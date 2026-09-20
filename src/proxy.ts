@@ -5,7 +5,9 @@ import { getSupabaseEnv } from "@/lib/supabase/config";
 const PUBLIC_PATHS = ["/login", "/termos", "/privacidade"];
 
 function isPublic(pathname: string) {
-  return PUBLIC_PATHS.includes(pathname) || pathname.startsWith("/auth/");
+  if (PUBLIC_PATHS.includes(pathname) || pathname.startsWith("/auth/")) return true;
+  // Pré-visualizações com dados fictícios: existem só em desenvolvimento (as páginas dão 404 em produção).
+  return process.env.NODE_ENV !== "production" && pathname.startsWith("/dev/");
 }
 
 /**

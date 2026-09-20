@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Conteúdo gerado sob demanda (npm run import:sql)
+/content/generated/

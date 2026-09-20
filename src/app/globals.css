@@ -39,3 +39,15 @@ body {
   outline: 3px solid var(--brand);
   outline-offset: 2px;
 }
+
+/* Modo escuro da leitura (RF-08): redefine as cores só dentro da área de leitura. */
+.reading-dark {
+  --background: #17131a;
+  --foreground: #ece7ee;
+  --card: #211b27;
+  --lilac: #2b2432;
+  --muted: #b9b0bf;
+  --line: #3c3444;
+  --brand: #e58a98;
+  --brand-strong: #f0a3ae;
+}

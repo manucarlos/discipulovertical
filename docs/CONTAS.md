@@ -31,7 +31,7 @@ Este guia é para o pastor. Você faz cada passo; o Claude acompanha e tira dúv
 4. Em cada projeto, aplique o banco de dados:
    1. Abra **SQL Editor > New query**.
    2. Abra o arquivo `supabase/migrations/20260919000001_base.sql`, copie **todo** o conteúdo, cole no editor e clique em **Run**. Deve aparecer "Success".
-   3. Repita, **nesta ordem**, com os arquivos `…000002_content.sql`, `…000003_progress.sql` e `…000004_church_pages.sql`.
+   3. Repita, **nesta ordem**, com os arquivos `…000002_content.sql`, `…000003_progress.sql`, `…000004_church_pages.sql` e `…000005_lesson_button_suggestion.sql`.
 5. **Defina quem é o primeiro Administrador, antes de entrar pela primeira vez.** No SQL Editor, rode (troque pelo e-mail Google que você vai usar para entrar):
 
    ```sql
@@ -41,6 +41,16 @@ Este guia é para o pastor. Você faz cada passo; o Claude acompanha e tira dúv
 
    Quem entrar com esse e-mail vira Admin automaticamente. Se você entrar antes de rodar isto, avise o Claude: dá para corrigir.
 6. Anote, em **Project Settings > API**, o **Project URL** e a chave **Publishable** (começa com `sb_publishable_`). São essas que vão no `.env.local` (Passo 5). **Não use** a chave `secret` / `service_role` em lugar nenhum por enquanto.
+
+### Passo 2b. Colocar o conteúdo do Ciclo 1 no banco
+
+Os textos das lições já estão escritos (Parte 2 do [handoff](HANDOFF.md)). Para levá-los ao banco, **sem nenhuma chave**:
+
+1. Peça ao Claude para gerar o arquivo, ou rode na pasta do projeto: `npm run import:sql -- --cycle 1`. Ele cria `content/generated/ciclo-1.sql` e lista as 8 lições.
+2. Abra o arquivo, copie **todo** o conteúdo e cole em **SQL Editor > New query** do Supabase. Clique em **Run**.
+3. No final aparece uma tabela com as 8 lições, todas como `draft` (rascunho). Nenhum membro vê rascunhos.
+
+É seguro repetir: o que já existe é ignorado, então suas edições nunca são sobrescritas. Para os Ciclos 2 e 3, use `--cycle 2` e `--cycle 3` (as lições do Ciclo 3 com `[PREENCHER]` entram, mas ficam **impedidas de publicar** até você preencher os dados da igreja).
 
 ## Passo 3. Google Cloud (o botão "Entrar com Google")
 

@@ -38,6 +38,7 @@ Na pasta do projeto:
 | Conferir tipos | `npm run typecheck` |
 | Conferir estilo do código | `npm run lint` |
 | Gerar a versão de produção | `npm run build` |
+| Gerar o SQL de importação das lições | `npm run import:sql -- --cycle 1` |
 
 Os testes incluem as **regras de acesso do banco** (quem pode ler e escrever o quê). Rode antes de qualquer mudança no banco.
 
@@ -63,6 +64,21 @@ Os testes incluem as **regras de acesso do banco** (quem pode ler e escrever o q
   ```sql
   update public.profiles set role = 'admin' where email = 'SEU-EMAIL@gmail.com';
   ```
+
+## 6b. Ler e publicar lições enquanto o editor não existe
+
+O painel de edição ainda não foi construído. Até lá:
+
+- **Ler os rascunhos como o membro vê:** rode `npm run dev` e abra `http://localhost:3000/dev/licao/c1-l01` (troque o final por `c1-l02` etc.). Essas páginas usam os textos do handoff e só existem no seu computador; em produção dão erro 404.
+- **Publicar depois de revisar** (SQL Editor do Supabase; troque a lista de lições):
+
+  ```sql
+  update public.lessons set status = 'published'
+  where slug in ('c1-l01', 'c1-l02');
+  ```
+
+  Lições com `[PREENCHER]` o banco recusa publicar. Publique **só o que o pastor já revisou**; a publicação fica no log de auditoria.
+- **Editar o texto** de uma lição ainda exige o editor. Enquanto isso, ajuste o `docs/HANDOFF.md` com o Claude **antes** de importar. A importação ignora lições que já existem, então, para trocar um rascunho ainda não publicado, peça ao Claude o procedimento.
 
 ## 7. Backup e restauração
 

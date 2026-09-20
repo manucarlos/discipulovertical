@@ -32,6 +32,7 @@ Sem `.env.local` o app abre e mostra avisos de "em preparação"; o login só fu
 | `npm run typecheck` | Confere os tipos |
 | `npm run lint` | Confere o estilo do código |
 | `npm run build` | Versão de produção |
+| `npm run import:sql` | Gera o SQL de importação das lições (`-- --cycle 1`) |
 | `npm run icons` | Gera ícones provisórios do PWA |
 
 ## Estrutura
@@ -40,16 +41,21 @@ Sem `.env.local` o app abre e mostra avisos de "em preparação"; o login só fu
 docs/         especificação, guias e decisões
 supabase/     migrations/ (SQL versionado, com RLS desde a primeira)
 tests/db/     testes das regras de acesso (Postgres em memória)
-scripts/      utilitários (ícones; importador de conteúdo, a fazer)
-src/app/      telas: login, onboarding, início, termos, privacidade
+scripts/      importador de conteúdo e gerador de ícones
+src/app/      telas: login, onboarding, (member)/ trilha, ciclo, lição, Nossa Igreja;
+              dev/ pré-visualizações (só em desenvolvimento)
 src/lib/      supabase/ (clientes), bible/ (provedor de texto bíblico),
-              lessons/ (liberação e progresso), onboarding, legal
+              content/ (leitura do handoff e SQL de importação),
+              lessons/ (liberação e progresso), trail/ (modelo da trilha),
+              onboarding, legal
 src/proxy.ts  renova a sessão e protege as rotas
 ```
 
 ## Status
 
-Fase 0 e início da Fase 1 (MVP). Pronto e testado: banco com RLS, login Google (código), onboarding com consentimentos, regras de liberação, provedor bíblico provisório. Próximo: trilha, lição e importador do Ciclo 1. Detalhes em [docs/DECISIONS.md](docs/DECISIONS.md).
+Fase 1 (MVP) em andamento. Pronto e testado: banco com RLS, login Google (código), onboarding com consentimentos, importador dos Ciclos 1 a 3, trilha, lista do ciclo, lição com leitura ajustável e "Concluir lição", Nossa Igreja. Falta: editor de lições e painel, perfil do membro, exportar/excluir dados. Detalhes e perguntas em aberto em [docs/DECISIONS.md](docs/DECISIONS.md).
+
+Para ver as telas sem Supabase: `npm run dev` e abra `/dev/trilha`, `/dev/ciclo/c1` e `/dev/licao/c1-l01`.
 
 ## Regras que não podem ser quebradas
 
