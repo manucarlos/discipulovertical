@@ -31,7 +31,7 @@ Este guia é para o pastor. Você faz cada passo; o Claude acompanha e tira dúv
 4. Em cada projeto, aplique o banco de dados:
    1. Abra **SQL Editor > New query**.
    2. Abra o arquivo `supabase/migrations/20260919000001_base.sql`, copie **todo** o conteúdo, cole no editor e clique em **Run**. Deve aparecer "Success".
-   3. Repita, **nesta ordem**, com os arquivos `…000002_content.sql`, `…000003_progress.sql`, `…000004_church_pages.sql` e `…000005_lesson_button_suggestion.sql`.
+   3. Repita, **nesta ordem**, com os arquivos `…000002_content.sql`, `…000003_progress.sql`, `…000004_church_pages.sql`, `…000005_lesson_button_suggestion.sql` e `…000006_lesson_editor.sql`.
 5. **Defina quem é o primeiro Administrador, antes de entrar pela primeira vez.** No SQL Editor, rode (troque pelo e-mail Google que você vai usar para entrar):
 
    ```sql
@@ -49,6 +49,7 @@ Os textos das lições já estão escritos (Parte 2 do [handoff](HANDOFF.md)). P
 1. Peça ao Claude para gerar o arquivo, ou rode na pasta do projeto: `npm run import:sql -- --cycle 1`. Ele cria `content/generated/ciclo-1.sql` e lista as 8 lições.
 2. Abra o arquivo, copie **todo** o conteúdo e cole em **SQL Editor > New query** do Supabase. Clique em **Run**.
 3. No final aparece uma tabela com as 8 lições, todas como `draft` (rascunho). Nenhum membro vê rascunhos.
+4. Para revisar e publicar, use o painel **Conteúdo** do app (veja o [RUNBOOK](RUNBOOK.md), seção 6b).
 
 É seguro repetir: o que já existe é ignorado, então suas edições nunca são sobrescritas. Para os Ciclos 2 e 3, use `--cycle 2` e `--cycle 3` (as lições do Ciclo 3 com `[PREENCHER]` entram, mas ficam **impedidas de publicar** até você preencher os dados da igreja).
 

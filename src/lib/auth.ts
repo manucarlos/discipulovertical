@@ -35,3 +35,14 @@ export const requireMember = cache(async () => {
 
   return { supabase, user, profile };
 });
+
+/**
+ * Área de conteúdo: só Editor e Admin. Quem é membro comum volta para o início.
+ * (A RLS do banco impõe a mesma regra; isto evita mostrar telas que não funcionariam.)
+ */
+export const requireStaff = cache(async () => {
+  const ctx = await requireMember();
+  const role = ctx.profile.role;
+  if (role !== "editor" && role !== "admin") redirect("/");
+  return { ...ctx, role: role as "editor" | "admin" };
+});

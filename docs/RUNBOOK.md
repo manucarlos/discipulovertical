@@ -65,20 +65,34 @@ Os testes incluem as **regras de acesso do banco** (quem pode ler e escrever o q
   update public.profiles set role = 'admin' where email = 'SEU-EMAIL@gmail.com';
   ```
 
-## 6b. Ler e publicar lições enquanto o editor não existe
+## 6b. Editar e publicar lições (painel de conteúdo)
 
-O painel de edição ainda não foi construído. Até lá:
+Quem é **Editor** ou **Admin** vê o link **Conteúdo** no topo do app (ou abra `/admin/trilha`).
 
-- **Ler os rascunhos como o membro vê:** rode `npm run dev` e abra `http://localhost:3000/dev/licao/c1-l01` (troque o final por `c1-l02` etc.). Essas páginas usam os textos do handoff e só existem no seu computador; em produção dão erro 404.
-- **Publicar depois de revisar** (SQL Editor do Supabase; troque a lista de lições):
+**Fluxo de trabalho**
 
-  ```sql
-  update public.lessons set status = 'published'
-  where slug in ('c1-l01', 'c1-l02');
-  ```
+1. **Trilha:** lista os ciclos e as lições, com o status de cada uma (rascunho, em revisão, publicada, arquivada) e um aviso amarelo nas que ainda têm `[PREENCHER]`. Use as setas para reordenar e o campo "Nova lição neste ciclo" para criar um rascunho.
+2. **Abra a lição** e edite. O texto tem barra de formatação (título, negrito, listas, citação, tabela). Os trechos `[PREENCHER: ...]` aparecem em amarelo e no quadro "Pendências". Salve com o botão **Salvar** ou **Ctrl+S**.
+3. **Ver como o membro vê:** abre a versão salva, idêntica à do membro. Salve antes para ver as mudanças.
+4. **Editor:** ao terminar, clique em **Enviar para revisão**. **Admin/Pastor:** revise e clique em **Publicar**. O botão fica bloqueado, com o motivo, enquanto houver `[PREENCHER]`; o banco também recusa.
+5. **Depois de publicada**, só o Admin edita, e cada salvamento vale na hora. Se errar, abra **Histórico de versões** e clique em **Restaurar** na versão anterior.
+6. **Tirar do ar:** prefira **Arquivar** (quem já iniciou continua vendo). **Despublicar** faz a lição sumir para todos, inclusive para quem já começou.
 
-  Lições com `[PREENCHER]` o banco recusa publicar. Publique **só o que o pastor já revisou**; a publicação fica no log de auditoria.
-- **Editar o texto** de uma lição ainda exige o editor. Enquanto isso, ajuste o `docs/HANDOFF.md` com o Claude **antes** de importar. A importação ignora lições que já existem, então, para trocar um rascunho ainda não publicado, peça ao Claude o procedimento.
+**Avisos**
+
+- Se aparecer "Outra pessoa salvou esta lição", recarregue a página; copie antes o que escreveu.
+- O sistema avisa se você tentar sair com alterações não salvas.
+- Preencha o versículo-chave só com a **referência** (ex.: `João 3.16`). Nunca cole o texto bíblico.
+
+**Dar acesso a outra pessoa (por enquanto por SQL, no SQL Editor do Supabase)**
+
+A pessoa precisa ter entrado uma vez com o Google. Depois, troque o e-mail e rode:
+
+```sql
+update public.profiles set role = 'editor' where email = 'pessoa@gmail.com';
+```
+
+(`'admin'` para outro administrador; `'member'` para tirar o acesso.) Esse caminho **não** grava no log de auditoria; a tela "Usuários e perfis", que grava, ainda será construída.
 
 ## 7. Backup e restauração
 

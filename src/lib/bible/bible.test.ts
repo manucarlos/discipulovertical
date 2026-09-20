@@ -48,6 +48,16 @@ describe("parseReference", () => {
   it("recusa texto que não é só uma referência", () => {
     expect(parseReference("Leia João 1.12")).toBeNull();
     expect(parseReference("")).toBeNull();
+    expect(parseReference("João")).toBeNull();
+    expect(parseReference("João 3.16-10")).toBeNull();
+    expect(parseReference("Marcos 0.1")).toBeNull();
+  });
+  it("aceita o que a pessoa digita: minúsculas, sem acento, dois-pontos, espaços a mais", () => {
+    expect(parseReference("efésios 2.8-9")?.label).toBe("Efésios 2.8-9");
+    expect(parseReference("JOAO 3:16")?.label).toBe("João 3.16");
+    expect(parseReference("  1  coríntios   10.13 ")?.label).toBe("1 Coríntios 10.13");
+    expect(parseReference("1 joao 4.8")?.bookCode).toBe("1JN");
+    expect(parseReference("salmo 23")?.label).toBe("Salmos 23");
   });
 });
 

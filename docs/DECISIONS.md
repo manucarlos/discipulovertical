@@ -89,22 +89,56 @@ Registro das escolhas feitas na construção, com o motivo. As decisões de prod
   - *Limite:* isso prova que **as permissões do banco permitem o fluxo**; as *server actions* em si e a integração com o Supabase real ainda não foram executadas (não há projeto Supabase). Conferir na homologação.
 - O build de produção pegou uma página que tentava ser pré-renderizada sem login (`/igreja`); todas as telas do membro agora chamam `connection()`.
 
+### Editor de lições
+
+- **Editor visual com TipTap**, como aprovado. Só oferece o que o formato de armazenamento representa: título, subtítulo, negrito, itálico, listas, citação e tabela. Recursos que o formato não guarda (sublinhado, link, código, riscado, linha horizontal) ficam desligados, para nada se perder ao salvar.
+- **Conversão sem perdas, testada nas 28 lições.** `src/lib/content/tiptap.ts` converte blocos <-> documento do editor, e um teste confirma que `docToBlocks(blocksToDoc(x))` devolve exatamente o original para todas as lições do handoff. Limites conhecidos: negrito e itálico ao mesmo tempo viram só negrito, e quebra de linha dentro de um parágrafo vira espaço.
+- **Asteriscos e barras literais** digitados no editor são escapados (`\*`, `\\`) para não virarem itálico ao reler. O texto inline aprendeu esse escape.
+- **`[PREENCHER]` destacado em amarelo dentro do texto** (decoração visual, não muda o conteúdo) e listado no painel de pendências, com o lugar e o que falta.
+- **Salvar é uma função do banco, não várias chamadas.** `save_lesson` grava, numa transação só: nova versão, campos, notas internas e quiz. Falhou no meio, nada fica gravado (testado). Roda com as permissões de quem chama (`SECURITY INVOKER`), então a RLS continua valendo: o editor só salva rascunho ou em revisão; só o Admin salva lição publicada.
+- **Conflito de edição:** o editor envia a versão que viu; se outra pessoa salvou depois, o banco recusa em vez de sobrescrever em silêncio, e a tela pede para recarregar.
+- **Cada salvamento cria uma versão** (histórico imutável). Restaurar (`restore_lesson_version`) cria uma versão *nova* com o texto antigo, então o histórico só cresce. Tempo de histórico mostrado: as 30 versões mais recentes.
+- **Editar lição publicada vale na hora** (só o Admin pode). O histórico permite desfazer. Não existe "rascunho paralelo" de lição publicada: é uma simplificação do MVP.
+- **`has_placeholders` é recalculado pelo banco** a partir do texto (conteúdo e notas), nunca aceito do navegador. E há uma **barreira final na publicação**: um gatilho confere o texto real e recusa publicar com `[PREENCHER]` mesmo que a coluna esteja errada, ou sem versão de conteúdo.
+- **Status:** rascunho, em revisão, publicada, arquivada. Editor: rascunho <-> em revisão. Admin: também publica, despublica, arquiva e restaura. A regra está em um lugar (`src/lib/admin/status.ts`), usada pela tela e pelo servidor, e a RLS impõe a mesma coisa no banco. Toda mudança de status entra no log de auditoria (`lesson_status_changed`).
+- **Despublicar avisa** que a lição some inclusive para quem já a iniciou; arquivar não (quem já iniciou continua vendo). Por isso arquivar é a opção recomendada.
+- **Criar e reordenar lições** também são funções do banco (`create_lesson`, `move_lesson`). A troca de posição é atômica; o Editor só reordena rascunhos, o Admin reordena tudo. Não há exclusão de lição: só arquivar (lição com progresso nunca é apagada).
+- **Configurações do ciclo** (nome, semanas, dias entre lições, máximo por semana, ativo) só para o Admin, na tela da trilha. Não há criação de ciclos pela tela ainda (o importador cria os três).
+- **Prévia idêntica à do membro** em `/admin/licao/[slug]/previa`: usa os mesmos componentes da leitura (`LessonView` e `ReadingShell`) sobre a versão *salva*. Alterações não salvas não aparecem lá.
+- **Validação no servidor** (`validateLessonDraft`): título, versículo-chave (tolerante a maiúsculas e acento, gravado na forma canônica), tempo (1 a 120), etiquetas, limites de tamanho, quiz (2 a 6 alternativas, resposta certa marcada) e **nenhum bloco é descartado em silêncio**. Mensagens de erro do banco viram texto claro em português (`describeEditorError`).
+- **Versículo-chave digitado à mão** aceita "joao 3:16" e grava "João 3.16". A detecção de referências *dentro* do texto das lições continua estrita, para evitar falsos positivos.
+- **Correção de um erro meu da etapa anterior:** os títulos de seção eram gravados com `level: 2` embora o tipo documentasse `1`. Agora são `1`, em todas as 149 seções das 28 lições.
+- **Peculiaridade do TipTap 3:** com `immediatelyRender: false` (necessário no Next), o `useEditorState` só atualiza na primeira transação. O editor aparece assim que existe, com a barra "em repouso" até o primeiro evento, em vez de esperar um estado que só chegaria depois de um clique.
+- **Alterações não salvas:** aviso ao sair da página, botão "Salvar" só ativo com mudança, atalho Ctrl+S (Cmd+S), e os botões de status ficam bloqueados até salvar.
+- **Pré-visualizações de desenvolvimento** `/dev/editor/[slug]` (com `?role=` e `?status=`) e `/dev/admin`: usam ações de mentirinha, mas passam pela validação real. Em produção dão 404.
+
+### Testes do editor
+
+- `tests/db/editor.test.ts` (21 testes): salvar (tudo ou nada, permissões, conflito, recálculo de `[PREENCHER]`), barreira de publicação, log de status, criar, restaurar e reordenar lições.
+- `src/lib/content/editor.test.ts`, `src/lib/admin/admin.test.ts`: conversão sem perdas das 28 lições, escape de asteriscos, pendências (38 marcadores, iguais aos do importador), validação do rascunho, regras de status, mensagens de erro e configurações do ciclo.
+- No navegador (com a pré-visualização): o editor abre sem "alterações" falsas, digitar marca "não salvo", salvar limpa, erros de validação aparecem e somem ao corrigir, negrito, desfazer, tabela (inserir, linha, excluir), modo somente leitura do Editor numa lição publicada, e os destaques amarelos.
+- **Limite:** as *server actions* do editor (`saveLesson` etc.) e a integração com o Supabase real ainda não rodaram (não há projeto). O que foi provado é a lógica, as funções do banco e a interface. Conferir na homologação.
+
 ## Perguntas em aberto para o pastor
 
 | Pergunta | Por quê |
 | --- | --- |
 | As lições têm de **355 a 616 palavras**, mas o molde da seção 15 pede **700 a 1.200**. Está bom assim ou devemos ampliar? | O texto mais curto combina com leitura no celular, mas foge do molde aprovado |
-| Alguma lição dos Ciclos 1 a 3 deve ser marcada como **sensível** (aviso de que não substitui aconselhamento, botão "Pedir ajuda pastoral")? Candidatas: Ciclo 2, lições de finanças e de perdão | Hoje todas entram como não sensíveis; a lista de sensíveis do handoff (0.7) cobre só a biblioteca do Grupo de Discipulado |
+| Alguma lição dos Ciclos 1 a 3 deve ser marcada como **sensível** (aviso de que não substitui aconselhamento, botão "Pedir ajuda pastoral")? Candidatas: Ciclo 2, lições de finanças e de perdão | Hoje todas entram como não sensíveis. Agora o próprio editor tem a caixa "Tema sensível", mas o aviso ao membro ainda não existe |
 | O "Botão sugerido" do batismo ("Quero me batizar", com link do formulário) deve virar chamada para ação real? | Está guardado como nota interna; precisa do link de inscrição |
+| Editar uma lição **já publicada** deve valer na hora (como está) ou passar por revisão antes de ir ao ar? | Hoje só o Admin edita lição publicada e a mudança é imediata; o histórico permite desfazer |
 
 ## Ainda não feito (propositalmente)
 
 | Item | Motivo |
 | --- | --- |
-| **Editor de lições e pré-visualização de rascunhos no painel** | Próximo passo. Sem ele, a revisão do pastor e a publicação só acontecem por SQL (ver RUNBOOK); é o que falta para o fluxo "revisar, editar e publicar" |
-| Lista de membros, ficha do membro e painel (RF-22 a RF-24) | MVP, depois do editor |
+| **Tela "Usuários e perfis"** (promover Editor, Cuidador, Admin) | Próximo passo. Hoje a promoção é por SQL (RUNBOOK), sem registro no log de auditoria |
+| Lista de membros, ficha do membro e painel (RF-23, RF-24) | MVP, depois da tela de usuários |
+| Editor de "Nossa Igreja" (RF-15 é editável) | Os textos existem e o membro os lê; falta a tela de edição do Admin |
 | Exportar e excluir os próprios dados (RF-27) | MVP; a exclusão exige a chave `service_role` no servidor, então pede cuidado extra. As cascatas no banco já estão testadas |
 | Perfil do membro (trocar versão da Bíblia, revogar consentimentos) | MVP |
+| Criar ciclo pela tela; arrastar e soltar lições | O importador cria os ciclos; as setas reordenam |
+| Aviso de "tema sensível" e botão de ajuda pastoral para o membro | A caixa existe no editor e é gravada; a exibição ao membro vem com o módulo de ajuda |
 | Service worker e uso offline | Com as telas de lição prontas, já dá para fazer; o manifesto e os ícones provisórios já permitem instalar o app |
 | Ícones definitivos, cores e logotipo | Aguardam o material oficial da igreja (`npm run icons` gera os provisórios) |
 | Termos de Uso e Política de Privacidade | Páginas com aviso "em elaboração"; o texto depende de revisão jurídica |

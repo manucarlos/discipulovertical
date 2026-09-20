@@ -12,14 +12,20 @@ let cycleId: string;
 const q = <T = Record<string, unknown>>(sql: string, params: unknown[] = []) =>
   db.query<T>(sql, params).then((r) => r.rows);
 
-/** Cria uma lição como dono do banco (fixture; não passa pela RLS). */
+/** Cria uma lição com uma versão de conteúdo, como dono do banco (fixture; não passa pela RLS). */
 async function createLesson(slug: string, position: number, hasPlaceholders = false) {
   const rows = await q<{ id: string }>(
     `insert into public.lessons (cycle_id, slug, title, position, has_placeholders)
      values ($1, $2, $3, $4, $5) returning id`,
     [cycleId, slug, `Lição ${slug}`, position, hasPlaceholders],
   );
-  return rows[0].id;
+  const id = rows[0].id;
+  const [version] = await q<{ id: string }>(
+    `insert into public.lesson_versions (lesson_id, content) values ($1, '{"blocks": []}') returning id`,
+    [id],
+  );
+  await q("update public.lessons set current_version_id = $1 where id = $2", [version.id, id]);
+  return id;
 }
 
 beforeAll(async () => {

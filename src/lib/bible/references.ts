@@ -74,9 +74,34 @@ export function findReferences(text: string): FoundReference[] {
   return found;
 }
 
-/** Lê uma única referência (ex.: o campo "versículo-chave" de uma lição). Devolve null se não for uma. */
+const stripAccents = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "");
+const normalizeName = (s: string) => stripAccents(s).toLowerCase().replace(/\s+/g, " ").trim();
+const NORMALIZED_LOOKUP = new Map(NAME_ENTRIES.map((e) => [normalizeName(e.name), e]));
+const WHOLE_REFERENCE = /^(.+?)\s(\d{1,3})(?:[.:](\d{1,3})(?:\s?[-–]\s?(\d{1,3}))?)?$/u;
+
+/**
+ * Lê uma única referência digitada por uma pessoa (ex.: o campo "versículo-chave" de uma lição).
+ * Ao contrário de findReferences, aceita maiúsculas/minúsculas e falta de acento ("joao 3.16"),
+ * porque aqui o texto inteiro precisa ser uma referência. Devolve null se não for uma.
+ */
 export function parseReference(text: string): BibleReference | null {
-  const trimmed = text.trim();
-  const [first] = findReferences(trimmed);
-  return first && first.start === 0 && first.end === trimmed.length ? first.reference : null;
+  const m = WHOLE_REFERENCE.exec(text.trim().replace(/\s+/g, " "));
+  if (!m) return null;
+  const entry = NORMALIZED_LOOKUP.get(normalizeName(m[1]));
+  if (!entry) return null;
+
+  const chapter = Number(m[2]);
+  const verseStart = m[3] !== undefined ? Number(m[3]) : null;
+  const verseEnd = m[4] !== undefined ? Number(m[4]) : null;
+  if (chapter < 1 || (verseStart !== null && verseStart < 1)) return null;
+  if (verseEnd !== null && verseStart !== null && verseEnd < verseStart) return null;
+
+  return {
+    bookCode: entry.code,
+    bookName: entry.canonical,
+    chapter,
+    verseStart,
+    verseEnd,
+    label: buildLabel(entry.canonical, chapter, verseStart, verseEnd),
+  };
 }

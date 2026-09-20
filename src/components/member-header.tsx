@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
 
-export function MemberHeader() {
+export function MemberHeader({ isStaff = false }: { isStaff?: boolean }) {
   return (
     <header className="border-b border-line bg-card">
       <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4 px-4 py-3">
@@ -15,6 +15,11 @@ export function MemberHeader() {
           <Link href="/igreja" className="hover:underline">
             Nossa Igreja
           </Link>
+          {isStaff && (
+            <Link href="/admin/trilha" className="font-medium text-brand hover:underline">
+              Conteúdo
+            </Link>
+          )}
           <form action={signOut}>
             <button type="submit" className="text-muted underline">
               Sair

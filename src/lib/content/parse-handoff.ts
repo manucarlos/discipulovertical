@@ -220,7 +220,7 @@ function tokenize(text: string, where: string): Token[] {
 
     const heading = /^(#{1,6})\s+(.+?)\s*$/.exec(line);
     if (heading) {
-      tokens.push({ kind: "heading", level: Math.max(1, heading[1].length - 2), text: heading[2] });
+      tokens.push({ kind: "heading", level: Math.max(1, heading[1].length - 3), text: heading[2] });
       i++;
       continue;
     }

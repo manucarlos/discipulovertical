@@ -6,11 +6,11 @@ import { getSupabaseEnv } from "@/lib/supabase/config";
 export default async function MemberLayout({ children }: LayoutProps<"/">) {
   // Sem Supabase configurado (início do projeto), as páginas mostram o aviso "em preparação".
   if (!getSupabaseEnv()) return <>{children}</>;
-  await requireMember();
+  const { profile } = await requireMember();
 
   return (
     <>
-      <MemberHeader />
+      <MemberHeader isStaff={profile.role === "editor" || profile.role === "admin"} />
       <div className="flex flex-1 flex-col">{children}</div>
     </>
   );
