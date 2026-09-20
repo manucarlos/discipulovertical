@@ -26,6 +26,15 @@ export function describeEditorError(error: DbErrorLike): FriendlyError {
       message: "Uma lição publicada não pode ter marcadores [PREENCHER]. Preencha ou remova todos antes de salvar.",
     };
   }
+  if (text.includes("último administrador")) {
+    return {
+      conflict: false,
+      message: "Não é possível remover o último administrador. Promova outra pessoa a administrador antes.",
+    };
+  }
+  if (error.code === "P0002" && text.includes("perfil não encontrado")) {
+    return { conflict: false, message: "Essa pessoa não foi encontrada." };
+  }
   if (error.code === "42501" || text.includes("row-level security") || text.includes("sem permissão")) {
     return {
       conflict: false,

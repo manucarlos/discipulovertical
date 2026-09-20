@@ -12,6 +12,11 @@ export function AdminHeader({ role }: { role: "editor" | "admin" }) {
           <Link href="/admin/trilha" className="hover:underline">
             Trilha
           </Link>
+          {role === "admin" && (
+            <Link href="/admin/pessoas" className="hover:underline">
+              Pessoas
+            </Link>
+          )}
           <Link href="/" className="hover:underline">
             Ver como membro
           </Link>

@@ -62,6 +62,10 @@ describe("describeEditorError", () => {
     expect(describeEditorError({ message: "new row violates row-level security policy" }).message).toMatch(/permissão/);
     expect(describeEditorError({ code: "42501", message: "só o administrador reordena lições publicadas ou arquivadas" }).message).toMatch(/reordenar/);
   });
+  it("último administrador e pessoa inexistente", () => {
+    expect(describeEditorError({ code: "P0001", message: "não é possível remover o último administrador" }).message).toMatch(/último administrador/);
+    expect(describeEditorError({ code: "P0002", message: "perfil não encontrado" }).message).toMatch(/não foi encontrada/);
+  });
   it("erros de validação da função aparecem em português; o resto vira mensagem genérica", () => {
     expect(describeEditorError({ code: "22023", message: "o título é obrigatório" }).message).toBe("O título é obrigatório.");
     const generic = describeEditorError({ code: "XX000", message: "connection reset by peer" });
@@ -124,5 +128,88 @@ describe("validateCycleSettings", () => {
     expect(error({ releaseIntervalDays: "1.5" })).toMatch(/intervalo/);
     expect(error({ maxLessonsPerWeek: "0" })).toMatch(/máximo/);
     expect(error({ maxLessonsPerWeek: "15" })).toMatch(/máximo/);
+  });
+});
+
+import {
+  describeActivity,
+  formatWhatsapp,
+  PAGE_SIZE,
+  parsePeopleFilters,
+  peopleQueryString,
+} from "./people";
+
+describe("parsePeopleFilters", () => {
+  it("lê filtros válidos", () => {
+    expect(parsePeopleFilters({ q: "  ana ", papel: "editor", situacao: "stalled", pagina: "3" })).toEqual({
+      search: "ana",
+      role: "editor",
+      status: "stalled",
+      page: 3,
+    });
+  });
+  it("ignora valores inválidos em vez de quebrar", () => {
+    expect(parsePeopleFilters({ papel: "chefe", situacao: "quase", pagina: "-2" })).toEqual({
+      search: "",
+      role: null,
+      status: null,
+      page: 1,
+    });
+    expect(parsePeopleFilters({ pagina: "1.5" }).page).toBe(1);
+    expect(parsePeopleFilters({ pagina: "abc" }).page).toBe(1);
+    expect(parsePeopleFilters({}).page).toBe(1);
+  });
+  it("limita o tamanho da busca e aceita parâmetro repetido", () => {
+    expect(parsePeopleFilters({ q: "x".repeat(500) }).search).toHaveLength(100);
+    expect(parsePeopleFilters({ papel: ["admin", "editor"] }).role).toBe("admin");
+  });
+  it("tem página de tamanho razoável", () => {
+    expect(PAGE_SIZE).toBeGreaterThanOrEqual(10);
+  });
+});
+
+describe("peopleQueryString", () => {
+  const base = { search: "", role: null, status: null, page: 1 } as const;
+  it("omite o que é padrão", () => {
+    expect(peopleQueryString({ ...base }, 1)).toBe("");
+  });
+  it("mantém os filtros e troca só a página", () => {
+    const qs = peopleQueryString({ search: "ana lima", role: "member", status: "stalled", page: 1 }, 2);
+    expect(qs).toBe("?q=ana+lima&papel=member&situacao=stalled&pagina=2");
+    expect(parsePeopleFilters(Object.fromEntries(new URLSearchParams(qs)))).toMatchObject({ search: "ana lima", page: 2 });
+  });
+});
+
+describe("describeActivity", () => {
+  const now = new Date("2026-09-20T15:00:00Z"); // domingo, 12h em Brasília
+  it("hoje, ontem e dias", () => {
+    expect(describeActivity(null, now)).toBe("nenhuma atividade");
+    expect(describeActivity("2026-09-20T14:00:00Z", now)).toBe("hoje");
+    expect(describeActivity("2026-09-19T16:00:00Z", now)).toBe("ontem");
+    expect(describeActivity("2026-09-15T16:00:00Z", now)).toBe("há 5 dias");
+  });
+  it("conta os dias pelo calendário de Brasília, não por 24 horas", () => {
+    // 1h em Brasília do dia 20 já é "hoje", mesmo tendo só 14 h de diferença.
+    expect(describeActivity("2026-09-20T03:00:00Z", now)).toBe("hoje");
+    // 23h de sábado em Brasília (02h UTC de domingo) ainda é "ontem" para quem olha ao meio-dia de domingo,
+    // e 23h de sexta já é "há 2 dias".
+    expect(describeActivity("2026-09-20T02:00:00Z", now)).toBe("ontem");
+    expect(describeActivity("2026-09-19T02:00:00Z", now)).toBe("há 2 dias");
+  });
+  it("meses e anos", () => {
+    expect(describeActivity("2026-06-20T15:00:00Z", now)).toBe("há 3 meses");
+    expect(describeActivity("2024-01-01T12:00:00Z", now)).toBe("há 2 anos");
+  });
+});
+
+describe("formatWhatsapp", () => {
+  it("formata celular e fixo brasileiros", () => {
+    expect(formatWhatsapp("5511912345678")).toBe("+55 (11) 91234-5678");
+    expect(formatWhatsapp("551131234567")).toBe("+55 (11) 3123-4567");
+  });
+  it("não inventa: sem número é nulo, formato estranho volta como está", () => {
+    expect(formatWhatsapp(null)).toBeNull();
+    expect(formatWhatsapp("")).toBeNull();
+    expect(formatWhatsapp("123")).toBe("123");
   });
 });

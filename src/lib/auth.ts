@@ -46,3 +46,10 @@ export const requireStaff = cache(async () => {
   if (role !== "editor" && role !== "admin") redirect("/");
   return { ...ctx, role: role as "editor" | "admin" };
 });
+
+/** Telas com dados pessoais de outras pessoas: só o Admin. O Editor volta para o painel de conteúdo. */
+export const requireAdmin = cache(async () => {
+  const ctx = await requireStaff();
+  if (ctx.role !== "admin") redirect("/admin/trilha");
+  return ctx;
+});

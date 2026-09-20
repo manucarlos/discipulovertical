@@ -84,15 +84,21 @@ Quem é **Editor** ou **Admin** vê o link **Conteúdo** no topo do app (ou abra
 - O sistema avisa se você tentar sair com alterações não salvas.
 - Preencha o versículo-chave só com a **referência** (ex.: `João 3.16`). Nunca cole o texto bíblico.
 
-**Dar acesso a outra pessoa (por enquanto por SQL, no SQL Editor do Supabase)**
+**Dar acesso a outra pessoa (só o Admin)**
 
-A pessoa precisa ter entrado uma vez com o Google. Depois, troque o e-mail e rode:
+A pessoa precisa ter entrado uma vez com o Google. Depois:
 
-```sql
-update public.profiles set role = 'editor' where email = 'pessoa@gmail.com';
-```
+1. No topo, abra **Conteúdo > Pessoas** e busque pelo nome ou e-mail.
+2. Abra a ficha, escolha o **Perfil** (Membro, Cuidador, Editor ou Administrador) e clique em **Salvar perfil**.
+3. A mudança fica registrada no **Histórico de perfil** da própria ficha e no log de auditoria.
 
-(`'admin'` para outro administrador; `'member'` para tirar o acesso.) Esse caminho **não** grava no log de auditoria; a tela "Usuários e perfis", que grava, ainda será construída.
+Regras: não dá para remover o **último administrador**, e você não altera o **seu próprio** perfil (peça a outro administrador). O perfil **Cuidador** ainda não dá acesso extra; ele vale a partir da próxima fase.
+
+**Acompanhar as pessoas**
+
+A lista mostra a **situação** de cada uma: primeiro acesso pendente, ainda não começou, em andamento, **parado** (14 dias ou mais sem atividade) e concluiu a trilha. Filtre por **Parado** para saber quem precisa de um contato pessoal. A ficha mostra o progresso lição a lição, o WhatsApp (se a pessoa informou) e os consentimentos.
+
+_Se precisar, por SQL (SQL Editor do Supabase; não grava no log de auditoria):_ `update public.profiles set role = 'editor' where email = 'pessoa@gmail.com';`
 
 ## 7. Backup e restauração
 

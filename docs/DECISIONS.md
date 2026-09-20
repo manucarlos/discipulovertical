@@ -119,6 +119,26 @@ Registro das escolhas feitas na construção, com o motivo. As decisões de prod
 - No navegador (com a pré-visualização): o editor abre sem "alterações" falsas, digitar marca "não salvo", salvar limpa, erros de validação aparecem e somem ao corrigir, negrito, desfazer, tabela (inserir, linha, excluir), modo somente leitura do Editor numa lição publicada, e os destaques amarelos.
 - **Limite:** as *server actions* do editor (`saveLesson` etc.) e a integração com o Supabase real ainda não rodaram (não há projeto). O que foi provado é a lógica, as funções do banco e a interface. Conferir na homologação.
 
+### Pessoas: lista, ficha e perfis (RF-23 e RF-24)
+
+- **Só o Admin.** A lista e a ficha têm dados pessoais (nome, e-mail, WhatsApp, consentimentos), e o handoff diz que o Editor vê apenas métricas de conteúdo. A função do banco `admin_member_overview` confere `is_admin()` (`SECURITY DEFINER`) e as telas usam `requireAdmin`; o Editor que abrir `/admin/pessoas` volta para a trilha.
+- **A situação é calculada no banco**, por uma única função, e usada pela lista *e* pela ficha (a ficha chama a mesma função), então as duas telas nunca discordam. Situações, em ordem de precedência: primeiro acesso pendente, concluiu a trilha, **parado**, ainda não começou, em andamento.
+- **"Parado" segue a RN-07:** 14 dias ou mais sem atividade (abrir, ler ou concluir uma lição), contados da última atividade; quem nunca começou conta desde o primeiro acesso. Quando entra uma lição obrigatória nova, quem tinha concluído tudo deixa de aparecer como "concluiu" (testado).
+- **Busca sem curingas:** o texto digitado é comparado como texto comum (`position`), então `%` e `_` não viram filtros por acidente. A busca ainda diferencia acentos ("Flavia" não acha "Flávia"); o `unaccent` do Postgres resolveria e fica como melhoria.
+- **Paginação no banco** (25 por página, com o total de todas as páginas na mesma consulta), pensada para 5.000 membros.
+- **Filtros na URL** (`?q=&papel=&situacao=&pagina=`): links compartilháveis; qualquer valor inválido é ignorado em vez de dar erro.
+- **Trocar perfil** passa pela função `admin_set_role` que já existia: só o Admin, **protege o último administrador** e **grava no log de auditoria**. A tela ainda impede o Admin de mudar o **próprio** perfil (peça a outro), para ninguém se tirar do painel sem querer; a proteção do último Admin continua no banco.
+- **Perfil "Cuidador"** já pode ser atribuído, mas **não dá nenhum acesso extra** até a V2 (as ferramentas do cuidador dependem das tabelas de atribuição). A tela avisa disso.
+- **A ficha mostra a trilha do ponto de vista da pessoa** (reusa `loadTrail` e as mesmas regras de liberação, aplicadas ao progresso dela), além de consentimentos e do histórico de mudanças de perfil. Reflexões, notas de cuidado e respostas de quiz ainda não existem (V2), então não aparecem.
+- **Acesso do Admin a dados pessoais não é registrado no log** (só as mudanças de perfil). O handoff exige registro apenas para notas de cuidado e reflexões privadas, que chegam na V2; se o pastor quiser registrar também a consulta de fichas, é uma mudança pequena.
+- **Pré-visualização** `/dev/pessoas` e `/dev/pessoas/[id]` (com `?eu=1`, `?ok=1`, `?erro=1`): pessoas fictícias e data fixa, com filtros funcionando em memória. Em produção dão 404.
+
+### Testes de Pessoas
+
+- `tests/db/people.test.ts` (10 testes): só o Admin executa; cada situação; contagens e última atividade; filtros por situação e perfil; busca (nome, e-mail, maiúsculas, `%` e `_`); filtros combinados; paginação com total; situação inválida; lição nova tirando alguém de "concluiu".
+- `src/lib/admin/admin.test.ts`: leitura dos filtros da URL (valores inválidos), links de paginação, "há N dias" no calendário de Brasília, formato do WhatsApp e novas mensagens de erro.
+- **Limite:** as *server actions* e a integração com o Supabase real seguem sem execução (não há projeto). A lógica, as funções do banco e a interface estão provadas.
+
 ## Perguntas em aberto para o pastor
 
 | Pergunta | Por quê |
@@ -132,8 +152,8 @@ Registro das escolhas feitas na construção, com o motivo. As decisões de prod
 
 | Item | Motivo |
 | --- | --- |
-| **Tela "Usuários e perfis"** (promover Editor, Cuidador, Admin) | Próximo passo. Hoje a promoção é por SQL (RUNBOOK), sem registro no log de auditoria |
-| Lista de membros, ficha do membro e painel (RF-23, RF-24) | MVP, depois da tela de usuários |
+| Painel com indicadores (funil por ciclo, taxa de conclusão, lições com mais abandono) | O handoff prevê na seção 11; a lista de pessoas já mostra quem está parado |
+| Filtro por ciclo na lista de pessoas e por cuidador | Por ciclo cabe agora; por cuidador depende da V2 |
 | Editor de "Nossa Igreja" (RF-15 é editável) | Os textos existem e o membro os lê; falta a tela de edição do Admin |
 | Exportar e excluir os próprios dados (RF-27) | MVP; a exclusão exige a chave `service_role` no servidor, então pede cuidado extra. As cascatas no banco já estão testadas |
 | Perfil do membro (trocar versão da Bíblia, revogar consentimentos) | MVP |

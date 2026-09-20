@@ -43,7 +43,7 @@ supabase/     migrations/ (SQL versionado, com RLS desde a primeira)
 tests/db/     testes das regras de acesso (Postgres em memória)
 scripts/      importador de conteúdo e gerador de ícones
 src/app/      telas: login, onboarding, (member)/ trilha, ciclo, lição, Nossa Igreja;
-              admin/ painel de conteúdo (trilha, editor, prévia);
+              admin/ painel (trilha, editor, prévia, pessoas e fichas);
               dev/ pré-visualizações (só em desenvolvimento)
 src/lib/      supabase/ (clientes), bible/ (provedor de texto bíblico),
               content/ (leitura do handoff, SQL de importação, conversão do editor),
@@ -55,9 +55,9 @@ src/proxy.ts  renova a sessão e protege as rotas
 
 ## Status
 
-Fase 1 (MVP) em andamento. Pronto e testado: banco com RLS, login Google (código), onboarding com consentimentos, importador dos Ciclos 1 a 3, trilha, ciclo, lição com leitura ajustável e "Concluir lição", Nossa Igreja e o **editor de lições** (painel de conteúdo com editor visual, prévia, status, histórico de versões e pendências `[PREENCHER]`). Falta: tela de usuários e perfis, lista de membros e painel, perfil do membro, exportar/excluir dados. Detalhes e perguntas em aberto em [docs/DECISIONS.md](docs/DECISIONS.md).
+Fase 1 (MVP) em andamento. Pronto e testado: banco com RLS, login Google (código), onboarding com consentimentos, importador dos Ciclos 1 a 3, trilha, ciclo, lição com leitura ajustável e "Concluir lição", Nossa Igreja, o **editor de lições** e a área **Pessoas** (lista com situação e filtros, ficha com progresso e troca de perfil pelo Admin). Falta: perfil do membro, exportar/excluir os próprios dados (RF-27), editor de "Nossa Igreja" e o painel de indicadores. Detalhes e perguntas em aberto em [docs/DECISIONS.md](docs/DECISIONS.md).
 
-Para ver as telas sem Supabase: `npm run dev` e abra `/dev/trilha`, `/dev/ciclo/c1`, `/dev/licao/c1-l01`, `/dev/editor/c1-l02` (aceita `?role=editor&status=published`) e `/dev/admin`.
+Para ver as telas sem Supabase: `npm run dev` e abra `/dev/trilha`, `/dev/ciclo/c1`, `/dev/licao/c1-l01`, `/dev/editor/c1-l02` (aceita `?role=editor&status=published`), `/dev/admin`, `/dev/pessoas` e `/dev/pessoas/00000000-0000-4000-8000-000000000001`.
 
 ## Regras que não podem ser quebradas
 
