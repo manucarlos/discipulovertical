@@ -8,14 +8,22 @@ export function AdminHeader({ role }: { role: "editor" | "admin" }) {
         <Link href="/admin/trilha" className="text-sm font-medium uppercase tracking-widest">
           Conteúdo · {role === "admin" ? "Administração" : "Edição"}
         </Link>
-        <nav aria-label="Painel de conteúdo" className="flex items-center gap-4 text-sm">
+        <nav aria-label="Painel de conteúdo" className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <Link href="/admin/painel" className="hover:underline">
+            Painel
+          </Link>
           <Link href="/admin/trilha" className="hover:underline">
             Trilha
           </Link>
           {role === "admin" && (
-            <Link href="/admin/pessoas" className="hover:underline">
-              Pessoas
-            </Link>
+            <>
+              <Link href="/admin/pessoas" className="hover:underline">
+                Pessoas
+              </Link>
+              <Link href="/admin/igreja" className="hover:underline">
+                Nossa Igreja
+              </Link>
+            </>
           )}
           <Link href="/" className="hover:underline">
             Ver como membro

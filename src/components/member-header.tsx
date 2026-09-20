@@ -8,12 +8,15 @@ export function MemberHeader({ isStaff = false }: { isStaff?: boolean }) {
         <Link href="/" className="text-sm font-medium uppercase tracking-widest text-brand">
           Vertical Church
         </Link>
-        <nav aria-label="Principal" className="flex items-center gap-4 text-sm">
+        <nav aria-label="Principal" className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm">
           <Link href="/" className="hover:underline">
             Minha trilha
           </Link>
           <Link href="/igreja" className="hover:underline">
             Nossa Igreja
+          </Link>
+          <Link href="/perfil" className="hover:underline">
+            Meu perfil
           </Link>
           {isStaff && (
             <Link href="/admin/trilha" className="font-medium text-brand hover:underline">

@@ -123,6 +123,16 @@ describe("admin_member_overview", () => {
     expect(Date.now() - last).toBeLessThan(1.5 * 86_400_000);
   });
 
+  it("a equipe (Admin e Editor) nunca aparece como 'parada', mesmo sem atividade há meses", async () => {
+    await q("update public.profiles set created_at = $2, onboarded_at = $2 where id = $1", [admin, daysAgo(90)]);
+    await q("update public.profiles set created_at = $2, onboarded_at = $2 where id = $1", [editor, daysAgo(90)]);
+    const rows = byEmail(await overview());
+    expect(rows["pastor@example.com"].status).toBe("not_started");
+    expect(rows["editora@example.com"].status).toBe("not_started");
+    // Já os membros na mesma situação continuam parados.
+    expect(rows["flavia@example.com"].status).toBe("stalled");
+  });
+
   it("filtra por situação", async () => {
     expect((await overview({ status: "stalled" })).map((r) => r.email).sort()).toEqual(["bia@example.com", "flavia@example.com"]);
     expect((await overview({ status: "completed" })).map((r) => r.email)).toEqual(["caio@example.com"]);

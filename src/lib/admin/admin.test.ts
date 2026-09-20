@@ -213,3 +213,86 @@ describe("formatWhatsapp", () => {
     expect(formatWhatsapp("123")).toBe("123");
   });
 });
+
+import { validateChurchPage } from "./church";
+
+describe("validateChurchPage", () => {
+  it("apara as pontas e normaliza o fim de linha, sem mexer no miolo", () => {
+    expect(validateChurchPage({ title: "  Nossa visão ", body: "  Primeiro.\r\n\r\nSegundo.  " })).toEqual({
+      ok: true,
+      title: "Nossa visão",
+      body: "Primeiro.\n\nSegundo.",
+    });
+  });
+  it("aceita o texto vazio (a página aparece como 'Em breve')", () => {
+    expect(validateChurchPage({ title: "Valores", body: "   " })).toEqual({ ok: true, title: "Valores", body: "" });
+  });
+  it("recusa título vazio e tamanhos absurdos", () => {
+    expect(validateChurchPage({ title: " ", body: "x" })).toMatchObject({ ok: false, error: expect.stringMatching(/título/) });
+    expect(validateChurchPage({ title: "x".repeat(101), body: "" })).toMatchObject({ ok: false });
+    expect(validateChurchPage({ title: "x", body: "y".repeat(20_001) })).toMatchObject({ ok: false });
+  });
+});
+
+import { formatPercent, normalizeDashboard, parsePeriod, percent, topAbandonment, type LessonMetric } from "./dashboard";
+
+describe("porcentagens e períodos do painel", () => {
+  it("sem base não há porcentagem (traço, e não um 0% enganoso)", () => {
+    expect(percent(0, 0)).toBeNull();
+    expect(formatPercent(3, 0)).toBe("—");
+    expect(formatPercent(1, 3)).toBe("33%");
+    expect(formatPercent(2, 3)).toBe("67%");
+    expect(formatPercent(0, 5)).toBe("0%");
+  });
+  it("só aceita os períodos que a tela oferece", () => {
+    expect(parsePeriod("7")).toBe(7);
+    expect(parsePeriod("90")).toBe(90);
+    expect(parsePeriod("15")).toBe(30);
+    expect(parsePeriod(undefined)).toBe(30);
+    expect(parsePeriod(["7", "90"])).toBe(7);
+    expect(parsePeriod("abc")).toBe(30);
+  });
+});
+
+describe("topAbandonment", () => {
+  const lesson = (slug: string, stalled: number, started: number, position = 1): LessonMetric => ({
+    slug,
+    title: slug,
+    cycle_slug: "c1",
+    cycle_position: 1,
+    position,
+    started,
+    completed: 0,
+    stalled_here: stalled,
+  });
+  it("ordena pelas que mais têm gente parada, desempata por quem começou, e ignora as sem parados", () => {
+    const top = topAbandonment([lesson("a", 0, 9), lesson("b", 2, 5, 2), lesson("c", 4, 6, 3), lesson("d", 2, 8, 4)]);
+    expect(top.map((l) => l.slug)).toEqual(["c", "d", "b"]);
+  });
+  it("respeita o limite e não altera a lista original", () => {
+    const all = Array.from({ length: 8 }, (_, i) => lesson(`l${i}`, i + 1, 10, i));
+    const copy = [...all];
+    expect(topAbandonment(all, 3)).toHaveLength(3);
+    expect(all).toEqual(copy);
+  });
+});
+
+describe("normalizeDashboard", () => {
+  it("preenche com zero o que o banco devolve vazio", () => {
+    const d = normalizeDashboard({
+      generated_at: "2026-09-20T15:00:00Z",
+      period_days: 30,
+      members_total: 0,
+      new_in_period: 0,
+      start_within_7_days: null,
+      situations: { stalled: 2 },
+      cycles: null,
+      lessons: null,
+      vision: null,
+    });
+    expect(d.situations).toEqual({ onboarding_pending: 0, not_started: 0, in_progress: 0, stalled: 2, completed: 0 });
+    expect(d.startWithin7Days).toEqual({ eligible: 0, started: 0 });
+    expect(d.cycles).toEqual([]);
+    expect(d.vision).toEqual({ lessons: 0, membersKnowing: 0, membersTotal: 0 });
+  });
+});

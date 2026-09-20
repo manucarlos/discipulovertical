@@ -63,29 +63,31 @@ export async function completeLesson(slug: string): Promise<void> {
   const { supabase, user, item, cycle, now } = ctx;
   const nowIso = now.toISOString();
 
-  if (item.state.state !== "completed") {
-    const { data: existing } = await supabase
-      .from("lesson_progress")
-      .select("released_at, started_at")
-      .eq("user_id", user.id)
-      .eq("lesson_id", item.id)
-      .maybeSingle();
+  // Já concluída: nada a gravar. Não reabre o ciclo, não mexe na data de conclusão e não repete a
+  // comemoração de "ciclo concluído".
+  if (item.state.state === "completed") redirect(`/ciclo/${cycle.slug}?concluida=${item.slug}`);
 
-    const { error } = await supabase.from("lesson_progress").upsert(
-      {
-        user_id: user.id,
-        lesson_id: item.id,
-        status: "completed",
-        released_at: existing?.released_at ?? nowIso,
-        started_at: existing?.started_at ?? nowIso,
-        completed_at: nowIso,
-        last_position: 1,
-        updated_at: nowIso,
-      },
-      { onConflict: "user_id,lesson_id" },
-    );
-    if (error) throw new Error(`Não foi possível concluir a lição: ${error.message}`);
-  }
+  const { data: existing } = await supabase
+    .from("lesson_progress")
+    .select("released_at, started_at")
+    .eq("user_id", user.id)
+    .eq("lesson_id", item.id)
+    .maybeSingle();
+
+  const { error } = await supabase.from("lesson_progress").upsert(
+    {
+      user_id: user.id,
+      lesson_id: item.id,
+      status: "completed",
+      released_at: existing?.released_at ?? nowIso,
+      started_at: existing?.started_at ?? nowIso,
+      completed_at: nowIso,
+      last_position: 1,
+      updated_at: nowIso,
+    },
+    { onConflict: "user_id,lesson_id" },
+  );
+  if (error) throw new Error(`Não foi possível concluir a lição: ${error.message}`);
 
   // RN-04: o ciclo termina quando todas as lições obrigatórias estão concluídas.
   const releaseLessons: ReleaseLesson[] = cycle.lessons.map((l) => ({

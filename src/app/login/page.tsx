@@ -5,7 +5,7 @@ import { GoogleSignInButton } from "./google-sign-in-button";
 export const metadata = { title: "Entrar" };
 
 export default async function LoginPage(props: PageProps<"/login">) {
-  const { erro } = await props.searchParams;
+  const { erro, conta } = await props.searchParams;
   const configured = getSupabaseEnv() !== null;
 
   return (
@@ -16,6 +16,12 @@ export default async function LoginPage(props: PageProps<"/login">) {
         <p className="mt-3 text-muted">
           Sua caminhada com Jesus, um passo de cada vez. Entre com sua conta Google para começar.
         </p>
+
+        {conta === "excluida" && (
+          <p role="status" className="mt-5 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            Sua conta foi excluída e os seus dados pessoais foram removidos. Se um dia quiser voltar, é só entrar de novo.
+          </p>
+        )}
 
         {erro && (
           <p role="alert" className="mt-5 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
