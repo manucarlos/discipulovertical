@@ -60,7 +60,7 @@ export default async function EditChurchPage(props: PageProps<"/admin/igreja">) 
                 className={inputClass}
               />
             </label>
-            <button type="submit" className="rounded-xl bg-brand px-5 py-2.5 font-medium text-white hover:bg-brand-strong">
+            <button type="submit" className="rounded-xl bg-brand px-5 py-2.5 font-medium text-on-brand hover:bg-brand-strong">
               Salvar
             </button>
           </form>

@@ -77,7 +77,7 @@ function Situations({ data, peopleHref }: { data: Dashboard; peopleHref: string 
         </ul>
       )}
       {data.situations.stalled > 0 && (
-        <Link href={peopleHref} className="mt-4 inline-block text-sm underline">
+        <Link href={peopleHref} className="mt-4 inline-flex min-h-11 items-center text-sm underline">
           Ver quem está parado →
         </Link>
       )}
@@ -235,7 +235,7 @@ export function DashboardView({ data, basePath = "/admin/painel", peopleHref = "
             key={d}
             href={`${basePath}?dias=${d}`}
             aria-current={d === data.periodDays ? "true" : undefined}
-            className={`rounded-full border px-3 py-1 ${d === data.periodDays ? "border-brand bg-brand text-white" : "border-line hover:bg-lilac"}`}
+            className={`inline-flex min-h-11 items-center rounded-full border px-4 ${d === data.periodDays ? "border-brand bg-brand text-on-brand" : "border-line hover:bg-lilac"}`}
           >
             {d} dias
           </Link>
@@ -264,7 +264,7 @@ export function DashboardView({ data, basePath = "/admin/painel", peopleHref = "
       <LessonFunnel lessons={data.lessons} />
 
       <details className="mt-10 rounded-xl border border-line p-4 text-sm">
-        <summary className="cursor-pointer font-medium">Como cada número é calculado</summary>
+        <summary className="-my-2 cursor-pointer py-2 font-medium">Como cada número é calculado</summary>
         <ul className="mt-3 list-disc space-y-1.5 pl-5 text-muted">
           <li>Só contam <strong>membros</strong>: Administradores e Editores ficam de fora.</li>
           <li><strong>Começaram em até 7 dias:</strong> entre quem chegou no período (e já teve 7 dias), quem concluiu a primeira lição em até 7 dias depois de entrar.</li>

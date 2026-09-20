@@ -27,7 +27,7 @@ export function GoogleSignInButton() {
         type="button"
         onClick={signIn}
         disabled={loading}
-        className="w-full rounded-xl bg-brand px-4 py-3 font-medium text-white transition hover:bg-brand-strong disabled:opacity-60"
+        className="w-full rounded-xl bg-brand px-4 py-3 font-medium text-on-brand transition hover:bg-brand-strong disabled:opacity-60"
       >
         {loading ? "Abrindo o Google…" : "Entrar com Google"}
       </button>

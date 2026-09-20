@@ -37,7 +37,7 @@ function ToolButton({
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={`h-9 min-w-9 rounded-lg px-2 text-sm font-medium transition disabled:opacity-40 ${
-        active ? "bg-brand text-white" : "text-foreground hover:bg-lilac"
+        active ? "bg-brand text-on-brand" : "text-foreground hover:bg-lilac"
       }`}
     >
       {children}

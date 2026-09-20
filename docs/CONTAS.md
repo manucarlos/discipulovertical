@@ -31,7 +31,11 @@ Este guia é para o pastor. Você faz cada passo; o Claude acompanha e tira dúv
 4. Em cada projeto, aplique o banco de dados:
    1. Abra **SQL Editor > New query**.
    2. Abra o arquivo `supabase/migrations/20260919000001_base.sql`, copie **todo** o conteúdo, cole no editor e clique em **Run**. Deve aparecer "Success".
-   3. Repita, **nesta ordem**, com os arquivos `…000002_content.sql`, `…000003_progress.sql`, `…000004_church_pages.sql`, `…000005_lesson_button_suggestion.sql`, `…000006_lesson_editor.sql` e `20260920000007_member_overview.sql`.
+   3. Repita, **nesta ordem**, com todos os outros arquivos da pasta `supabase/migrations`:
+      `…000002_content`, `…000003_progress`, `…000004_church_pages`, `…000005_lesson_button_suggestion`,
+      `…000006_lesson_editor`, `20260920000007_member_overview`, `…000008_tighten_function_privileges`,
+      `…000009_delete_my_account`, `…000010_member_situation`, `…000011_church_pages_audit` e `…000012_dashboard`
+      (são 12 arquivos no total; a ordem é a do nome). Se algum der erro, **pare e avise o Claude**: não pule nenhum.
 5. **Defina quem é o primeiro Administrador, antes de entrar pela primeira vez.** No SQL Editor, rode (troque pelo e-mail Google que você vai usar para entrar):
 
    ```sql

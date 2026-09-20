@@ -6,7 +6,7 @@ import { deleteAccount, updateProfile, updateReminders, type FormState } from ".
 const inputClass =
   "mt-1 w-full rounded-lg border border-line bg-white px-3 py-2.5 text-base text-foreground focus:border-brand";
 const primaryButton =
-  "rounded-xl bg-brand px-5 py-3 font-medium text-white transition hover:bg-brand-strong disabled:opacity-60";
+  "rounded-xl bg-brand px-5 py-3 font-medium text-on-brand transition hover:bg-brand-strong disabled:opacity-60";
 
 function Feedback({ state }: { state: FormState }) {
   if (!state) return null;

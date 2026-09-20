@@ -174,8 +174,8 @@ export function ReadingShell({ initialPosition, completed, openAction, saveActio
               onClick={() => changeFont(s.id)}
               aria-label={s.aria}
               aria-pressed={font === s.id}
-              className={`${s.cls} size-10 rounded-lg font-serif font-medium ${
-                font === s.id ? "bg-brand text-white" : "text-muted hover:bg-lilac"
+              className={`${s.cls} size-11 rounded-lg font-serif font-medium ${
+                font === s.id ? "bg-brand text-on-brand" : "text-muted hover:bg-lilac"
               }`}
             >
               {s.label}
@@ -185,7 +185,7 @@ export function ReadingShell({ initialPosition, completed, openAction, saveActio
             type="button"
             onClick={toggleTheme}
             aria-pressed={theme === "dark"}
-            className="ml-2 h-10 rounded-lg px-3 text-sm text-muted hover:bg-lilac"
+            className="ml-2 h-11 rounded-lg px-3 text-sm text-muted hover:bg-lilac"
           >
             {theme === "dark" ? "Modo claro" : "Modo escuro"}
           </button>

@@ -54,7 +54,7 @@ export default async function LessonPreviewPage(props: PageProps<"/admin/licao/[
         links={links}
         versionCode={profile.bible_version}
         footer={
-          <button type="button" disabled className="w-full rounded-xl bg-brand px-5 py-4 text-lg font-medium text-white opacity-60">
+          <button type="button" disabled className="w-full rounded-xl bg-brand px-5 py-4 text-lg font-medium text-on-brand opacity-60">
             Concluir lição
           </button>
         }

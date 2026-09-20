@@ -10,6 +10,7 @@
   --foreground: #1d181b;
   --brand: #8a1c2b;
   --brand-strong: #6e1421;
+  --on-brand: #ffffff; /* texto sobre a cor da igreja */
   --lilac: #e9e5ee;
   --muted: #5f5860;
   --card: #ffffff;
@@ -21,6 +22,7 @@
   --color-foreground: var(--foreground);
   --color-brand: var(--brand);
   --color-brand-strong: var(--brand-strong);
+  --color-on-brand: var(--on-brand);
   --color-lilac: var(--lilac);
   --color-muted: var(--muted);
   --color-card: var(--card);
@@ -50,6 +52,7 @@ body {
   --line: #3c3444;
   --brand: #e58a98;
   --brand-strong: #f0a3ae;
+  --on-brand: #17131a;
 }
 
 /* Editor de texto das lições (TipTap): o reset do Tailwind remove estilos de listas, tabelas etc. */

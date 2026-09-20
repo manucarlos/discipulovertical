@@ -100,6 +100,17 @@ A lista mostra a **situação** de cada uma: primeiro acesso pendente, ainda nã
 
 _Se precisar, por SQL (SQL Editor do Supabase; não grava no log de auditoria):_ `update public.profiles set role = 'editor' where email = 'pessoa@gmail.com';`
 
+## 6c. Pedidos das pessoas (LGPD) e Nossa Igreja
+
+- **"Quero meus dados":** a própria pessoa baixa em **Meu perfil > Baixar meus dados**. Você não precisa fazer nada.
+- **"Quero excluir minha conta":** a própria pessoa faz em **Meu perfil > Excluir minha conta**. Apaga o perfil, os consentimentos e o progresso. Se for **o único administrador**, o sistema não deixa: promova outra pessoa antes.
+- **Corrigir dados de alguém:** a pessoa corrige em **Meu perfil**. O Admin vê tudo em **Pessoas**, mas não altera nome nem e-mail de terceiros.
+- **Textos de Nossa Igreja:** **Conteúdo > Nossa Igreja** (só o Admin). Cada mudança fica no log de auditoria.
+
+## 6d. O painel de indicadores
+
+**Conteúdo > Painel** (Admin) mostra quantos chegaram, quantos começaram em 7 dias, **quantos estão parados**, quantos concluíram, e em que lições mais gente para. O Editor vê só o painel de conteúdo, sem dados de pessoas. Use o filtro **Parado** em Pessoas para saber quem precisa de um contato. Como cada número é calculado está no rodapé do painel.
+
 ## 7. Backup e restauração
 
 _A definir com o pastor e conferir no plano contratado do Supabase:_

@@ -45,7 +45,7 @@ export function MemberStatusBadge({ status }: { status: MemberStatus }) {
 
 function RoleBadge({ role }: { role: UserRole }) {
   if (role === "member") return null;
-  return <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-medium text-white">{ROLE_LABEL[role]}</span>;
+  return <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-medium text-on-brand">{ROLE_LABEL[role]}</span>;
 }
 
 const inputClass = "mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-base text-foreground focus:border-brand";
@@ -102,7 +102,7 @@ export function PeopleListView({
           </select>
         </label>
         <div className="flex items-center gap-3 sm:col-span-2">
-          <button type="submit" className="rounded-xl bg-brand px-5 py-2.5 font-medium text-white hover:bg-brand-strong">
+          <button type="submit" className="rounded-xl bg-brand px-5 py-2.5 font-medium text-on-brand hover:bg-brand-strong">
             Filtrar
           </button>
           {filtered && (
@@ -275,7 +275,7 @@ export function PersonDetailView({
                 ))}
               </select>
             </label>
-            <button type="submit" className="rounded-xl bg-brand px-5 py-2.5 font-medium text-white hover:bg-brand-strong">
+            <button type="submit" className="rounded-xl bg-brand px-5 py-2.5 font-medium text-on-brand hover:bg-brand-strong">
               Salvar perfil
             </button>
           </form>

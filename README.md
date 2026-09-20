@@ -10,6 +10,8 @@ Aplicativo web (PWA) de discipulado da Vertical Church: leva o novo convertido, 
 | [docs/CONTAS.md](docs/CONTAS.md) | Passo a passo para criar as contas e ligar o login com Google |
 | [docs/RUNBOOK.md](docs/RUNBOOK.md) | Onde ficam as contas, como publicar, backup e emergências |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Decisões técnicas e o que ainda falta |
+| [docs/RELATORIO_USABILIDADE.md](docs/RELATORIO_USABILIDADE.md) | Testes de usabilidade com Claudião, Claudinho e Claudio: o que foi testado e achado |
+| [docs/CHECKLIST_PILOTO.md](docs/CHECKLIST_PILOTO.md) | Roteiro para conferir no Supabase de verdade e o que falta antes do piloto |
 
 ## Rodar no computador
 
@@ -40,7 +42,9 @@ Sem `.env.local` o app abre e mostra avisos de "em preparação"; o login só fu
 ```
 docs/         especificação, guias e decisões
 supabase/     migrations/ (SQL versionado, com RLS desde a primeira)
-tests/db/     testes das regras de acesso (Postgres em memória)
+tests/db/     testes das regras de acesso e de segurança (Postgres em memória)
+tests/e2e/    testes de usabilidade com três pessoas e auditoria de acessibilidade
+tests/security/ cobertura de autorização; tests/pwa/ service worker
 scripts/      importador de conteúdo e gerador de ícones
 src/app/      telas: login, onboarding, (member)/ trilha, ciclo, lição, Nossa Igreja;
               admin/ painel (trilha, editor, prévia, pessoas e fichas);
@@ -55,9 +59,11 @@ src/proxy.ts  renova a sessão e protege as rotas
 
 ## Status
 
-Fase 1 (MVP) em andamento. Pronto e testado: banco com RLS, login Google (código), onboarding com consentimentos, importador dos Ciclos 1 a 3, trilha, ciclo, lição com leitura ajustável e "Concluir lição", Nossa Igreja, o **editor de lições** e a área **Pessoas** (lista com situação e filtros, ficha com progresso e troca de perfil pelo Admin). Falta: perfil do membro, exportar/excluir os próprios dados (RF-27), editor de "Nossa Igreja" e o painel de indicadores. Detalhes e perguntas em aberto em [docs/DECISIONS.md](docs/DECISIONS.md).
+**MVP (Fase 1) completo no código.** Pronto e testado: banco com RLS, login Google (código), primeiro acesso com consentimentos, importador dos Ciclos 1 a 3, trilha, ciclo, lição com leitura ajustável, "Concluir lição", Nossa Igreja (editável), **editor de lições**, **Pessoas** (lista, ficha, perfis), **painel de indicadores**, **perfil do membro** (dados, lembretes, baixar e excluir os próprios dados) e PWA instalável com página de "sem internet".
 
-Para ver as telas sem Supabase: `npm run dev` e abra `/dev/trilha`, `/dev/ciclo/c1`, `/dev/licao/c1-l01`, `/dev/editor/c1-l02` (aceita `?role=editor&status=published`), `/dev/admin`, `/dev/pessoas` e `/dev/pessoas/00000000-0000-4000-8000-000000000001`.
+**O que ainda não foi feito, e por quê:** nada disso rodou contra um Supabase real (as contas ainda não existem). O que foi provado: a lógica, o banco (Postgres em memória, com as regras de segurança reais), o código real das páginas e ações com três pessoas simuladas, acessibilidade e segurança. Próximo passo: o roteiro de [docs/CHECKLIST_PILOTO.md](docs/CHECKLIST_PILOTO.md). Decisões e perguntas em aberto em [docs/DECISIONS.md](docs/DECISIONS.md); resultado dos testes de usabilidade em [docs/RELATORIO_USABILIDADE.md](docs/RELATORIO_USABILIDADE.md).
+
+Para ver as telas sem Supabase: `npm run dev` e abra `/dev/trilha`, `/dev/ciclo/c1`, `/dev/licao/c1-l01`, `/dev/editor/c1-l02`, `/dev/admin`, `/dev/pessoas`, `/dev/painel` e `/dev/cabecalhos`.
 
 ## Regras que não podem ser quebradas
 

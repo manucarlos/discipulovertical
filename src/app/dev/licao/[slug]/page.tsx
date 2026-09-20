@@ -39,7 +39,7 @@ export default async function DevLessonPage(props: PageProps<"/dev/licao/[slug]"
         links={links}
         versionCode={version}
         footer={
-          <button type="button" className="w-full rounded-xl bg-brand px-5 py-4 text-lg font-medium text-white">
+          <button type="button" className="w-full rounded-xl bg-brand px-5 py-4 text-lg font-medium text-on-brand">
             Concluir lição
           </button>
         }

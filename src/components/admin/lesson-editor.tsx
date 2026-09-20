@@ -257,6 +257,8 @@ export function LessonEditor({
 
   return (
     <div>
+      {/* O título da lição é um campo de formulário; este título (só para leitores de tela) diz onde a pessoa está. */}
+      <h1 className="sr-only">Editar lição: {form.title || "sem título"}</h1>
       <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-line bg-background/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
@@ -267,7 +269,7 @@ export function LessonEditor({
             </p>
           </div>
           {previewHref && (
-            <Link href={previewHref} target="_blank" className="text-sm underline">
+            <Link href={previewHref} target="_blank" rel="noopener noreferrer" className="text-sm underline">
               Ver como o membro vê
             </Link>
           )}
@@ -276,7 +278,7 @@ export function LessonEditor({
               type="button"
               onClick={save}
               disabled={!dirty || saving}
-              className="rounded-xl bg-brand px-5 py-2.5 font-medium text-white transition hover:bg-brand-strong disabled:opacity-50"
+              className="rounded-xl bg-brand px-5 py-2.5 font-medium text-on-brand transition hover:bg-brand-strong disabled:opacity-50"
             >
               {saving ? "Salvando…" : "Salvar"}
             </button>
@@ -314,7 +316,7 @@ export function LessonEditor({
                 disabled={busy || dirty || Boolean(t.blockedReason)}
                 title={t.blockedReason ?? (dirty ? "Salve as alterações antes de mudar o status." : undefined)}
                 className={`rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-50 ${
-                  t.primary ? "bg-brand text-white hover:bg-brand-strong" : "border border-line hover:bg-lilac"
+                  t.primary ? "bg-brand text-on-brand hover:bg-brand-strong" : "border border-line hover:bg-lilac"
                 }`}
               >
                 {t.label}

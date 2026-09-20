@@ -63,7 +63,7 @@ export function OnboardingForm({ defaultName, versions, defaultVersion }: Props)
           <input type="checkbox" name="consentData" required className="mt-1 size-4 accent-brand" />
           <span>
             {CONSENT_TEXT.data_processing}{" "}
-            <Link href="/privacidade" target="_blank" className="underline">
+            <Link href="/privacidade" target="_blank" rel="noopener noreferrer" className="underline">
               Política de Privacidade
             </Link>
           </span>
@@ -87,7 +87,7 @@ export function OnboardingForm({ defaultName, versions, defaultVersion }: Props)
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-xl bg-brand px-4 py-3 font-medium text-white transition hover:bg-brand-strong disabled:opacity-60"
+        className="w-full rounded-xl bg-brand px-4 py-3 font-medium text-on-brand transition hover:bg-brand-strong disabled:opacity-60"
       >
         {pending ? "Salvando…" : "Começar minha trilha"}
       </button>

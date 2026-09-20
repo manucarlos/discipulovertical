@@ -48,7 +48,7 @@ export default async function LessonPage(props: PageProps<"/licao/[slug]">) {
     <form action={completeLesson.bind(null, slug)}>
       <button
         type="submit"
-        className="w-full rounded-xl bg-brand px-5 py-4 text-lg font-medium text-white transition hover:bg-brand-strong"
+        className="w-full rounded-xl bg-brand px-5 py-4 text-lg font-medium text-on-brand transition hover:bg-brand-strong"
       >
         Concluir lição
       </button>

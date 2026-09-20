@@ -18,7 +18,7 @@ function ProgressBar({ percent, label }: { percent: number; label: string }) {
 }
 
 const linkButton =
-  "mt-5 inline-block rounded-xl bg-brand px-5 py-3 font-medium text-white transition hover:bg-brand-strong";
+  "mt-5 inline-block rounded-xl bg-brand px-5 py-3 font-medium text-on-brand transition hover:bg-brand-strong";
 
 /** Tela "Minha trilha" (RF-05): ciclo atual, próxima lição e porcentagem concluída. */
 export function TrailHome({ name, view, now }: { name: string; view: TrailView; now: Date }) {
@@ -198,7 +198,7 @@ export function CycleDetail({ cycle, now, banners = {} }: { cycle: CycleView; no
               <span
                 aria-hidden="true"
                 className={`flex size-9 shrink-0 items-center justify-center rounded-full font-serif ${
-                  lesson.state.state === "completed" ? "bg-emerald-600 text-white" : "bg-lilac text-foreground"
+                  lesson.state.state === "completed" ? "bg-emerald-700 text-white" : "bg-lilac text-foreground"
                 }`}
               >
                 {lesson.state.state === "completed" ? "✓" : lesson.position}

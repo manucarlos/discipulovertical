@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv } from "@/lib/supabase/config";
 
-const PUBLIC_PATHS = ["/login", "/termos", "/privacidade"];
+const PUBLIC_PATHS = ["/login", "/termos", "/privacidade", "/offline"];
 
 function isPublic(pathname: string) {
   if (PUBLIC_PATHS.includes(pathname) || pathname.startsWith("/auth/")) return true;
@@ -49,7 +49,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Tudo, menos arquivos estáticos e o manifesto do PWA.
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Tudo, menos arquivos estáticos, o manifesto e o service worker do PWA.
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
