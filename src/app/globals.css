@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/*
+ * Identidade visual PROVISÓRIA, inferida dos cartazes da igreja (handoff 0.2):
+ * vermelho profundo, preto e cinza-lilás claro, títulos em serifa.
+ * Trocar quando o pastor enviar o logotipo e as cores oficiais.
+ */
+:root {
+  --background: #faf9fb;
+  --foreground: #1d181b;
+  --brand: #8a1c2b;
+  --brand-strong: #6e1421;
+  --lilac: #e9e5ee;
+  --muted: #5f5860;
+  --card: #ffffff;
+  --line: #ddd7e0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-lilac: var(--lilac);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-lora);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
