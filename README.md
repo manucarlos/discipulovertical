@@ -12,6 +12,7 @@ Aplicativo web (PWA) de discipulado da Vertical Church: leva o novo convertido, 
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Decisões técnicas e o que ainda falta |
 | [docs/RELATORIO_USABILIDADE.md](docs/RELATORIO_USABILIDADE.md) | Testes de usabilidade com Claudião, Claudinho e Claudio: o que foi testado e achado |
 | [docs/MARCA.md](docs/MARCA.md) | Como trocar as cores e o logotipo (as cores ficam em `src/lib/brand.ts`) |
+| [docs/EXPANSAO.md](docs/EXPANSAO.md) | Ideias para o futuro: tela de Marca no painel e servir outras igrejas, cada uma com a sua identidade |
 | [docs/PENDENCIAS.md](docs/PENDENCIAS.md) | O mapa do que está pronto, do que só o pastor e a igreja podem fazer e do que não foi construído |
 | [docs/CHECKLIST_PILOTO.md](docs/CHECKLIST_PILOTO.md) | Roteiro para conferir no Supabase de verdade e o que falta antes do piloto |
 
