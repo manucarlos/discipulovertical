@@ -29,7 +29,7 @@ Este guia é para o pastor. Você faz cada passo com calma; o Claude acompanha e
 | --- | --- | --- | --- | --- |
 | **1** | Conta no **GitHub** e enviar o código | Guarda o código com segurança e alimenta a Vercel | Grátis | 15 min |
 | **2** | Conta no **Supabase** e criar o projeto | O banco de dados e o login | Grátis (veja o aviso sobre pausa) | 15 min |
-| **3** | Aplicar as **23 migrações** (um arquivo só) | Cria as tabelas e as regras de segurança | Grátis | 10 min |
+| **3** | Aplicar as **24 migrações** (um arquivo só) | Cria as tabelas e as regras de segurança | Grátis | 10 min |
 | **4** | **Google Cloud** e ligar ao Supabase | O botão "Entrar com Google" | Grátis | 30 min |
 | **5** | Testar no seu computador | Ver tudo funcionando antes de publicar | Grátis | 15 min |
 | **6** | **Vercel**: colocar o site no ar | O endereço que as pessoas vão abrir | Grátis (confira os termos do plano) | 20 min |
@@ -48,7 +48,7 @@ O Claude já gerou três arquivos na pasta `content/generated/` do projeto (se n
 
 | Arquivo | O que é | Fase |
 | --- | --- | --- |
-| `banco-completo.sql` | As **23 migrações juntas**: cria todas as tabelas e regras de segurança | 3 |
+| `banco-completo.sql` | As **24 migrações juntas**: cria todas as tabelas e regras de segurança | 3 |
 | `todos-os-ciclos.sql` | Os **Ciclos 1 a 3** (28 lições, em rascunho) | 7 |
 | `biblioteca.sql` | A **biblioteca do Grupo de Discipulado** (28 lições e 6 trilhas, em rascunho) | 7 (só quando for abrir os grupos) |
 
@@ -97,7 +97,7 @@ Para abrir um deles: na pasta do projeto, `content` > `generated`, clique com o 
 
 ---
 
-## Fase 3. Aplicar as 23 migrações (o banco)
+## Fase 3. Aplicar as 24 migrações (o banco)
 
 As migrações criam as tabelas (pessoas, lições, progresso, grupos…) e, principalmente, as **regras de segurança**: quem pode ver o quê. Todas as tabelas já nascem protegidas.
 
@@ -109,7 +109,7 @@ As migrações criam as tabelas (pessoas, lições, progresso, grupos…) e, pri
 
 **Se der erro:** o arquivo roda como uma única transação, então **nada fica pela metade**: o banco continua vazio. Leia a mensagem (ela indica o nome da migração, pelo cabeçalho `-- ===== ... =====`), **copie só a mensagem de erro** (não há segredos nela) e mande ao Claude. Depois de corrigir, cole tudo de novo.
 
-**Prefere uma migração de cada vez?** São 23 arquivos em `supabase/migrations`, na ordem do nome (`…0001_base` até `…0023_initial_admin_on_confirm`). Cole e rode um por vez, em ordem, sem pular nenhum. O resultado é o mesmo.
+**Prefere uma migração de cada vez?** São 24 arquivos em `supabase/migrations`, na ordem do nome (`…0001_base` até `…0024_feedback`). Cole e rode um por vez, em ordem, sem pular nenhum. O resultado é o mesmo.
 
 > **Por que "22"?** As 13 primeiras formam o MVP; as 9 seguintes (14 a 22) criam os recursos além do MVP (chaves de liberação, quiz, cuidadores, lembretes, certificados, grupos…). Aplicar todas **não muda nada** para as pessoas: tudo isso nasce **desligado**.
 

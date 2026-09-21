@@ -47,13 +47,22 @@ describe("ações do servidor ('use server')", () => {
         //  - completeOnboarding: confere a sessão direto com auth.getUser() e manda ao login se não houver.
         const explicitGetUser = /supabase\.auth\.getUser\(\)/.test(body) && /redirect\("\/login"\)/.test(body);
         const isSignOut = name === "signOut" && /supabase\.auth\.signOut\(\)/.test(body);
-        expect(GUARD.test(body) || explicitGetUser || isSignOut, `${name} não chama requireMember/requireStaff/requireAdmin`).toBe(true);
+        //  - submitFeedback: formulário público do piloto, sem login de propósito. Só grava pela função do banco
+        //    submit_feedback (que confere a chave ligada e o limite por hora), com campo-isca e validação antes.
+        const isPublicFeedback =
+          rel(file) === "src/app/feedback/actions.ts" &&
+          name === "submitFeedback" &&
+          /createAnonClient\(\)/.test(body) &&
+          /rpc\("submit_feedback"/.test(body) &&
+          /formData\.get\("website"\)/.test(body) &&
+          /validateFeedback\(/.test(body);
+        expect(GUARD.test(body) || explicitGetUser || isSignOut || isPublicFeedback, `${name} não chama requireMember/requireStaff/requireAdmin`).toBe(true);
       });
     }
   }
 
   it("as ações do painel exigem equipe, e as de dados de outras pessoas exigem administrador", () => {
-    const admin = ["src/app/admin/pessoas/actions.ts", "src/app/admin/igreja/actions.ts", "src/app/admin/configuracoes/actions.ts", "src/app/admin/cuidado/actions.ts", "src/app/admin/lembretes/actions.ts", "src/app/admin/encerramentos/actions.ts", "src/app/admin/grupos/actions.ts", "src/app/admin/pedidos-de-ajuda/actions.ts"];
+    const admin = ["src/app/admin/pessoas/actions.ts", "src/app/admin/igreja/actions.ts", "src/app/admin/configuracoes/actions.ts", "src/app/admin/cuidado/actions.ts", "src/app/admin/lembretes/actions.ts", "src/app/admin/encerramentos/actions.ts", "src/app/admin/grupos/actions.ts", "src/app/admin/pedidos-de-ajuda/actions.ts", "src/app/admin/feedback/actions.ts"];
     for (const f of admin) {
       const source = read(path.resolve(__dirname, "../..", f));
       for (const { name, body } of exportedFunctions(source)) {
@@ -78,7 +87,7 @@ describe("telas do painel (/admin)", () => {
     });
   }
   it("as telas com dados pessoais de outras pessoas exigem administrador", () => {
-    for (const p of pages.filter((f) => /admin\/(pessoas|igreja|configuracoes|cuidado|lembretes|encerramentos|grupos|pedidos-de-ajuda)\//.test(rel(f)))) {
+    for (const p of pages.filter((f) => /admin\/(pessoas|igreja|configuracoes|cuidado|lembretes|encerramentos|grupos|pedidos-de-ajuda|feedback)\//.test(rel(f)))) {
       expect(read(p), rel(p)).toMatch(/requireAdmin\(/);
     }
     expect(read(files.find((f) => rel(f).endsWith("admin/painel/page.tsx"))!)).toMatch(/role === "admin"/); // o editor recebe só métricas de conteúdo
@@ -135,6 +144,21 @@ describe("telas do membro e rotas de dados", () => {
 
   it("dados pessoais nunca ficam em cache", () => {
     expect(read(files.find((f) => rel(f).endsWith("perfil/exportar/route.ts"))!)).toMatch(/"Cache-Control":\s*"no-store"/);
+  });
+});
+
+describe("formulário público de feedback", () => {
+  it("é a única ação do servidor sem login, e a página pública está na lista do proxy", () => {
+    const actionFiles = files.filter((f) => /\.(ts|tsx)$/.test(f) && /^\s*["']use server["']/.test(read(f)));
+    const withoutLogin = actionFiles.filter((f) => !GUARD.test(read(f)) && !/supabase\.auth\.getUser\(\)/.test(read(f)));
+    // signOut (app/actions.ts) e as ações /dev também não usam GUARD; o que importa é que o feedback é o único do app/feedback.
+    expect(withoutLogin.map(rel).filter((f) => f.startsWith("src/app/feedback/"))).toEqual(["src/app/feedback/actions.ts"]);
+    expect(read(path.resolve(__dirname, "../../src/proxy.ts"))).toMatch(/PUBLIC_PATHS = \[[^\]]*"\/feedback"/);
+  });
+
+  it("a página pública só mostra o formulário se o Admin o ligou (chave feedback)", () => {
+    expect(read(path.resolve(APP, "feedback/page.tsx"))).toMatch(/public_features/);
+    expect(read(path.resolve(APP, "feedback/page.tsx"))).toMatch(/feedback\?: boolean/);
   });
 });
 

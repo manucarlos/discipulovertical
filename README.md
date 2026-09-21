@@ -36,7 +36,7 @@ Sem `.env.local` o app abre e mostra avisos de "em preparação"; o login só fu
 | `npm run lint` | Confere o estilo do código |
 | `npm run build` | Versão de produção |
 | `npm run import:sql` | Gera o SQL de importação das lições (`-- --cycle 1`) |
-| `npm run db:bundle` | Junta as 23 migrações num arquivo só para colar no Supabase (`content/generated/banco-completo.sql`) |
+| `npm run db:bundle` | Junta as 24 migrações num arquivo só para colar no Supabase (`content/generated/banco-completo.sql`) |
 | `npm run import:library` | Gera o SQL da biblioteca do Grupo de Discipulado (28 lições e 6 trilhas, em rascunho) |
 | `npm run icons` | Gera ícones provisórios do PWA |
 
@@ -67,6 +67,7 @@ src/proxy.ts  renova a sessão e protege as rotas
 - **MVP:** banco com RLS, login Google, primeiro acesso com consentimentos, importador dos Ciclos 1 a 3, trilha, ciclo, lição com leitura ajustável, Nossa Igreja editável, editor de lições, Pessoas, painel de indicadores, perfil do membro (baixar e excluir os próprios dados) e PWA.
 - **V2 (desligado):** quiz, prática e reflexão, vídeo, cuidadores com alertas de quem parou, lembretes por e-mail (com agendador seguro e descadastro em um clique), encerramentos e presença, certificados em PDF com verificação pública, planilhas CSV.
 - **V3 (desligado):** sequência de dias e marcos, entrar com e-mail.
+- **Piloto (desligado):** formulário público de feedback em `/feedback` (sem login, com limite de 30 respostas por hora), lido pelo Admin em **Feedback**, e o roteiro do testador em `docs/ROTEIRO_TESTADOR.pdf`.
 - **Grupo de Discipulado (desligado):** discipuladores, grupos com calendário diário (pausas, atraso, entrada tardia), painel, guia do encontro, presença, reflexões compartilhadas por escolha, pedidos de ajuda pastoral (com escalada), trilhas oficiais e a **biblioteca de 28 lições em rascunho** (`npm run import:library`).
 - **Segurança:** política de conteúdo (CSP) com nonce, RLS conferida por testes em todo o schema, autorização conferida em todo o código.
 

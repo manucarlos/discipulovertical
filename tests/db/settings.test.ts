@@ -105,10 +105,10 @@ describe("public_features (antes do login)", () => {
     }
   };
 
-  it("sem login, devolve só se o login por e-mail está ligado (desligado por padrão)", async () => {
-    expect(await asAnon()).toEqual({ email_login: false });
+  it("sem login, devolve só se o login por e-mail e o formulário de feedback estão ligados (desligados por padrão)", async () => {
+    expect(await asAnon()).toEqual({ email_login: false, feedback: false });
     await asUser(db, admin, () => q("update public.app_settings set value = 'true'::jsonb where key = 'feature.email_login'"));
-    expect(await asAnon()).toEqual({ email_login: true });
+    expect(await asAnon()).toEqual({ email_login: true, feedback: false });
     await asUser(db, admin, () => q("update public.app_settings set value = 'false'::jsonb where key = 'feature.email_login'"));
   });
 });

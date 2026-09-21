@@ -52,6 +52,7 @@ describe("tabelas", () => {
       "church_pages",
       "closure_events",
       "cycles",
+      "feedback_responses",
       "group_reflections",
       "lesson_internal_notes",
       "lessons",
@@ -99,9 +100,19 @@ describe("funções", () => {
       `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute') order by 1`,
     );
-    // Cada uma exige algo que só o e-mail, o certificado ou o agendador têm: o código do descadastro, o código do
-    // certificado (verificação pública) ou o CRON_SECRET.
-    expect(rows.map((r) => r.proname)).toEqual(["cron_certificates", "cron_enqueue", "cron_report", "cron_snapshot", "public_features", "unsubscribe_email", "verify_certificate"]);
+    // Cada uma exige algo que só o e-mail, o certificado ou o agendador têm (o código do descadastro, o código do
+    // certificado ou o CRON_SECRET), ou não expõe nada: public_features devolve só duas chaves e submit_feedback só
+    // GRAVA (com a chave "feedback" ligada e no máximo 30 respostas por hora).
+    expect(rows.map((r) => r.proname)).toEqual([
+      "cron_certificates",
+      "cron_enqueue",
+      "cron_report",
+      "cron_snapshot",
+      "public_features",
+      "submit_feedback",
+      "unsubscribe_email",
+      "verify_certificate",
+    ]);
   });
 
   it("as funções do agendador conferem o segredo antes de qualquer coisa", async () => {

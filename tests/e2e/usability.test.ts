@@ -48,6 +48,10 @@ import UnsubscribePage from "@/app/desinscrever/page";
 import ClosuresPage from "@/app/admin/encerramentos/page";
 import CertificatesPage from "@/app/(member)/certificados/page";
 import VerifyPage from "@/app/verificar/page";
+import FeedbackPage from "@/app/feedback/page";
+import { submitFeedback } from "@/app/feedback/actions";
+import FeedbackAdminPage from "@/app/admin/feedback/page";
+import { deleteFeedback } from "@/app/admin/feedback/actions";
 import MyGroupsPage from "@/app/(member)/grupo/page";
 import JoinGroupPage from "@/app/(member)/grupo/entrar/page";
 import GroupHomePage from "@/app/(member)/grupo/[id]/page";
@@ -404,6 +408,76 @@ describe("Grupo de Discipulado: todas as telas passam na auditoria de acessibili
     expect(queue.text).toContain("Prioridade: direto à equipe");
 
     await world.sql("update public.app_settings set value = 'false'::jsonb where key = 'feature.groups'");
+  });
+});
+
+describe("Formulário de feedback do piloto: visitante sem login e administrador", () => {
+  const answer = {
+    device: "iphone",
+    entered: "com_dificuldade",
+    lessonDone: "sim",
+    ease: "3",
+    alone: "com_ajuda",
+    liked: "Gostei da leitura curta.",
+    confusing: "Não achei o botão de voltar.",
+    suggestion: "",
+    contactName: "",
+    contact: "",
+  };
+
+  it("fechado por padrão: o visitante vê um aviso e não consegue enviar", async () => {
+    world.visitor();
+    const closed = await audit("feedback (fechado)", FeedbackPage);
+    expect(closed.text).toContain("não está aberto");
+    expect(closed.text).not.toContain("Enviar minha resposta");
+    const sent = await outcome(() => submitFeedback(null, form(answer)));
+    expect(sent.value).toEqual({ error: expect.stringContaining("fechado") });
+  });
+
+  it("aberto: o visitante vê o formulário, envia, e o Admin lê e apaga", async () => {
+    await world.sql("update public.app_settings set value = 'true'::jsonb where key = 'feature.feedback'");
+
+    world.visitor();
+    const open = await audit("feedback (aberto)", FeedbackPage);
+    expect(open.text).toContain("Enviar minha resposta");
+    expect(open.text).toContain("Qual aparelho você usou?");
+
+    // Falta uma resposta obrigatória: a mensagem diz qual.
+    const incomplete = await outcome(() => submitFeedback(null, form({ ...answer, entered: "" })));
+    expect(incomplete.value).toEqual({ error: expect.stringContaining("conseguiu entrar") });
+
+    // Robô: o campo-isca preenchido finge sucesso e não grava nada.
+    const bot = await outcome(() => submitFeedback(null, form({ ...answer, website: "http://spam.example" })));
+    expect(bot.value).toEqual({ done: true });
+    expect(await world.sql("select 1 from public.feedback_responses")).toHaveLength(0);
+
+    const sent = await outcome(() => submitFeedback(null, form(answer)));
+    expect(sent.value).toEqual({ done: true });
+    expect(await world.sql("select 1 from public.feedback_responses")).toHaveLength(1);
+
+    await world.login(CLAUDIAO);
+    const list = await audit("feedback (administrador, com resposta)", FeedbackAdminPage);
+    expect(list.text).toContain("1 resposta");
+    expect(list.text).toContain("Não achei o botão de voltar.");
+    expect(list.text).toContain("Sim, mas com dificuldade");
+    expect(list.text).toContain("aberto");
+    await audit("feedback (administrador, com aviso)", FeedbackAdminPage, { search: { ok: "Resposta apagada." } });
+
+    const [row] = await world.sql<{ id: string }>("select id from public.feedback_responses");
+    await outcome(() => deleteFeedback(form({ id: row.id })));
+    expect(await world.sql("select 1 from public.feedback_responses")).toHaveLength(0);
+    const empty = await audit("feedback (administrador, sem respostas)", FeedbackAdminPage);
+    expect(empty.text).toContain("Ainda não há respostas");
+
+    await world.sql("update public.app_settings set value = 'false'::jsonb where key = 'feature.feedback'");
+    const closed = await audit("feedback (administrador, formulário fechado)", FeedbackAdminPage);
+    expect(closed.text).toContain("fechado");
+  });
+
+  it("um membro comum não lê as respostas nem pela tela do painel", async () => {
+    await world.login(CLAUDINHO);
+    const result = await visit(FeedbackAdminPage);
+    expect(result.redirect ?? (result.notFound ? "404" : null)).not.toBeNull();
   });
 });
 

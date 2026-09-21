@@ -150,6 +150,13 @@ _Se precisar, por SQL (SQL Editor do Supabase; não grava no log de auditoria):_
 
 **Pessoas** tem os links **Baixar planilha de pessoas** e **de progresso por lição** (CSV para Excel). Cada download fica no log. Trate o arquivo como dado pessoal: guarde em local seguro e apague quando terminar.
 
+## 6k. Feedback do piloto
+
+O formulário público (`/feedback`, sem login) nasce **desligado**. Para o piloto: **Administração > Configurações > "Formulário de feedback do piloto"**, salve, e envie o link e o roteiro (`docs/ROTEIRO_TESTADOR.pdf`) aos testadores. As respostas ficam em **Administração > Feedback**, com resumo no alto. Só a administração as vê.
+
+- **Abuso:** o banco aceita no máximo 30 respostas por hora e ignora robôs simples. Se receber lixo, desligue a chave em Configurações.
+- **LGPD:** as respostas podem ter nome e contato (opcionais) e texto livre. Quem pedir para apagar: use **Apagar** na resposta. Ao fim do piloto, exporte o que importa (copie os textos), apague as respostas e **desligue o formulário**.
+
 ## 7. Backup e restauração
 
 _A definir com o pastor e conferir no plano contratado do Supabase:_

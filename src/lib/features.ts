@@ -12,6 +12,7 @@ export const FEATURES = [
   { key: "groups", label: "Grupo de Discipulado", phase: "Grupos", description: "Discipuladores conduzem grupos por uma trilha diária, com painel, encontros e pedidos de ajuda." },
   { key: "gamification", label: "Sequência de dias e marcos", phase: "V3", description: "Mostra a sequência de dias de leitura e marcos de conquista, de forma discreta." },
   { key: "email_login", label: "Entrar com e-mail", phase: "V3", description: "Alternativa ao login do Google, por link enviado ao e-mail. Precisa do e-mail configurado no Supabase." },
+  { key: "feedback", label: "Formulário de feedback do piloto", phase: "Piloto", description: "Abre a página pública /feedback (sem login) para os testadores contarem como foi. As respostas aparecem em Feedback, no painel." },
 ] as const;
 
 export type FeatureKey = (typeof FEATURES)[number]["key"];

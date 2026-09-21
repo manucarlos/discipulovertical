@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { buildCsp, makeNonce } from "@/lib/csp";
 import { getSupabaseEnv } from "@/lib/supabase/config";
 
-const PUBLIC_PATHS = ["/login", "/termos", "/privacidade", "/offline", "/desinscrever", "/api/descadastro", "/verificar"];
+const PUBLIC_PATHS = ["/login", "/termos", "/privacidade", "/offline", "/desinscrever", "/api/descadastro", "/verificar", "/feedback"];
 
 function isPublic(pathname: string) {
   if (PUBLIC_PATHS.includes(pathname) || pathname.startsWith("/auth/")) return true;

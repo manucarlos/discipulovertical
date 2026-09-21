@@ -42,7 +42,7 @@ describe("resolveSettings", () => {
     for (const f of FEATURES) {
       expect(f.label.length, f.key).toBeGreaterThan(3);
       expect(f.description.length, f.key).toBeGreaterThan(20);
-      expect(["V2", "V3", "Grupos"]).toContain(f.phase);
+      expect(["V2", "V3", "Grupos", "Piloto"]).toContain(f.phase);
     }
   });
 
