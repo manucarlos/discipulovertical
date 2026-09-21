@@ -54,6 +54,7 @@ import { GET as exportMyData } from "@/app/(member)/perfil/exportar/route";
 import { changeLessonStatus, restoreLessonVersion, saveLesson } from "@/app/admin/licao/[slug]/actions";
 import { createLesson, moveLesson, saveCycleSettings } from "@/app/admin/actions";
 import { changeRole } from "@/app/admin/pessoas/actions";
+import { GET as exportCsv } from "@/app/admin/pessoas/exportar/route";
 import ClosuresPage from "@/app/admin/encerramentos/page";
 import { createClosureEvent, deleteClosureEvent, issueCertificates, saveAttendance } from "@/app/admin/encerramentos/actions";
 import CertificatesPage from "@/app/(member)/certificados/page";
@@ -1537,6 +1538,61 @@ describe("Encerramento e certificado: o Claudio recebe o do Ciclo 1", () => {
     await world.sql("update public.consents set revoked_at = now() where user_id = $1 and purpose = 'email_reminders'", [CLAUDIO.id]);
     await world.login(CLAUDIAO);
     await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "" })));
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// HISTÓRIA 4h · planilhas em CSV (RF-26)
+// ---------------------------------------------------------------------------------------------
+
+describe("Claudião baixa as planilhas de pessoas e de progresso", () => {
+  const download = (kind: string) => exportCsv(new Request(`https://x.org/admin/pessoas/exportar?tipo=${kind}`));
+  const text = async (r: Response) => (await r.text()).replace(/^﻿/, "");
+
+  it("a planilha de pessoas traz uma linha por pessoa, sem WhatsApp, e fica no registro", async () => {
+    await world.login(CLAUDIAO);
+    const before = await world.sql("select 1 from public.audit_log where action = 'data_exported'");
+    const response = await download("membros");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/csv");
+    expect(response.headers.get("content-disposition")).toMatch(/pessoas-\d{4}-\d{2}-\d{2}\.csv/);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const csv = await text(response);
+    const lines = csv.trim().split("\r\n");
+    expect(lines[0]).toBe("Nome;E-mail;Perfil;Situação;Lições concluídas;Lições iniciadas;Última atividade;Entrou em;Primeiro acesso concluído em");
+    expect(lines.length).toBe(1 + 3); // Claudião, Claudinho e Claudio
+    expect(csv).toContain("claudinho@example.com");
+    expect(csv).toContain("Administrador");
+    expect(csv).not.toMatch(/5511912345678|91234-5678/); // o WhatsApp não vai
+    expect(await world.sql("select 1 from public.audit_log where action = 'data_exported'")).toHaveLength(before.length + 1);
+  });
+
+  it("um nome que parece fórmula não vira fórmula na planilha", async () => {
+    await world.sql("update public.profiles set display_name = '=HYPERLINK(\"http://x\")' where id = $1", [CLAUDIO.id]);
+    const csv = await text(await download("membros"));
+    expect(csv).toContain("'=HYPERLINK");
+    expect(csv).not.toMatch(/(^|;|\r\n)=HYPERLINK/);
+    await world.sql("update public.profiles set display_name = 'Claudio' where id = $1", [CLAUDIO.id]);
+  });
+
+  it("a planilha de progresso traz uma linha por lição iniciada", async () => {
+    const csv = await text(await download("progresso"));
+    const lines = csv.trim().split("\r\n");
+    expect(lines[0]).toBe("Nome;E-mail;Lição;Título;Situação;Iniciada em;Concluída em;Prática feita");
+    const [{ n }] = await world.sql<{ n: number }>("select count(*)::int as n from public.lesson_progress");
+    expect(lines.length).toBe(1 + n);
+    expect(csv).toContain("c1-l02");
+    expect(csv).toContain("Concluída");
+  });
+
+  it("um membro não baixa nada, e quem não entrou vai ao login", async () => {
+    await world.login(CLAUDINHO);
+    const before = await world.sql("select 1 from public.audit_log where action = 'data_exported'");
+    expect((await outcome(() => download("membros"))).redirect).toBe("/");
+    expect((await client().rpc("audit_export", { p_kind: "members", p_rows: 1 })).error?.message).toMatch(/não autorizado/);
+    expect(await world.sql("select 1 from public.audit_log where action = 'data_exported'")).toHaveLength(before.length);
+    world.visitor();
+    expect((await outcome(() => download("membros"))).redirect).toBe("/login");
   });
 });
 

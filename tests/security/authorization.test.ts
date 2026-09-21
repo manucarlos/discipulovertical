@@ -108,6 +108,10 @@ describe("telas do membro e rotas de dados", () => {
       const source = read(r);
       if (rel(r) === "src/app/auth/callback/route.ts") {
         expect(source, "o parâmetro next precisa ser validado (redirecionamento aberto)").toMatch(/startsWith\("\/"\)\s*&&\s*!value\.startsWith\("\/\/"\)/);
+      } else if (rel(r) === "src/app/admin/pessoas/exportar/route.ts") {
+        expect(source, "a planilha de pessoas é só do administrador").toMatch(/requireAdmin\(/);
+        expect(source, "toda exportação fica no registro").toMatch(/audit_export/);
+        expect(source, "dados pessoais nunca ficam em cache").toMatch(/"Cache-Control":\s*"no-store"/);
       } else if (rel(r) === "src/app/api/cron/lembretes/route.ts") {
         expect(source, "o agendador precisa provar que tem o CRON_SECRET").toMatch(/isAuthorizedCron\(/);
         expect(source, "sem CRON_SECRET configurado a rota recusa").toMatch(/if \(!secret\)/);

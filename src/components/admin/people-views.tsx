@@ -75,6 +75,17 @@ export function PeopleListView({
         Quem está na plataforma, em que etapa cada um está e quem está parado. Dados pessoais: visíveis só para administradores.
       </p>
 
+      {basePath === "/admin/pessoas" && (
+        <p className="mt-3 flex flex-wrap gap-x-5 text-sm">
+          <a href="/admin/pessoas/exportar?tipo=membros" className="inline-flex min-h-11 items-center underline">
+            Baixar planilha de pessoas (CSV)
+          </a>
+          <a href="/admin/pessoas/exportar?tipo=progresso" className="inline-flex min-h-11 items-center underline">
+            Baixar planilha de progresso por lição (CSV)
+          </a>
+        </p>
+      )}
+
       <form method="get" action={basePath} className="mt-6 grid gap-3 rounded-2xl border border-line bg-card p-4 sm:grid-cols-2">
         <label className="block text-sm font-medium sm:col-span-2">
           Buscar por nome ou e-mail
