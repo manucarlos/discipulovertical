@@ -197,8 +197,9 @@ Quem entrar pela primeira vez com esse e-mail vira Administrador automaticamente
 3. Em **Environment Variables**, adicione **as duas** variáveis (uma de cada vez, com os valores do projeto de **produção**):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-   - E já acrescente `NEXT_PUBLIC_SITE_URL` com o endereço que a Vercel vai dar (ou deixe para o passo 6). 
-4. Clique em **Deploy**. Em 1 a 3 minutos a Vercel mostra um endereço como `https://vertical-discipulado.vercel.app`.
+   - **Só essas duas por enquanto.** A Vercel pré-preenche outros nomes (`NEXT_PUBLIC_SITE_URL`, `CRON_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`) com valor vazio: **não os preencha agora** (eles entram na Fase 9). `NEXT_PUBLIC_SITE_URL` só é usada pelos lembretes por e-mail.
+   - Variáveis que começam com `NEXT_PUBLIC_` são **públicas** (vão para o navegador): deixe o tipo como **Config** (não "Secret") e o ambiente **Production and Preview**.
+4. Clique em **Deploy** (se a tela tiver dois botões, **Create Project** primeiro e depois **Deploy**). Em 1 a 3 minutos a Vercel mostra um endereço como `https://vertical-discipulado.vercel.app`. Se o deploy não iniciar, um envio qualquer à branch `main` no GitHub dispara o build de produção.
 5. **Volte ao Supabase** > **Authentication > URL Configuration** e ajuste:
    - **Site URL:** o endereço da Vercel;
    - **Redirect URLs:** **acrescente** `https://SEU-ENDERECO/auth/callback` (mantenha a de `localhost`).
