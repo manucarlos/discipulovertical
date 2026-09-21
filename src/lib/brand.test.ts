@@ -64,6 +64,12 @@ describe("a paleta tem um lugar só", () => {
     expect(css).not.toMatch(/^\s*--(background|foreground|brand|brand-strong|on-brand|tint|muted|card|line)\s*:/m);
   });
 
+  it("o manifesto do app é dinâmico: sem isso o Next o gera uma vez no build e a marca do painel nunca chega ao app instalado", () => {
+    const manifest = fs.readFileSync(path.join(SRC, "app/manifest.ts"), "utf8");
+    expect(manifest).toMatch(/export const dynamic = "force-dynamic"/);
+    expect(manifest).toContain("loadIdentity()");
+  });
+
   it("o layout grava a paleta da igreja (personalizada ou padrão) e o modo escuro da leitura na página", () => {
     const layout = fs.readFileSync(path.join(SRC, "app/layout.tsx"), "utf8");
     expect(layout).toContain("cssVariables(identity.palette)");

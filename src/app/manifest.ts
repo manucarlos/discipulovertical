@@ -2,6 +2,10 @@ import type { MetadataRoute } from "next";
 import { BROWSER } from "@/lib/brand";
 import { ASSET_FILES, assetUrl, loadIdentity } from "@/lib/brand-store";
 
+// O manifesto lê a marca da igreja (nome, cor e ícones). Sem isto o Next o gera UMA vez, na hora do build, e a marca
+// escolhida no painel nunca chegaria ao app instalado.
+export const dynamic = "force-dynamic";
+
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const identity = await loadIdentity();
   const icon = (file: (typeof ASSET_FILES)[keyof typeof ASSET_FILES]) => assetUrl(file, identity.version);
