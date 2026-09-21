@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatEventWhen, type MemberClosure } from "@/lib/closures";
+import type { Engagement } from "@/lib/gamification";
 import type { CycleView, LessonItem, TrailView } from "@/lib/trail/view";
 import { formatWhen, lockedMessage } from "@/lib/trail/format";
 
@@ -22,7 +23,7 @@ const linkButton =
   "mt-5 inline-block rounded-xl bg-brand px-5 py-3 font-medium text-on-brand transition hover:bg-brand-strong";
 
 /** Tela "Minha trilha" (RF-05): ciclo atual, próxima lição e porcentagem concluída. */
-export function TrailHome({ name, view, now }: { name: string; view: TrailView; now: Date }) {
+export function TrailHome({ name, view, now, engagement = null }: { name: string; view: TrailView; now: Date; engagement?: Engagement | null }) {
   const { current, next, upcoming } = view;
   const firstName = name.trim().split(/\s+/)[0] || "";
 
@@ -90,6 +91,8 @@ export function TrailHome({ name, view, now }: { name: string; view: TrailView; 
         </section>
       )}
 
+      {engagement && <EngagementCard engagement={engagement} />}
+
       {view.cycles.length > 0 && (
         <section aria-labelledby="ciclos" className="mt-10">
           <h2 id="ciclos" className="font-serif text-2xl">Ciclos</h2>
@@ -119,6 +122,30 @@ export function TrailHome({ name, view, now }: { name: string; view: TrailView; 
         </section>
       )}
     </div>
+  );
+}
+
+/** Sequência de dias e marcos (RF-30). Só comemora o que existe: sem sequência ativa ou marco, nem aparece. */
+function EngagementCard({ engagement }: { engagement: Engagement }) {
+  const reached = engagement.milestones.filter((m) => m.reached);
+  const showStreak = engagement.streakDays >= 2;
+  if (!showStreak && reached.length === 0) return null;
+  return (
+    <section aria-labelledby="jornada" className="mt-6 rounded-2xl border border-line bg-card p-5">
+      <h2 id="jornada" className="font-serif text-xl">
+        Sua jornada
+      </h2>
+      {showStreak && <p className="mt-1 text-sm">{engagement.streakDays} dias seguidos lendo. Que constância!</p>}
+      {reached.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {reached.map((m) => (
+            <li key={m.id} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-900">
+              ✓ {m.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

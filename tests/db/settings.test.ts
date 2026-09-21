@@ -94,3 +94,21 @@ describe("app_settings", () => {
     expect(row.updated_by).toBe(admin);
   });
 });
+
+describe("public_features (antes do login)", () => {
+  const asAnon = async () => {
+    await db.exec("set role anon");
+    try {
+      return (await q<{ v: Record<string, boolean> }>("select public.public_features() as v"))[0].v;
+    } finally {
+      await db.exec("reset role");
+    }
+  };
+
+  it("sem login, devolve só se o login por e-mail está ligado (desligado por padrão)", async () => {
+    expect(await asAnon()).toEqual({ email_login: false });
+    await asUser(db, admin, () => q("update public.app_settings set value = 'true'::jsonb where key = 'feature.email_login'"));
+    expect(await asAnon()).toEqual({ email_login: true });
+    await asUser(db, admin, () => q("update public.app_settings set value = 'false'::jsonb where key = 'feature.email_login'"));
+  });
+});

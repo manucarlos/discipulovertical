@@ -98,7 +98,7 @@ describe("funções", () => {
     );
     // Cada uma exige algo que só o e-mail, o certificado ou o agendador têm: o código do descadastro, o código do
     // certificado (verificação pública) ou o CRON_SECRET.
-    expect(rows.map((r) => r.proname)).toEqual(["cron_certificates", "cron_enqueue", "cron_report", "cron_snapshot", "unsubscribe_email", "verify_certificate"]);
+    expect(rows.map((r) => r.proname)).toEqual(["cron_certificates", "cron_enqueue", "cron_report", "cron_snapshot", "public_features", "unsubscribe_email", "verify_certificate"]);
   });
 
   it("as funções do agendador conferem o segredo antes de qualquer coisa", async () => {

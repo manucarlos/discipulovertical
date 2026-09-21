@@ -139,6 +139,13 @@ describe("Claudinho, membro novo: cada tela que ele vê", () => {
     await audit("login", LoginPage);
     await audit("login (conta excluída)", LoginPage, { search: { conta: "excluida" } });
     await audit("login (erro)", LoginPage, { search: { erro: "1" } });
+    // Entrar com e-mail (RF-31): só aparece quando o Admin liga.
+    expect((await visit(LoginPage)).text).not.toContain("Enviar link de acesso");
+    await world.sql("update public.app_settings set value = 'true'::jsonb where key = 'feature.email_login'");
+    const withEmail = await audit("login com e-mail", LoginPage);
+    expect(withEmail.text).toContain("Entrar com Google");
+    expect(withEmail.text).toContain("Enviar link de acesso");
+    await world.sql("update public.app_settings set value = 'false'::jsonb where key = 'feature.email_login'");
     await audit("termos", TermosPage);
     await audit("privacidade", PrivacidadePage);
     await audit("desinscrever (link válido)", UnsubscribePage, { search: { t: "00000000-0000-4000-8000-000000000000" } });
@@ -292,6 +299,14 @@ describe("Encerramento e certificado: telas do membro, do administrador e a veri
     expect(cyclePage.text).toContain("Encerramento presencial");
     const list = await audit("meus certificados", CertificatesPage);
     expect(list.text).toContain("VC-1A2B-3C4D-5E6F");
+    // Gamificação leve: só aparece com o recurso ligado, e só mostra o que existe.
+    expect((await visit(HomePage)).text).not.toContain("Sua jornada");
+    await world.sql("update public.app_settings set value = 'true'::jsonb where key = 'feature.gamification'");
+    const journey = await audit("minha trilha com sequência e marcos", HomePage);
+    expect(journey.text).toContain("Sua jornada");
+    expect(journey.text).toContain("Primeiro ciclo concluído");
+    await world.sql("update public.app_settings set value = 'false'::jsonb where key = 'feature.gamification'");
+
     await world.login(CLAUDINHO);
     await audit("meus certificados (vazio)", CertificatesPage);
 
