@@ -397,6 +397,9 @@ describe("Grupo de Discipulado: todas as telas passam na auditoria de acessibili
     await world.login(CLAUDIAO);
     const admin = await audit("grupos (administrador)", AdminGroupsPage);
     expect(admin.text).toContain("Grupo A");
+    const libraryEditor = await audit("editor de lição da biblioteca", EditLessonPage, { params: { slug: "lib-a" } });
+    expect(libraryEditor.text).toContain("Guia do encontro");
+    await audit("prévia de lição da biblioteca", PreviewPage, { params: { slug: "lib-a" } });
     const queue = await audit("pedidos de ajuda pastoral", PastoralHelpPage);
     expect(queue.text).toContain("Prioridade: direto à equipe");
 

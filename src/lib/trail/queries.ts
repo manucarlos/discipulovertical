@@ -20,6 +20,7 @@ export async function loadTrail(supabase: SupabaseClient, userId: string, now = 
     supabase
       .from("lessons")
       .select("id, cycle_id, slug, title, position, estimated_minutes, required")
+      .eq("kind", "trail") // as lições da biblioteca do grupo não entram na trilha de novos convertidos
       .eq("status", "published")
       .order("position"),
     supabase

@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
     "icons": "node scripts/make-placeholder-icons.mjs",
-    "import:sql": "tsx scripts/import-content.ts"
+    "import:sql": "tsx scripts/import-content.ts",
+    "import:library": "tsx scripts/import-library.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
