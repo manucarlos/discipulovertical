@@ -13,6 +13,7 @@ import {
 } from "@/lib/content/editor-form";
 import { findPlaceholders } from "@/lib/content/placeholders";
 import { blocksToDoc, docToBlocks, type PMNode } from "@/lib/content/tiptap";
+import { buildVideo, watchUrl } from "@/lib/content/video";
 import { BodyEditor } from "./body-editor";
 
 export interface EditorActions {
@@ -45,6 +46,8 @@ interface FormState {
   practiceTitle: string;
   practiceItems: string;
   reflection: string;
+  videoUrl: string;
+  videoTranscript: string;
   quiz: QuizForm[];
   pastoralReviewNote: string;
   videoSuggestion: string;
@@ -66,6 +69,8 @@ function initialForm(lesson: LessonForEditing): FormState {
     practiceTitle: lesson.content.practice?.title ?? "Prática da semana",
     practiceItems: itemsToLines(lesson.content.practice?.items ?? []),
     reflection: lesson.content.reflection ?? "",
+    videoUrl: lesson.content.video ? watchUrl(lesson.content.video) : "",
+    videoTranscript: lesson.content.video?.transcript ?? "",
     quiz: lesson.quiz.map((q) => ({
       prompt: q.prompt,
       options: { A: q.options.A ?? "", B: q.options.B ?? "", C: q.options.C ?? "", D: q.options.D ?? "" },
@@ -94,6 +99,7 @@ function toPayload(f: FormState) {
       blocks: docToBlocks(f.doc),
       practice: buildPractice(f.practiceTitle, f.practiceItems),
       reflection: buildReflection(f.reflection),
+      video: buildVideo(f.videoUrl, f.videoTranscript),
     },
     notes: {
       pastoralReviewNote: f.pastoralReviewNote,
@@ -406,6 +412,26 @@ export function LessonEditor({
             hint="Use Título para as seções. Quando faltar uma informação da igreja, escreva [PREENCHER: o que falta] em negrito: a lição fica bloqueada para publicação até isso ser resolvido."
           >
             <BodyEditor initialDoc={form.doc} onChange={(doc) => patch({ doc })} readOnly={readOnly} />
+          </Section>
+
+          <Section
+            title="Vídeo (opcional)"
+            hint="Cole o link de um vídeo do YouTube ou do Vimeo. Ele aparece no começo da lição, em modo de privacidade, quando o recurso “Vídeo nas lições” está ligado em Configurações. Escreva também a transcrição, para quem não pode ouvir."
+          >
+            <label className="block text-sm font-medium">
+              Link do vídeo
+              <input
+                className={inputClass}
+                value={form.videoUrl}
+                onChange={(e) => patch({ videoUrl: e.target.value })}
+                inputMode="url"
+                placeholder="https://youtu.be/…"
+              />
+            </label>
+            <label className="block text-sm font-medium">
+              Transcrição em texto <span className="font-normal text-muted">(uma linha em branco separa parágrafos)</span>
+              <textarea className={inputClass} rows={5} value={form.videoTranscript} onChange={(e) => patch({ videoTranscript: e.target.value })} />
+            </label>
           </Section>
 
           <Section title="Prática e reflexão">

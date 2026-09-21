@@ -142,6 +142,7 @@ export default async function LessonPage(props: PageProps<"/licao/[slug]">) {
         content={detail.content}
         links={links}
         versionCode={profile.bible_version}
+        video={flags.video ? (detail.content.video ?? null) : null}
         extras={
           <>
             {errorMessage && (
@@ -153,6 +154,7 @@ export default async function LessonPage(props: PageProps<"/licao/[slug]">) {
               <PracticeSection
                 practiceDone={practiceDone}
                 reflection={reflection}
+                question={detail.content.reflection}
                 practiceAction={togglePractice.bind(null, slug)}
                 reflectionAction={saveReflection.bind(null, slug)}
                 saved={saved}

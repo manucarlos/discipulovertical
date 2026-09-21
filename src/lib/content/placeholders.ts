@@ -43,6 +43,7 @@ export function findPlaceholders(content: LessonContent, notes: NotesText = {}):
   }
   content.practice?.items.forEach((item) => hits.push(...scan(item, "Prática")));
   if (content.reflection) hits.push(...scan(content.reflection, "Reflexão"));
+  if (content.video?.transcript) hits.push(...scan(content.video.transcript, "Transcrição do vídeo"));
 
   hits.push(...scan(notes.pastoralReviewNote ?? "", "Nota para revisão pastoral"));
   hits.push(...scan(notes.videoSuggestion ?? "", "Sugestão de vídeo"));

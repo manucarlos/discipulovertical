@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { parseReference } from "@/lib/bible/references";
-import type { LessonBlock, LessonContent } from "@/lib/content/types";
+import type { LessonBlock, LessonContent, LessonVideo } from "@/lib/content/types";
+import { embedUrl } from "@/lib/content/video";
 import { RichText } from "./rich-text";
 
 export interface LessonViewProps {
@@ -12,6 +13,8 @@ export interface LessonViewProps {
   content: LessonContent;
   links: Record<string, string>;
   versionCode: string;
+  /** Vídeo da lição, já filtrado pela chave "Vídeo nas lições". */
+  video?: LessonVideo | null;
   /** Entre a prática e o rodapé: reflexão e quiz (recursos que o Admin liga). */
   extras?: ReactNode;
   /** Área abaixo da prática (botão de concluir, navegação). */
@@ -27,6 +30,7 @@ export function LessonView({
   content,
   links,
   versionCode,
+  video = null,
   extras,
   footer,
 }: LessonViewProps) {
@@ -74,6 +78,8 @@ export function LessonView({
         )}
       </header>
 
+      {video && <LessonVideoBlock video={video} />}
+
       <div className="mt-8 space-y-5">
         {content.blocks.map((block, i) => (
           <Block key={i} block={block} rich={rich} />
@@ -97,6 +103,40 @@ export function LessonView({
 
       {footer && <div className="mt-10">{footer}</div>}
     </article>
+  );
+}
+
+/** Vídeo em modo de privacidade (RF-11), com a transcrição em texto logo abaixo. */
+function LessonVideoBlock({ video }: { video: LessonVideo }) {
+  const paragraphs = video.transcript.split(/\n{2,}/).filter((p) => p.trim() !== "");
+  return (
+    <section aria-labelledby="video-titulo" className="mt-8">
+      <h2 id="video-titulo" className="sr-only">
+        Vídeo da lição
+      </h2>
+      <div className="aspect-video w-full overflow-hidden rounded-xl border border-line bg-black">
+        <iframe
+          src={embedUrl(video)}
+          title="Vídeo da lição"
+          className="size-full"
+          loading="lazy"
+          allow="encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+        />
+      </div>
+      {paragraphs.length > 0 && (
+        <details className="mt-3 rounded-xl border border-line bg-card px-4 py-3">
+          <summary className="min-h-11 cursor-pointer py-2 font-medium">Ler a transcrição do vídeo</summary>
+          <div className="mt-2 space-y-3 text-[0.95em]">
+            {paragraphs.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </div>
+        </details>
+      )}
+    </section>
   );
 }
 

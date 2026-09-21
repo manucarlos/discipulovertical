@@ -115,6 +115,10 @@ export function validateLessonDraft(input: unknown): DraftResult {
     return fail("A prática precisa de um título e de pelo menos um item.");
   }
 
+  if (isObject(input.content.video) && !content.video) {
+    return fail("O vídeo precisa de um link válido do YouTube ou do Vimeo (por exemplo, https://youtu.be/...).");
+  }
+
   const notesIn = isObject(input.notes) ? input.notes : {};
   const note = (key: string) => {
     const value = str(notesIn[key]).trim();

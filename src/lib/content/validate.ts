@@ -1,4 +1,5 @@
 import type { LessonBlock, LessonContent } from "./types";
+import { asLessonVideo } from "./video";
 
 const isString = (v: unknown): v is string => typeof v === "string";
 const isStringArray = (v: unknown): v is string[] => Array.isArray(v) && v.every(isString);
@@ -43,5 +44,8 @@ export function asLessonContent(value: unknown): LessonContent | null {
     }
   }
 
-  return { blocks, practice, reflection: isString(v.reflection) ? v.reflection : null };
+  const content: LessonContent = { blocks, practice, reflection: isString(v.reflection) ? v.reflection : null };
+  const video = asLessonVideo(v.video);
+  if (video) content.video = video;
+  return content;
 }

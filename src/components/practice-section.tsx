@@ -3,13 +3,15 @@ import { REFLECTION_MAX } from "@/lib/quiz";
 interface Props {
   practiceDone: boolean;
   reflection: string;
+  /** A pergunta de reflexão que a lição propõe, se houver. */
+  question?: string | null;
   practiceAction: (formData: FormData) => Promise<void>;
   reflectionAction: (formData: FormData) => Promise<void>;
   saved?: "pratica" | "reflexao";
 }
 
 /** RF-13: marcar a prática como feita (autodeclarada, não bloqueia nada) e escrever uma reflexão privada. */
-export function PracticeSection({ practiceDone, reflection, practiceAction, reflectionAction, saved }: Props) {
+export function PracticeSection({ practiceDone, reflection, question = null, practiceAction, reflectionAction, saved }: Props) {
   return (
     <section aria-labelledby="reflexao-titulo" className="mt-6 rounded-2xl border border-line bg-card p-5">
       <h2 id="reflexao-titulo" className="font-serif text-2xl">
@@ -38,6 +40,7 @@ export function PracticeSection({ practiceDone, reflection, practiceAction, refl
         <label htmlFor="reflexao" className="block font-medium">
           Reflexão (opcional)
         </label>
+        {question && <p className="font-serif text-lg">{question}</p>}
         <p id="reflexao-ajuda" className="text-sm text-muted">
           O que Deus falou com você nesta lição? O texto é privado: só você e a liderança da igreja podem lê-lo.
         </p>

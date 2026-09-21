@@ -1597,6 +1597,58 @@ describe("Claudião baixa as planilhas de pessoas e de progresso", () => {
 });
 
 // ---------------------------------------------------------------------------------------------
+// HISTÓRIA 4i · vídeo na lição (RF-11)
+// ---------------------------------------------------------------------------------------------
+
+describe("Claudião coloca um vídeo numa lição, e o Claudinho o vê quando o recurso está ligado", () => {
+  const slug = "c1-l03";
+  const VIDEO = { provider: "youtube", id: "dQw4w9WgXcQ", transcript: "Bem-vindos.\n\nHoje falaremos sobre a fé." } as const;
+
+  it("o Claudião salva o vídeo; um link que não é do YouTube ou do Vimeo é recusado com mensagem clara", async () => {
+    await world.login(CLAUDIAO);
+    const lesson = await loadLessonForEditing(client(), slug);
+    const bad = await saveLesson(slug, lesson!.currentVersionId, payloadOf(lesson!, { content: { ...lesson!.content, video: { provider: "youtube", id: "", transcript: "" } } }));
+    expect(bad).toMatchObject({ ok: false, error: expect.stringContaining("link válido do YouTube ou do Vimeo") });
+
+    const saved = await saveLesson(slug, lesson!.currentVersionId, payloadOf(lesson!, { content: { ...lesson!.content, video: { ...VIDEO } } }));
+    expect(saved).toMatchObject({ ok: true });
+    const reloaded = await loadLessonForEditing(client(), slug);
+    expect(reloaded!.content.video).toEqual(VIDEO);
+
+    // O editor mostra o link de volta, e a prévia do Claudião já exibe o vídeo.
+    const editor = await visit(EditLessonPage, { params: { slug } });
+    expect(editor.html).toContain("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+    const preview = await visit(PreviewPage, { params: { slug } });
+    expect(preview.html).toContain("youtube-nocookie.com/embed/dQw4w9WgXcQ");
+  });
+
+  it("com o recurso desligado o membro não vê o vídeo; ligado, vê em modo de privacidade, com a transcrição", async () => {
+    await world.login(CLAUDIO); // já concluiu a trilha: a lição está liberada
+    const off = await visit(LessonPage, { params: { slug } });
+    expect(off.html).not.toContain("youtube");
+    expect(off.text).not.toContain("Ler a transcrição");
+
+    await world.login(CLAUDIAO);
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "", feature_video: true })));
+    await world.login(CLAUDIO);
+    const on = await visit(LessonPage, { params: { slug } });
+    expect(on.html).toContain('src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0"');
+    expect(on.html).toContain('title="Vídeo da lição"');
+    expect(on.text).toContain("Ler a transcrição do vídeo");
+    expect(on.text).toContain("Hoje falaremos sobre a fé.");
+  });
+
+  it("desliga o recurso e tira o vídeo (estado anterior)", async () => {
+    await world.login(CLAUDIAO);
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "" })));
+    const lesson = await loadLessonForEditing(client(), slug);
+    const { video: _removed, ...withoutVideo } = lesson!.content;
+    expect(await saveLesson(slug, lesson!.currentVersionId, payloadOf(lesson!, { content: withoutVideo }))).toMatchObject({ ok: true });
+    expect((await loadLessonForEditing(client(), slug))!.content.video).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
 // HISTÓRIA 5 · o editor vê só métricas de conteúdo; o Claudinho exclui a própria conta
 // ---------------------------------------------------------------------------------------------
 

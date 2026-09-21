@@ -17,11 +17,20 @@ export interface LessonPractice {
   items: string[];
 }
 
+/** Vídeo da lição (RF-11): YouTube ou Vimeo em modo de privacidade, com a transcrição em texto. */
+export interface LessonVideo {
+  provider: "youtube" | "vimeo";
+  id: string;
+  transcript: string;
+}
+
 /** Conteúdo versionado (lesson_versions.content). Nada aqui é material interno da equipe. */
 export interface LessonContent {
   blocks: LessonBlock[];
   practice: LessonPractice | null;
   reflection: string | null;
+  /** Ausente nas lições antigas. */
+  video?: LessonVideo | null;
 }
 
 export interface QuizQuestion {

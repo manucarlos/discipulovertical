@@ -77,12 +77,12 @@ export function PeopleListView({
 
       {basePath === "/admin/pessoas" && (
         <p className="mt-3 flex flex-wrap gap-x-5 text-sm">
-          <a href="/admin/pessoas/exportar?tipo=membros" className="inline-flex min-h-11 items-center underline">
+          <Link href="/admin/pessoas/exportar?tipo=membros" prefetch={false} className="inline-flex min-h-11 items-center underline">
             Baixar planilha de pessoas (CSV)
-          </a>
-          <a href="/admin/pessoas/exportar?tipo=progresso" className="inline-flex min-h-11 items-center underline">
+          </Link>
+          <Link href="/admin/pessoas/exportar?tipo=progresso" prefetch={false} className="inline-flex min-h-11 items-center underline">
             Baixar planilha de progresso por lição (CSV)
-          </a>
+          </Link>
         </p>
       )}
 
