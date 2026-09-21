@@ -50,6 +50,11 @@ import { GET as exportMyData } from "@/app/(member)/perfil/exportar/route";
 import { changeLessonStatus, restoreLessonVersion, saveLesson } from "@/app/admin/licao/[slug]/actions";
 import { createLesson, moveLesson, saveCycleSettings } from "@/app/admin/actions";
 import { changeRole } from "@/app/admin/pessoas/actions";
+import CarePage from "@/app/(member)/cuidado/page";
+import CareMemberPage from "@/app/(member)/cuidado/[id]/page";
+import { addCareNote, updateCareAlert } from "@/app/(member)/cuidado/actions";
+import CareAdminPage from "@/app/admin/cuidado/page";
+import { assignCaregiver, autoAssignCaregivers, unassignCaregiver, updateAdminAlert } from "@/app/admin/cuidado/actions";
 import { loadLessonForEditing, type LessonForEditing } from "@/lib/admin/queries";
 import { findPlaceholders } from "@/lib/content/placeholders";
 import { loadTrail } from "@/lib/trail/queries";
@@ -992,6 +997,157 @@ describe("Claudinho faz o quiz, marca a prática e escreve a reflexão", () => {
     await world.sql("delete from public.quiz_attempts");
     await world.sql("delete from public.lesson_progress where user_id = $1 and lesson_id = $2", [CLAUDINHO.id, lessonId]);
     await world.login(CLAUDIAO);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// HISTÓRIA 4e · cuidadores e alertas de quem parou (RF-20, RF-21, RF-25, RN-07, RN-13)
+// O Claudio vira cuidador e recebe o Claudinho.
+// ---------------------------------------------------------------------------------------------
+
+describe("Cuidado: o Claudio cuida do Claudinho, e o alerta aparece quando ele para", () => {
+  const shiftClaudinho = (days: number) =>
+    world.sql(
+      `update public.lesson_progress set
+         started_at = started_at - $2::interval, completed_at = completed_at - $2::interval, updated_at = updated_at - $2::interval
+       where user_id = $1`,
+      [CLAUDINHO.id, `${days} days`],
+    );
+
+  it("com o recurso desligado, ninguém tem tela de cuidado; o Admin já pode se organizar", async () => {
+    await world.login(CLAUDIAO);
+    expect((await visit(CareAdminPage)).text).toContain("está desligado");
+    await outcome(() => changeRole(CLAUDIO.id!, form({ role: "caregiver" })));
+    await world.login(CLAUDIO);
+    expect((await visit(CarePage)).redirect).toBe("/"); // perfil certo, recurso desligado
+  });
+
+  it("o Claudião liga o recurso; o Claudinho aparece na fila e é atribuído ao Claudio", async () => {
+    await world.login(CLAUDIAO);
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "", feature_caregivers: true, feature_reflections: true })));
+
+    const page = await visit(CareAdminPage);
+    expect(page.text).not.toContain("está desligado");
+    expect(page.text).toContain("Sem cuidador");
+    expect(page.text).toContain("Claudinho da Silva");
+
+    const assigned = await outcome(() => assignCaregiver(CLAUDINHO.id!, form({ caregiver: CLAUDIO.id!, from: `/admin/pessoas/${CLAUDINHO.id}` })));
+    expect(assigned.redirect).toContain(`/admin/pessoas/${CLAUDINHO.id}`);
+    expect(decodeURIComponent(assigned.redirect!.replace(/\+/g, " "))).toContain("Cuidador atribuído");
+
+    const ficha = await visit(PersonPage, { params: { id: CLAUDINHO.id! } });
+    expect(ficha.text).toContain("Atual: Claudio");
+    expect(ficha.text).toContain("Cuidador atribuído"); // no histórico
+  });
+
+  it("o Claudio vê o Claudinho na lista, com o contato e o progresso dele", async () => {
+    await world.login(CLAUDIO);
+    const list = await visit(CarePage);
+    expect(list.text).toContain("Meus membros");
+    expect(list.text).toContain("Claudinho da Silva");
+    expect(list.text).not.toContain("Claudião");
+
+    const ficha = await visit(CareMemberPage, { params: { id: CLAUDINHO.id! } });
+    expect(ficha.text).toContain("+55 (11) 91234-5678");
+    expect(ficha.html).toContain("https://wa.me/5511912345678");
+    expect(ficha.text).toMatch(/Concluída em \d{2}\/\d{2}\/\d{4}/);
+    expect(ficha.text).toContain("Notas de cuidado");
+    expect(await world.sql("select 1 from public.audit_log where action = 'person_viewed' and actor_id = $1", [CLAUDIO.id])).toHaveLength(1);
+  });
+
+  it("o cuidador não abre quem não é dele, e o Claudinho (membro) não tem essa tela", async () => {
+    await world.login(CLAUDIO);
+    expect((await visit(CareMemberPage, { params: { id: CLAUDIAO.id! } })).notFound).toBe(true);
+    expect((await visit(CareMemberPage, { params: { id: "não-é-uuid" } })).notFound).toBe(true);
+    expect((await client().from("lesson_progress").select("user_id").eq("user_id", CLAUDIAO.id!)).data).toEqual([]);
+
+    await world.login(CLAUDINHO);
+    expect((await visit(CarePage)).redirect).toBe("/");
+    expect((await visit(CareMemberPage, { params: { id: CLAUDINHO.id! } })).redirect).toBe("/");
+    expect((await outcome(() => addCareNote(CLAUDINHO.id!, form({ body: "x" })))).redirect).toBe("/");
+    expect((await client().from("care_alerts").select("id")).data).toEqual([]);
+    expect((await client().from("care_assignments").select("id")).data).toEqual([]);
+  });
+
+  it("a reflexão do Claudinho aparece para o cuidador dele, e a consulta fica registrada", async () => {
+    await world.sql(
+      "insert into public.reflections (user_id, lesson_id, body) select $1, id, 'Estou cansado, mas firme.' from public.lessons where slug = 'c1-l02'",
+      [CLAUDINHO.id],
+    );
+    await world.login(CLAUDIO);
+    const ficha = await visit(CareMemberPage, { params: { id: CLAUDINHO.id! } });
+    expect(ficha.text).toContain("Estou cansado, mas firme.");
+    expect(await world.sql("select 1 from public.audit_log where action = 'reflections_viewed' and actor_id = $1", [CLAUDIO.id])).not.toHaveLength(0);
+    await world.sql("delete from public.reflections");
+  });
+
+  it("o cuidador escreve uma nota, o Claudião a lê na ficha, e outro cuidador não a vê", async () => {
+    await world.login(CLAUDIO);
+    const saved = await outcome(() => addCareNote(CLAUDINHO.id!, form({ body: "Conversamos após o culto. Pediu oração pelo trabalho." })));
+    expect(decodeURIComponent(saved.redirect!.replace(/\+/g, " "))).toContain("Nota salva");
+    expect((await visit(CareMemberPage, { params: { id: CLAUDINHO.id! } })).text).toContain("Pediu oração pelo trabalho.");
+
+    const empty = await outcome(() => addCareNote(CLAUDINHO.id!, form({ body: "   " })));
+    expect(decodeURIComponent(empty.redirect!.replace(/\+/g, " "))).toContain("Escreva a nota");
+
+    await world.login(CLAUDIAO);
+    const adminView = await visit(PersonPage, { params: { id: CLAUDINHO.id! } });
+    expect(adminView.text).toContain("Pediu oração pelo trabalho.");
+    expect(adminView.text).toContain("por Claudio");
+  });
+
+  it("14 dias sem ler: o alerta abre sozinho; o cuidador marca 'em contato' e resolve", async () => {
+    await shiftClaudinho(20);
+    await world.login(CLAUDIO);
+    const list = await visit(CarePage);
+    expect(list.text).toContain("Alerta: Aberto");
+    expect(list.text).toContain("Parado");
+
+    const ficha = await visit(CareMemberPage, { params: { id: CLAUDINHO.id! } });
+    expect(ficha.text).toContain("Pedido de contato");
+    const [alert] = await world.sql<{ id: string }>("select id from public.care_alerts where status <> 'resolved'");
+
+    await outcome(() => updateCareAlert(CLAUDINHO.id!, form({ alert: alert.id, status: "in_contact" })));
+    expect((await visit(CarePage)).text).toContain("Alerta: Em contato");
+
+    const done = await outcome(() => updateCareAlert(CLAUDINHO.id!, form({ alert: alert.id, status: "resolved", resolution: "Conversamos por telefone." })));
+    expect(decodeURIComponent(done.redirect!.replace(/\+/g, " "))).toContain("Alerta resolvido");
+    expect(await world.sql("select 1 from public.care_alerts where status = 'resolved' and resolution = 'Conversamos por telefone.'")).toHaveLength(1);
+    expect((await visit(CarePage)).text).not.toContain("Alerta: Aberto"); // nada de alerta repetido logo depois do contato
+    await shiftClaudinho(-20);
+  });
+
+  it("o Claudião vê os alertas de quem não tem cuidador e cuida deles", async () => {
+    await world.login(CLAUDIAO);
+    await outcome(() => unassignCaregiver(CLAUDINHO.id!));
+    await shiftClaudinho(40);
+    await world.sql("update public.care_alerts set resolved_at = now() - interval '30 days'");
+    const page = await visit(CareAdminPage);
+    expect(page.text).toContain("Alertas de quem parou");
+    expect(page.text).toContain("sem cuidador (você cuida deste)");
+    const [alert] = await world.sql<{ id: string }>("select id from public.care_alerts where status <> 'resolved'");
+    await outcome(() => updateAdminAlert(CLAUDINHO.id!, form({ alert: alert.id, status: "resolved", resolution: "" })));
+    expect(await world.sql("select 1 from public.care_alerts where status <> 'resolved'")).toHaveLength(0);
+    await shiftClaudinho(-40);
+  });
+
+  it("o rodízio distribui a fila, e perder o perfil de cuidador devolve o membro para a fila", async () => {
+    await world.login(CLAUDIAO);
+    const auto = await outcome(() => autoAssignCaregivers());
+    expect(decodeURIComponent(auto.redirect!.replace(/\+/g, " "))).toMatch(/atribuído/);
+    expect(await world.sql("select 1 from public.care_assignments where active and caregiver_id = $1", [CLAUDIO.id])).not.toHaveLength(0);
+
+    await outcome(() => changeRole(CLAUDIO.id!, form({ role: "member" })));
+    expect(await world.sql("select 1 from public.care_assignments where active")).toHaveLength(0);
+    expect((await visit(CareAdminPage)).text).toContain("Claudinho da Silva");
+  });
+
+  it("desliga o recurso e devolve o estado anterior", async () => {
+    await world.login(CLAUDIAO);
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "" })));
+    await world.sql("delete from public.care_notes");
+    await world.sql("delete from public.care_alerts");
+    await world.sql("delete from public.care_assignments");
   });
 });
 

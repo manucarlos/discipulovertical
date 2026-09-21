@@ -43,6 +43,8 @@ export function describeEditorError(error: DbErrorLike): FriendlyError {
         : "Você não tem permissão para fazer isso. Lições publicadas só podem ser alteradas pelo administrador.",
     };
   }
+  // Mensagens que as nossas próprias funções do banco escrevem para a pessoa (já em português).
+  if (error.code === "P0001" && text && !text.includes("[")) return { conflict: false, message: text };
   if (error.code === "22023" && text) return { conflict: false, message: `${text.charAt(0).toUpperCase()}${text.slice(1)}.` };
 
   return { conflict: false, message: "Não foi possível concluir a ação. Tente de novo em instantes." };

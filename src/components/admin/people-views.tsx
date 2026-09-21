@@ -17,6 +17,7 @@ import {
   type UserRole,
 } from "@/lib/admin/people";
 import type { PersonDetail, PersonReflection } from "@/lib/admin/people-queries";
+import type { AuthoredNote } from "@/lib/care";
 import { lockedMessage } from "@/lib/trail/format";
 import type { TrailView } from "@/lib/trail/view";
 
@@ -192,6 +193,64 @@ const LESSON_STATE_STYLE = {
   locked: "bg-transparent text-muted",
 } as const;
 
+/** Progresso lição a lição de uma pessoa, ciclo por ciclo. Usada na ficha do Admin e na do cuidador. */
+export function ProgressSection({ trail, now }: { trail: TrailView; now: Date }) {
+  return (
+    <section aria-labelledby="progresso" className="rounded-2xl border border-line bg-card p-5">
+      <h2 id="progresso" className="font-serif text-xl">
+        Progresso
+      </h2>
+      {trail.cycles.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">Ainda não há lições publicadas.</p>
+      ) : (
+        <div className="mt-3 space-y-5">
+          {trail.cycles.map((cycle) => (
+            <div key={cycle.id}>
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="font-medium">
+                  {cycle.position}. {cycle.title}
+                </h3>
+                <span className="text-sm text-muted">
+                  {cycle.completedCount} de {cycle.requiredCount} · {cycle.percent}%
+                </span>
+              </div>
+              <div
+                role="progressbar"
+                aria-label={`Progresso no ciclo ${cycle.title}`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={cycle.percent}
+                className="mt-1.5 h-2 overflow-hidden rounded-full bg-lilac"
+              >
+                <div className="h-full rounded-full bg-brand" style={{ width: `${cycle.percent}%` }} />
+              </div>
+              <ol className="mt-2 space-y-1">
+                {cycle.lessons.map((l) => {
+                  const s = l.state;
+                  const text =
+                    s.state === "locked"
+                      ? lockedMessage(s, now)
+                      : s.state === "completed"
+                        ? `Concluída em ${shortDate.format(s.completedAt)}`
+                        : LESSON_STATE_LABEL[s.state];
+                  return (
+                    <li key={l.id} className="flex items-center justify-between gap-3 text-sm">
+                      <span className={`min-w-0 truncate ${s.state === "locked" ? "text-muted" : ""}`}>
+                        {l.position}. {l.title}
+                      </span>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${LESSON_STATE_STYLE[s.state]}`}>{text}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 /** Ficha da pessoa (RF-24): dados, perfil de acesso, progresso lição a lição, consentimentos e histórico. */
 export function PersonDetailView({
   detail,
@@ -202,6 +261,8 @@ export function PersonDetailView({
   ok,
   erro,
   reflections = null,
+  care = null,
+  careNotes = null,
   backHref = "/admin/pessoas",
 }: {
   detail: PersonDetail;
@@ -213,6 +274,15 @@ export function PersonDetailView({
   erro?: string;
   /** Reflexões da pessoa (RN-03). `null` quando o recurso está desligado: a seção nem aparece. */
   reflections?: PersonReflection[] | null;
+  /** Cuidador atual e quem pode receber a pessoa. `null` para quem não recebe cuidador (equipe). */
+  care?: {
+    caregivers: { id: string; name: string }[];
+    currentId: string | null;
+    assignAction: (formData: FormData) => Promise<void>;
+    unassignAction: (formData: FormData) => Promise<void>;
+  } | null;
+  /** Notas de cuidado escritas sobre a pessoa. `null` com o recurso desligado. */
+  careNotes?: AuthoredNote[] | null;
   backHref?: string;
 }) {
   const p = detail.summary;
@@ -293,58 +363,51 @@ export function PersonDetailView({
         </dl>
       </section>
 
-      <section aria-labelledby="progresso" className="rounded-2xl border border-line bg-card p-5">
-        <h2 id="progresso" className="font-serif text-xl">
-          Progresso
-        </h2>
-        {trail.cycles.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">Ainda não há lições publicadas.</p>
-        ) : (
-          <div className="mt-3 space-y-5">
-            {trail.cycles.map((cycle) => (
-              <div key={cycle.id}>
-                <div className="flex items-baseline justify-between gap-3">
-                  <h3 className="font-medium">
-                    {cycle.position}. {cycle.title}
-                  </h3>
-                  <span className="text-sm text-muted">
-                    {cycle.completedCount} de {cycle.requiredCount} · {cycle.percent}%
-                  </span>
-                </div>
-                <div
-                  role="progressbar"
-                  aria-label={`Progresso no ciclo ${cycle.title}`}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={cycle.percent}
-                  className="mt-1.5 h-2 overflow-hidden rounded-full bg-lilac"
-                >
-                  <div className="h-full rounded-full bg-brand" style={{ width: `${cycle.percent}%` }} />
-                </div>
-                <ol className="mt-2 space-y-1">
-                  {cycle.lessons.map((l) => {
-                    const s = l.state;
-                    const text =
-                      s.state === "locked"
-                        ? lockedMessage(s, now)
-                        : s.state === "completed"
-                          ? `Concluída em ${shortDate.format(s.completedAt)}`
-                          : LESSON_STATE_LABEL[s.state];
-                    return (
-                      <li key={l.id} className="flex items-center justify-between gap-3 text-sm">
-                        <span className={`min-w-0 truncate ${s.state === "locked" ? "text-muted" : ""}`}>
-                          {l.position}. {l.title}
-                        </span>
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${LESSON_STATE_STYLE[s.state]}`}>{text}</span>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      {care && (
+        <section aria-labelledby="cuidador" className="rounded-2xl border border-line bg-card p-5">
+          <h2 id="cuidador" className="font-serif text-xl">
+            Cuidador
+          </h2>
+          {care.caregivers.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">Ainda não há cuidadores. Dê o perfil de Cuidador a alguém para poder atribuir.</p>
+          ) : (
+            <>
+              <p className="mt-1 text-sm text-muted">
+                {care.currentId ? `Atual: ${care.caregivers.find((c) => c.id === care.currentId)?.name ?? "—"}.` : "Sem cuidador no momento."}
+              </p>
+              <form action={care.assignAction} className="mt-3 flex flex-wrap items-end gap-3">
+                <input type="hidden" name="from" value={`/admin/pessoas/${p.id}`} />
+                <label className="min-w-48 flex-1 text-sm font-medium">
+                  Atribuir a
+                  <select name="caregiver" defaultValue={care.currentId ?? ""} required className={inputClass}>
+                    <option value="" disabled>
+                      Escolha…
+                    </option>
+                    {care.caregivers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button type="submit" className="rounded-xl bg-brand px-5 py-2.5 font-medium text-on-brand hover:bg-brand-strong">
+                  Salvar cuidador
+                </button>
+              </form>
+              {care.currentId && (
+                <form action={care.unassignAction} className="mt-2">
+                  <input type="hidden" name="from" value={`/admin/pessoas/${p.id}`} />
+                  <button type="submit" className="inline-flex min-h-11 items-center text-sm underline">
+                    Tirar cuidador
+                  </button>
+                </form>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      <ProgressSection trail={trail} now={now} />
 
       {reflections && (
         <section aria-labelledby="reflexoes" className="rounded-2xl border border-line bg-card p-5">
@@ -362,6 +425,29 @@ export function PersonDetailView({
                     {r.lessonTitle} <span className="font-normal text-muted">· {shortDate.format(new Date(r.updatedAt))}</span>
                   </p>
                   <p className="mt-1 whitespace-pre-line text-sm">{r.body}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {careNotes && (
+        <section aria-labelledby="notas-cuidado" className="rounded-2xl border border-line bg-card p-5">
+          <h2 id="notas-cuidado" className="font-serif text-xl">
+            Notas de cuidado
+          </h2>
+          {careNotes.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">Nenhuma nota registrada.</p>
+          ) : (
+            <ul className="mt-3 space-y-4">
+              {careNotes.map((n) => (
+                <li key={n.id}>
+                  <p className="whitespace-pre-line text-sm">{n.body}</p>
+                  <p className="mt-1 text-xs text-muted">
+                    {dateTime.format(new Date(n.createdAt))}
+                    {n.authorName ? ` · por ${n.authorName}` : ""}
+                  </p>
                 </li>
               ))}
             </ul>

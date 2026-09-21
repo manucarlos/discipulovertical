@@ -423,7 +423,7 @@ export function LessonEditor({
             </label>
           </Section>
 
-          <Section title="Quiz" hint="Perguntas de múltipla escolha, com explicação. Os membros só verão o quiz a partir da próxima fase; as perguntas ficam guardadas.">
+          <Section title="Quiz" hint="Perguntas de múltipla escolha, com explicação. Os membros só veem o quiz quando o recurso “Quiz das lições” é ligado em Configurações; até lá as perguntas ficam guardadas.">
             {form.quiz.map((q, qi) => (
               <div key={qi} className="space-y-3 rounded-xl border border-line p-4">
                 <div className="flex items-start justify-between gap-3">

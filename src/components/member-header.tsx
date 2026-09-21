@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
 
-export function MemberHeader({ isStaff = false }: { isStaff?: boolean }) {
+export function MemberHeader({ isStaff = false, isCaregiver = false }: { isStaff?: boolean; isCaregiver?: boolean }) {
   return (
     <header className="border-b border-line bg-card">
       <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4 px-4 py-3">
@@ -18,6 +18,11 @@ export function MemberHeader({ isStaff = false }: { isStaff?: boolean }) {
           <Link href="/perfil" className="inline-flex min-h-11 items-center px-1.5 hover:underline">
             Meu perfil
           </Link>
+          {isCaregiver && (
+            <Link href="/cuidado" className="inline-flex min-h-11 items-center px-1.5 font-medium text-brand hover:underline">
+              Meus membros
+            </Link>
+          )}
           {isStaff && (
             <Link href="/admin/trilha" className="inline-flex min-h-11 items-center px-1.5 font-medium text-brand hover:underline">
               Conteúdo

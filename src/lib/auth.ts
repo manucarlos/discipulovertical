@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { loadSettings } from "@/lib/features";
 import { getSupabaseEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,6 +46,17 @@ export const requireStaff = cache(async () => {
   const role = ctx.profile.role;
   if (role !== "editor" && role !== "admin") redirect("/");
   return { ...ctx, role: role as "editor" | "admin" };
+});
+
+/**
+ * Área do cuidador: só quem tem o perfil de cuidador, e só com o recurso ligado.
+ * (A RLS e as funções do banco impõem a mesma regra e ainda limitam aos membros atribuídos.)
+ */
+export const requireCaregiver = cache(async () => {
+  const ctx = await requireMember();
+  if (ctx.profile.role !== "caregiver") redirect("/");
+  if (!(await loadSettings(ctx.supabase)).flags.caregivers) redirect("/");
+  return ctx;
 });
 
 /** Telas com dados pessoais de outras pessoas: só o Admin. O Editor volta para o painel de conteúdo. */

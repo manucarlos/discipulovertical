@@ -39,6 +39,9 @@ import PersonPage from "@/app/admin/pessoas/[id]/page";
 import DashboardPage from "@/app/admin/painel/page";
 import EditChurchPage from "@/app/admin/igreja/page";
 import SettingsPage from "@/app/admin/configuracoes/page";
+import CarePage from "@/app/(member)/cuidado/page";
+import CareMemberPage from "@/app/(member)/cuidado/[id]/page";
+import CareAdminPage from "@/app/admin/cuidado/page";
 import { changeRole } from "@/app/admin/pessoas/actions";
 import { MemberHeader } from "@/components/member-header";
 import { AdminHeader } from "@/components/admin/admin-header";
@@ -215,6 +218,44 @@ describe("Claudião, administrador, e um editor: painel de conteúdo", () => {
     await audit("trilha (editor)", AdminTrailPage);
     await audit("editor de lição publicada (somente leitura)", EditLessonPage, { params: { slug: "c1-l03" } });
     await audit("editor de lição em rascunho", EditLessonPage, { params: { slug: "c3-l02" } });
+  });
+});
+
+describe("Cuidado: telas do cuidador e do administrador", () => {
+  it("lista, ficha com alerta e nota, painel de cuidado e ficha do administrador com cuidador", async () => {
+    // Claudio (que virou editor acima) passa a cuidador do Claudinho; o Claudinho está parado há 30 dias.
+    await world.sql("update public.app_settings set value = 'true'::jsonb where key in ('feature.caregivers', 'feature.reflections')");
+    await world.sql("update public.profiles set role = 'caregiver' where id = $1", [CLAUDIO.id]);
+    await world.sql("insert into public.care_assignments (member_id, caregiver_id) values ($1, $2)", [CLAUDINHO.id, CLAUDIO.id]);
+    await world.sql("update public.lesson_progress set updated_at = updated_at - interval '30 days', started_at = started_at - interval '30 days' where user_id = $1", [CLAUDINHO.id]);
+    await world.sql(
+      "insert into public.care_notes (member_id, author_id, body) values ($1, $2, 'Liguei na terça; pediu para ligar de novo.')",
+      [CLAUDINHO.id, CLAUDIO.id],
+    );
+    await world.sql(
+      "insert into public.reflections (user_id, lesson_id, body) select $1, id, 'Uma reflexão.' from public.lessons where slug = 'c1-l01'",
+      [CLAUDINHO.id],
+    );
+
+    await world.login(CLAUDIO);
+    const list = await audit("cuidado: meus membros", CarePage);
+    expect(list.text).toContain("Alerta: Aberto");
+    const ficha = await audit("cuidado: ficha do membro", CareMemberPage, { params: { id: CLAUDINHO.id! } });
+    expect(ficha.text).toContain("Liguei na terça");
+    await audit("cuidado: ficha com mensagem", CareMemberPage, { params: { id: CLAUDINHO.id! }, search: { ok: "Nota salva." } });
+    await audit("cuidado: ficha com erro", CareMemberPage, { params: { id: CLAUDINHO.id! }, search: { erro: "Algo deu errado." } });
+
+    await world.sql("update public.profiles set role = 'admin' where id = $1", [CLAUDIAO.id]);
+    await world.login(CLAUDIAO);
+    const admin = await audit("cuidado: painel do administrador", CareAdminPage);
+    expect(admin.text).toContain("Alertas de quem parou");
+    const person = await audit("cuidado: ficha do administrador com cuidador e notas", PersonPage, { params: { id: CLAUDINHO.id! } });
+    expect(person.text).toContain("Notas de cuidado");
+    expect(person.text).toContain("Liguei na terça");
+    await audit("cuidado: ficha do administrador (reflexões)", PersonPage, { params: { id: CLAUDINHO.id! }, search: { ok: "Cuidador atribuído." } });
+    expect(person.text).toContain("Uma reflexão.");
+
+    await world.sql("update public.app_settings set value = 'false'::jsonb where key in ('feature.caregivers', 'feature.reflections')");
   });
 });
 

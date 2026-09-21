@@ -48,6 +48,7 @@ describe("tabelas", () => {
        where grantee = 'authenticated' and table_schema = 'public' and privilege_type = 'DELETE' order by 1`,
     );
     expect(rows.map((r) => r.table_name)).toEqual([
+      "care_notes",
       "church_pages",
       "cycles",
       "lesson_internal_notes",

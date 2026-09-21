@@ -13,7 +13,7 @@ export const ROLE_LABEL: Record<UserRole, string> = {
 
 export const ROLE_HINT: Record<UserRole, string> = {
   member: "Faz a trilha e vê só os próprios dados.",
-  caregiver: "Reservado para acompanhar membros. Ainda não tem acesso extra: as ferramentas do cuidador chegam na próxima fase.",
+  caregiver: "Acompanha os membros atribuídos a ele: vê o progresso, os alertas e as reflexões deles e registra notas de cuidado (com o recurso Cuidadores ligado).",
   editor: "Cria e edita lições em rascunho e envia para revisão. Não publica e não vê dados pessoais.",
   admin: "Acesso total: publica, vê todas as pessoas e promove perfis.",
 };
@@ -84,6 +84,9 @@ export const CONSENT_LABEL: Record<string, string> = {
 export const AUDIT_LABEL: Record<string, string> = {
   role_changed: "Perfil alterado",
   initial_admin_assigned: "Primeiro administrador definido",
+  care_assigned: "Cuidador atribuído",
+  care_unassigned: "Cuidador removido",
+  care_alert_updated: "Alerta de cuidado atualizado",
 };
 
 /** "5511912345678" -> "+55 (11) 91234-5678". Devolve o texto original se não reconhecer o formato. */
