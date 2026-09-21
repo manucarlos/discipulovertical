@@ -123,7 +123,7 @@ function toPayload(f: FormState) {
 const snapshotOf = (f: FormState) => JSON.stringify({ ...toPayload(f), note: "" });
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-base text-foreground focus:border-brand disabled:bg-lilac";
+  "mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-base text-foreground focus:border-brand disabled:bg-tint";
 
 const dateTime = new Intl.DateTimeFormat("pt-BR", {
   timeZone: "America/Sao_Paulo",
@@ -145,7 +145,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 }
 
 const STATUS_STYLE: Record<LessonStatus, string> = {
-  draft: "bg-lilac text-foreground",
+  draft: "bg-tint text-foreground",
   in_review: "bg-amber-100 text-amber-900",
   published: "bg-emerald-100 text-emerald-900",
   archived: "bg-zinc-200 text-zinc-700",
@@ -308,7 +308,7 @@ export function LessonEditor({
         )}
 
         {readOnly && (
-          <p role="status" className="rounded-xl bg-lilac px-4 py-3 text-sm text-muted">
+          <p role="status" className="rounded-xl bg-tint px-4 py-3 text-sm text-muted">
             Esta lição está {STATUS_LABEL[lesson.status].toLowerCase()}. Só o administrador pode alterá-la.
           </p>
         )}
@@ -325,7 +325,7 @@ export function LessonEditor({
                 disabled={busy || dirty || Boolean(t.blockedReason)}
                 title={t.blockedReason ?? (dirty ? "Salve as alterações antes de mudar o status." : undefined)}
                 className={`rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-50 ${
-                  t.primary ? "bg-brand text-on-brand hover:bg-brand-strong" : "border border-line hover:bg-lilac"
+                  t.primary ? "bg-brand text-on-brand hover:bg-brand-strong" : "border border-line hover:bg-tint"
                 }`}
               >
                 {t.label}
@@ -531,7 +531,7 @@ export function LessonEditor({
                 })
               }
               disabled={form.quiz.length >= 10}
-              className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-lilac disabled:opacity-50"
+              className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-tint disabled:opacity-50"
             >
               + Adicionar pergunta
             </button>
@@ -572,7 +572,7 @@ export function LessonEditor({
                 <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line px-3 py-2 text-sm">
                   <span>
                     <span className="font-medium">{when}</span>
-                    {i === 0 && <span className="ml-2 rounded-full bg-lilac px-2 py-0.5 text-xs">atual</span>}
+                    {i === 0 && <span className="ml-2 rounded-full bg-tint px-2 py-0.5 text-xs">atual</span>}
                     <span className="block text-muted">
                       {v.authorName ?? "Equipe"}
                       {v.note ? ` · ${v.note}` : ""}
@@ -584,7 +584,7 @@ export function LessonEditor({
                       onClick={() => restore(v.id, when)}
                       disabled={busy || dirty}
                       title={dirty ? "Salve as alterações antes de restaurar." : undefined}
-                      className="rounded-lg border border-line px-3 py-1.5 hover:bg-lilac disabled:opacity-50"
+                      className="rounded-lg border border-line px-3 py-1.5 hover:bg-tint disabled:opacity-50"
                     >
                       Restaurar
                     </button>

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Lora } from "next/font/google";
+import type { CSSProperties } from "react";
 import { ServiceWorker } from "@/components/service-worker";
+import { BROWSER, READING_DARK_CSS, ROOT_STYLE } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,14 +25,19 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#8a1c2b",
+  themeColor: BROWSER.themeColor,
   width: "device-width",
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${lora.variable} h-full antialiased`}>
+    // As cores da marca (src/lib/brand.ts) entram aqui como variáveis CSS; o globals.css só dá nomes a elas.
+    <html lang="pt-BR" className={`${geistSans.variable} ${lora.variable} h-full antialiased`} style={ROOT_STYLE as CSSProperties}>
+      <head>
+        {/* Só texto fixo do brand.ts (nunca dado de usuário): a regra do modo escuro da leitura. */}
+        <style dangerouslySetInnerHTML={{ __html: READING_DARK_CSS }} />
+      </head>
       <body className="min-h-full flex flex-col">
         {children}
         <ServiceWorker />

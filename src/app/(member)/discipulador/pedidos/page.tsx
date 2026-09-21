@@ -48,7 +48,7 @@ export default async function GroupHelpPage(props: PageProps<"/discipulador/pedi
             <li key={r.id} className="rounded-2xl border border-line bg-card p-5">
               <p className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{r.requesterName}</span>
-                <span className="rounded-full bg-lilac px-2.5 py-1 text-xs font-medium">{HELP_STATUS_LABEL[r.status]}</span>
+                <span className="rounded-full bg-tint px-2.5 py-1 text-xs font-medium">{HELP_STATUS_LABEL[r.status]}</span>
                 {r.escalatedAt && <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800">Escalado à equipe pastoral</span>}
               </p>
               <p className="text-xs text-muted">{dateTime.format(new Date(r.createdAt))}{r.topic ? ` · ${r.topic}` : ""}</p>
@@ -79,7 +79,7 @@ export default async function GroupHelpPage(props: PageProps<"/discipulador/pedi
                     </div>
                   </form>
                   <form action={escalateGroupHelp.bind(null, r.id)}>
-                    <button type="submit" className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-lilac">
+                    <button type="submit" className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-tint">
                       Escalar à equipe pastoral
                     </button>
                   </form>

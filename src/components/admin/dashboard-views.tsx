@@ -13,7 +13,7 @@ import { STATUS_LABEL, type MemberStatus } from "@/lib/admin/people";
 function Bar({ value, max, emphasis = false, label }: { value: number; max: number; emphasis?: boolean; label: string }) {
   const width = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
   return (
-    <div role="img" aria-label={label} title={label} className="h-2 w-full overflow-hidden rounded-full bg-lilac">
+    <div role="img" aria-label={label} title={label} className="h-2 w-full overflow-hidden rounded-full bg-tint">
       <div
         className={`h-full rounded-full ${emphasis ? "bg-brand" : "bg-zinc-400"}`}
         style={{ width: `${width}%`, minWidth: value > 0 ? "0.5rem" : 0 }}
@@ -94,7 +94,7 @@ function CyclesTable({ data }: { data: Dashboard }) {
         <div className="overflow-x-auto rounded-2xl border border-line">
           <table className="w-full min-w-[30rem] border-collapse text-left text-sm">
             <caption className="sr-only">Membros que começaram e concluíram cada ciclo</caption>
-            <thead className="bg-lilac">
+            <thead className="bg-tint">
               <tr>
                 <th scope="col" className="px-3 py-2 font-medium">Ciclo</th>
                 <th scope="col" className="px-3 py-2 text-right font-medium">Começaram</th>
@@ -167,7 +167,7 @@ export function LessonFunnel({ lessons }: { lessons: LessonMetric[] }) {
           {cycles.map(([slug, position]) => (
             <div key={slug} className="overflow-x-auto rounded-2xl border border-line">
               <table className="w-full min-w-[32rem] border-collapse text-left text-sm">
-                <caption className="bg-lilac px-3 py-2 text-left font-medium">Ciclo {position}</caption>
+                <caption className="bg-tint px-3 py-2 text-left font-medium">Ciclo {position}</caption>
                 <thead>
                   <tr className="text-muted">
                     <th scope="col" className="px-3 py-2 font-normal">Lição</th>
@@ -235,7 +235,7 @@ export function DashboardView({ data, basePath = "/admin/painel", peopleHref = "
             key={d}
             href={`${basePath}?dias=${d}`}
             aria-current={d === data.periodDays ? "true" : undefined}
-            className={`inline-flex min-h-11 items-center rounded-full border px-4 ${d === data.periodDays ? "border-brand bg-brand text-on-brand" : "border-line hover:bg-lilac"}`}
+            className={`inline-flex min-h-11 items-center rounded-full border px-4 ${d === data.periodDays ? "border-brand bg-brand text-on-brand" : "border-line hover:bg-tint"}`}
           >
             {d} dias
           </Link>

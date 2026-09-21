@@ -12,7 +12,7 @@ function ProgressBar({ percent, label }: { percent: number; label: string }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={percent}
-      className="h-2.5 w-full overflow-hidden rounded-full bg-lilac"
+      className="h-2.5 w-full overflow-hidden rounded-full bg-tint"
     >
       <div className="h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
     </div>
@@ -152,7 +152,7 @@ function EngagementCard({ engagement }: { engagement: Engagement }) {
 const badge: Record<string, string> = {
   completed: "bg-emerald-50 text-emerald-800",
   in_progress: "bg-amber-50 text-amber-800",
-  available: "bg-lilac text-foreground",
+  available: "bg-tint text-foreground",
   locked: "bg-transparent text-muted",
 };
 
@@ -210,7 +210,7 @@ export function CycleDetail({
         </p>
       )}
       {banners.lockedNotice && (
-        <p role="status" className="mt-5 rounded-xl bg-lilac px-4 py-3 text-sm text-muted">
+        <p role="status" className="mt-5 rounded-xl bg-tint px-4 py-3 text-sm text-muted">
           Essa lição ainda não foi liberada. Veja abaixo quando ela abre.
         </p>
       )}
@@ -247,7 +247,7 @@ export function CycleDetail({
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={cycle.percent}
-          className="h-2.5 w-full overflow-hidden rounded-full bg-lilac"
+          className="h-2.5 w-full overflow-hidden rounded-full bg-tint"
         >
           <div className="h-full rounded-full bg-brand" style={{ width: `${cycle.percent}%` }} />
         </div>
@@ -265,7 +265,7 @@ export function CycleDetail({
               <span
                 aria-hidden="true"
                 className={`flex size-9 shrink-0 items-center justify-center rounded-full font-serif ${
-                  lesson.state.state === "completed" ? "bg-emerald-700 text-white" : "bg-lilac text-foreground"
+                  lesson.state.state === "completed" ? "bg-emerald-700 text-white" : "bg-tint text-foreground"
                 }`}
               >
                 {lesson.state.state === "completed" ? "✓" : lesson.position}

@@ -54,9 +54,9 @@ export default async function PastoralHelpPage(props: PageProps<"/admin/pedidos-
                 {r.destination === "pastoral" ? (
                   <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800">Prioridade: direto à equipe</span>
                 ) : (
-                  <span className="rounded-full bg-lilac px-2.5 py-1 text-xs font-medium">Escalado pelo discipulador</span>
+                  <span className="rounded-full bg-tint px-2.5 py-1 text-xs font-medium">Escalado pelo discipulador</span>
                 )}
-                <span className="rounded-full bg-lilac px-2.5 py-1 text-xs font-medium">{HELP_STATUS_LABEL[r.status]}</span>
+                <span className="rounded-full bg-tint px-2.5 py-1 text-xs font-medium">{HELP_STATUS_LABEL[r.status]}</span>
               </p>
               <p className="text-xs text-muted">
                 {dateTime.format(new Date(r.createdAt))}

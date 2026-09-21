@@ -59,7 +59,7 @@ export function EmailSignInForm() {
       <button
         type="submit"
         disabled={status === "sending"}
-        className="mt-3 w-full rounded-xl border border-line px-4 py-3 font-medium hover:bg-lilac disabled:opacity-60"
+        className="mt-3 w-full rounded-xl border border-line px-4 py-3 font-medium hover:bg-tint disabled:opacity-60"
       >
         {status === "sending" ? "Enviando…" : "Enviar link de acesso"}
       </button>

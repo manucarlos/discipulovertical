@@ -54,7 +54,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
               )}
             </>
           ) : (
-            <p className="rounded-lg bg-lilac px-3 py-2 text-sm text-muted">
+            <p className="rounded-lg bg-tint px-3 py-2 text-sm text-muted">
               O login ainda não foi configurado. Siga o passo a passo em <code>docs/CONTAS.md</code>.
             </p>
           )}

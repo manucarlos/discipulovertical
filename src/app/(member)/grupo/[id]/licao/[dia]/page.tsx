@@ -97,7 +97,7 @@ export default async function GroupLessonPage(props: PageProps<"/grupo/[id]/lica
                 <button
                   type="submit"
                   aria-pressed={mine.challengeDone}
-                  className={`inline-flex min-h-11 items-center rounded-xl border px-4 py-2 font-medium ${mine.challengeDone ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-line hover:bg-lilac"}`}
+                  className={`inline-flex min-h-11 items-center rounded-xl border px-4 py-2 font-medium ${mine.challengeDone ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-line hover:bg-tint"}`}
                 >
                   {mine.challengeDone ? "✓ Desafio feito (toque para desmarcar)" : "Marcar o desafio como feito"}
                 </button>

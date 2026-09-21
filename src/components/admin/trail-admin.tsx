@@ -105,7 +105,7 @@ export function AdminTrailView({
                 const down = cycle.lessons[i + 1];
                 return (
                   <li key={lesson.id} className="flex items-center gap-3 rounded-2xl border border-line bg-card p-3">
-                    <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-lilac font-serif text-sm">
+                    <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tint font-serif text-sm">
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -118,7 +118,7 @@ export function AdminTrailView({
                           <span className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-900">Pendências [PREENCHER]</span>
                         )}
                         {lesson.sensitive && <span className="rounded-full bg-red-50 px-2 py-0.5 text-red-800">Sensível</span>}
-                        {!lesson.required && <span className="rounded-full bg-lilac px-2 py-0.5 text-muted">Opcional</span>}
+                        {!lesson.required && <span className="rounded-full bg-tint px-2 py-0.5 text-muted">Opcional</span>}
                         {lesson.estimated_minutes !== null && <span className="text-muted">{lesson.estimated_minutes} min</span>}
                       </div>
                     </div>
@@ -128,7 +128,7 @@ export function AdminTrailView({
                           type="submit"
                           aria-label={`Subir “${lesson.title}”`}
                           disabled={!canMove(role, lesson, up)}
-                          className="size-9 rounded-lg border border-line hover:bg-lilac disabled:opacity-30"
+                          className="size-9 rounded-lg border border-line hover:bg-tint disabled:opacity-30"
                         >
                           ↑
                         </button>
@@ -138,7 +138,7 @@ export function AdminTrailView({
                           type="submit"
                           aria-label={`Descer “${lesson.title}”`}
                           disabled={!canMove(role, lesson, down)}
-                          className="size-9 rounded-lg border border-line hover:bg-lilac disabled:opacity-30"
+                          className="size-9 rounded-lg border border-line hover:bg-tint disabled:opacity-30"
                         >
                           ↓
                         </button>
@@ -155,14 +155,14 @@ export function AdminTrailView({
                 Nova lição neste ciclo
                 <input name="title" placeholder="Título da lição" required maxLength={200} className={inputClass} />
               </label>
-              <button type="submit" className="rounded-xl border border-line px-4 py-2.5 text-sm font-medium hover:bg-lilac">
+              <button type="submit" className="rounded-xl border border-line px-4 py-2.5 text-sm font-medium hover:bg-tint">
                 + Criar rascunho
               </button>
             </form>
           </section>
         ))}
         {cycles.length === 0 && (
-          <p className="rounded-xl bg-lilac px-4 py-3 text-muted">
+          <p className="rounded-xl bg-tint px-4 py-3 text-muted">
             Ainda não há ciclos. Importe o conteúdo do handoff (veja o guia de contas, Fase 7a).
           </p>
         )}

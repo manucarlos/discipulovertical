@@ -34,7 +34,7 @@ const dateTime = new Intl.DateTimeFormat("pt-BR", {
 
 const STATUS_STYLE: Record<MemberStatus, string> = {
   onboarding_pending: "bg-zinc-200 text-zinc-700",
-  not_started: "bg-lilac text-foreground",
+  not_started: "bg-tint text-foreground",
   in_progress: "bg-amber-100 text-amber-900",
   stalled: "bg-red-100 text-red-800",
   completed: "bg-emerald-100 text-emerald-900",
@@ -168,14 +168,14 @@ export function PeopleListView({
       {pages > 1 && (
         <nav aria-label="Páginas" className="mt-6 flex items-center justify-between">
           {filters.page > 1 ? (
-            <Link href={`${basePath}${peopleQueryString(filters, filters.page - 1)}`} className="rounded-xl border border-line px-4 py-2 text-sm hover:bg-lilac">
+            <Link href={`${basePath}${peopleQueryString(filters, filters.page - 1)}`} className="rounded-xl border border-line px-4 py-2 text-sm hover:bg-tint">
               ← Anterior
             </Link>
           ) : (
             <span />
           )}
           {filters.page < pages ? (
-            <Link href={`${basePath}${peopleQueryString(filters, filters.page + 1)}`} className="rounded-xl border border-line px-4 py-2 text-sm hover:bg-lilac">
+            <Link href={`${basePath}${peopleQueryString(filters, filters.page + 1)}`} className="rounded-xl border border-line px-4 py-2 text-sm hover:bg-tint">
               Próxima →
             </Link>
           ) : (
@@ -200,7 +200,7 @@ const LESSON_STATE_LABEL = { completed: "Concluída", in_progress: "Em andamento
 const LESSON_STATE_STYLE = {
   completed: "bg-emerald-100 text-emerald-900",
   in_progress: "bg-amber-100 text-amber-900",
-  available: "bg-lilac text-foreground",
+  available: "bg-tint text-foreground",
   locked: "bg-transparent text-muted",
 } as const;
 
@@ -231,7 +231,7 @@ export function ProgressSection({ trail, now }: { trail: TrailView; now: Date })
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={cycle.percent}
-                className="mt-1.5 h-2 overflow-hidden rounded-full bg-lilac"
+                className="mt-1.5 h-2 overflow-hidden rounded-full bg-tint"
               >
                 <div className="h-full rounded-full bg-brand" style={{ width: `${cycle.percent}%` }} />
               </div>

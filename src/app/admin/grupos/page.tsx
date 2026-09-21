@@ -11,7 +11,7 @@ export const metadata = { title: "Grupos · Conteúdo" };
 
 const inputClass = "mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-base text-foreground focus:border-brand";
 const primary = "rounded-xl bg-brand px-5 py-2.5 font-medium text-on-brand hover:bg-brand-strong";
-const secondary = "inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-lilac";
+const secondary = "inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-tint";
 const TRACK_STATUS: Record<string, string> = { draft: "Rascunho", published: "Publicada", archived: "Arquivada" };
 const LESSON_STATUS: Record<string, string> = { draft: "Rascunho", in_review: "Em revisão", published: "Publicada", archived: "Arquivada" };
 
@@ -168,7 +168,7 @@ export default async function AdminGroupsPage(props: PageProps<"/admin/grupos">)
             {tracks.map((t) => (
               <li key={t.id} className="rounded-2xl border border-line bg-card p-4">
                 <p className="font-medium">
-                  {t.title} <span className="ml-1 rounded-full bg-lilac px-2 py-0.5 text-xs font-normal">{TRACK_STATUS[t.status]}</span>
+                  {t.title} <span className="ml-1 rounded-full bg-tint px-2 py-0.5 text-xs font-normal">{TRACK_STATUS[t.status]}</span>
                 </p>
                 <p className="text-sm text-muted">
                   {dayCount.get(t.id) ?? 0} dias{t.description ? ` · ${t.description}` : ""}
@@ -232,7 +232,7 @@ export default async function AdminGroupsPage(props: PageProps<"/admin/grupos">)
           <div className="mt-3 overflow-x-auto rounded-xl border border-line">
             <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
               <caption className="sr-only">Lições da biblioteca</caption>
-              <thead className="bg-lilac">
+              <thead className="bg-tint">
                 <tr>
                   <th scope="col" className="px-3 py-2 font-medium">Identificador</th>
                   <th scope="col" className="px-3 py-2 font-medium">Lição</th>

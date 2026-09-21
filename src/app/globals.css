@@ -1,29 +1,18 @@
 @import "tailwindcss";
 
 /*
- * Identidade visual PROVISÓRIA, inferida dos cartazes da igreja (handoff 0.2):
- * vermelho profundo, preto e cinza-lilás claro, títulos em serifa.
- * Trocar quando o pastor enviar o logotipo e as cores oficiais.
+ * AS CORES NÃO FICAM AQUI. A paleta da marca é definida em src/lib/brand.ts e chega às telas como variáveis
+ * CSS (--background, --foreground, --brand, --brand-strong, --on-brand, --tint, --muted, --card, --line),
+ * gravadas pelo layout (src/app/layout.tsx). Para trocar as cores, edite só o brand.ts (guia: docs/MARCA.md).
+ * Aqui o Tailwind só aprende os nomes: bg-brand, text-muted, bg-tint, border-line etc.
  */
-:root {
-  --background: #faf9fb;
-  --foreground: #1d181b;
-  --brand: #8a1c2b;
-  --brand-strong: #6e1421;
-  --on-brand: #ffffff; /* texto sobre a cor da igreja */
-  --lilac: #e9e5ee;
-  --muted: #5f5860;
-  --card: #ffffff;
-  --line: #ddd7e0;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-brand: var(--brand);
   --color-brand-strong: var(--brand-strong);
   --color-on-brand: var(--on-brand);
-  --color-lilac: var(--lilac);
+  --color-tint: var(--tint);
   --color-muted: var(--muted);
   --color-card: var(--card);
   --color-line: var(--line);
@@ -42,18 +31,7 @@ body {
   outline-offset: 2px;
 }
 
-/* Modo escuro da leitura (RF-08): redefine as cores só dentro da área de leitura. */
-.reading-dark {
-  --background: #17131a;
-  --foreground: #ece7ee;
-  --card: #211b27;
-  --lilac: #2b2432;
-  --muted: #b9b0bf;
-  --line: #3c3444;
-  --brand: #e58a98;
-  --brand-strong: #f0a3ae;
-  --on-brand: #17131a;
-}
+/* Modo escuro da leitura (RF-08): a regra .reading-dark também vem do brand.ts (READING_DARK_CSS), gravada pelo layout. */
 
 /* Editor de texto das lições (TipTap): o reset do Tailwind remove estilos de listas, tabelas etc. */
 .lesson-prose {
@@ -112,7 +90,7 @@ body {
   text-align: left;
 }
 .lesson-prose th {
-  background: var(--lilac);
+  background: var(--tint);
   font-weight: 600;
 }
 .lesson-prose td > p,

@@ -110,7 +110,7 @@ export default async function RemindersPage(props: PageProps<"/admin/lembretes">
                     type="submit"
                     formAction={sendTestEmail.bind(null, t.kind)}
                     formNoValidate
-                    className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-lilac"
+                    className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-tint"
                   >
                     Enviar teste para mim
                   </button>
@@ -131,7 +131,7 @@ export default async function RemindersPage(props: PageProps<"/admin/lembretes">
           <div className="mt-3 overflow-x-auto rounded-xl border border-line">
             <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
               <caption className="sr-only">Últimos e-mails enviados</caption>
-              <thead className="bg-lilac">
+              <thead className="bg-tint">
                 <tr>
                   <th scope="col" className="px-3 py-2 font-medium">Quando</th>
                   <th scope="col" className="px-3 py-2 font-medium">Para</th>

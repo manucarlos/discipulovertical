@@ -57,7 +57,7 @@ export function OnboardingForm({ defaultName, versions, defaultVersion }: Props)
         </span>
       </label>
 
-      <fieldset className="space-y-3 rounded-xl bg-lilac p-4">
+      <fieldset className="space-y-3 rounded-xl bg-tint p-4">
         <legend className="sr-only">Consentimentos</legend>
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" name="consentData" required className="mt-1 size-4 accent-brand" />

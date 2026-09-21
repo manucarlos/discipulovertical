@@ -24,7 +24,7 @@ export function PracticeSection({ practiceDone, reflection, question = null, pra
           type="submit"
           aria-pressed={practiceDone}
           className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 py-2 font-medium ${
-            practiceDone ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-line hover:bg-lilac"
+            practiceDone ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-line hover:bg-tint"
           }`}
         >
           {practiceDone ? "✓ Prática feita (toque para desmarcar)" : "Marcar prática como feita"}

@@ -17,7 +17,7 @@ const STATE_STYLE: Record<DayState, string> = {
   done: "bg-emerald-50 text-emerald-800",
   today: "bg-brand text-on-brand",
   late: "bg-amber-50 text-amber-900",
-  available: "bg-lilac text-foreground",
+  available: "bg-tint text-foreground",
   not_released: "bg-transparent text-muted",
 };
 
@@ -69,7 +69,7 @@ export default async function GroupHomePage(props: PageProps<"/grupo/[id]">) {
         {released < ctx.days.length ? `A lição do dia libera às ${ctx.group.releaseHour}h.` : "Vocês chegaram ao fim da trilha!"}
       </p>
       {ctx.pauses.length > 0 && (
-        <p className="mt-2 rounded-xl bg-lilac px-4 py-3 text-sm">
+        <p className="mt-2 rounded-xl bg-tint px-4 py-3 text-sm">
           Pausas do grupo:{" "}
           {ctx.pauses.map((p) => `${shortFmt.format(new Date(`${p.from}T00:00:00Z`))} a ${shortFmt.format(new Date(`${p.until}T00:00:00Z`))}`).join("; ")}. Nesses dias não sai lição.
         </p>

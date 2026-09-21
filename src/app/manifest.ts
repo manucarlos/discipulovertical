@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { BROWSER } from "@/lib/brand";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -8,9 +9,9 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     lang: "pt-BR",
-    // Branco: é o fundo dos ícones (o logotipo é preto e laranja), então a tela de abertura do app combina com eles.
-    background_color: "#ffffff",
-    theme_color: "#8a1c2b",
+    // Cores em src/lib/brand.ts: a abertura do app combina com os ícones (fundo branco) e a barra usa a cor da igreja.
+    background_color: BROWSER.splashBackground,
+    theme_color: BROWSER.themeColor,
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },

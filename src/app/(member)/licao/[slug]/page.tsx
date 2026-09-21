@@ -32,7 +32,7 @@ async function archivedLesson(slug: string) {
   );
   return (
     <ReadingShell initialPosition={null} completed>
-      <p role="status" className="mb-6 rounded-xl bg-lilac px-4 py-3 text-sm text-muted">
+      <p role="status" className="mb-6 rounded-xl bg-tint px-4 py-3 text-sm text-muted">
         Esta lição saiu da trilha (foi arquivada), mas você a concluiu e pode reler quando quiser.
       </p>
       <LessonView
@@ -109,7 +109,7 @@ export default async function LessonPage(props: PageProps<"/licao/[slug]">) {
       </Link>
     </div>
   ) : !quizPassed ? (
-    <p role={first(search.quiz) === "1" ? "alert" : undefined} className="rounded-xl bg-lilac px-4 py-3 text-center text-sm">
+    <p role={first(search.quiz) === "1" ? "alert" : undefined} className="rounded-xl bg-tint px-4 py-3 text-center text-sm">
       Responda ao quiz acima e acerte pelo menos {passingScore(questions.length)} de {questions.length} para concluir a lição.
     </p>
   ) : (

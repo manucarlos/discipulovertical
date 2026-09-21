@@ -9,7 +9,7 @@ export const metadata = { title: "Encerramentos · Conteúdo" };
 
 const inputClass = "mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-base text-foreground focus:border-brand";
 const primary = "rounded-xl bg-brand px-5 py-2.5 font-medium text-on-brand hover:bg-brand-strong";
-const secondary = "inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-lilac";
+const secondary = "inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-tint";
 
 /** Encerramentos presenciais (RF-18) e emissão de certificados (RF-19, RN-06). */
 export default async function ClosuresPage(props: PageProps<"/admin/encerramentos">) {

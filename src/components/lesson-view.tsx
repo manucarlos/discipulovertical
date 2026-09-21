@@ -42,14 +42,14 @@ export function LessonView({
       <header>
         <ul className="flex flex-wrap gap-2 text-xs">
           {tags.map((t) => (
-            <li key={t} className="rounded-full bg-lilac px-2.5 py-1 font-medium text-muted">
+            <li key={t} className="rounded-full bg-tint px-2.5 py-1 font-medium text-muted">
               {t}
             </li>
           ))}
         </ul>
         <h1 className="mt-4 font-serif text-3xl leading-tight sm:text-4xl">{title}</h1>
         {estimatedMinutes !== null && <p className="mt-2 text-sm text-muted">Cerca de {estimatedMinutes} minutos</p>}
-        <p className="mt-5 rounded-xl border-l-4 border-brand bg-lilac px-4 py-3">
+        <p className="mt-5 rounded-xl border-l-4 border-brand bg-tint px-4 py-3">
           <span className="font-medium">Objetivo: </span>
           {objective}
         </p>
@@ -166,7 +166,7 @@ function Block({ block, rich }: { block: LessonBlock; rich: (text: string) => Re
       return (
         <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full min-w-[32rem] border-collapse text-left text-[0.95em]">
-            <thead className="bg-lilac">
+            <thead className="bg-tint">
               <tr>
                 {block.header.map((h, i) => (
                   <th key={i} scope="col" className="border-b border-line px-3 py-2 font-medium">

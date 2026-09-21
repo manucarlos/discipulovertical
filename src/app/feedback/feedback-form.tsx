@@ -96,7 +96,7 @@ export function FeedbackForm() {
         <textarea name="suggestion" rows={3} maxLength={FEEDBACK_LIMITS.text} className={fieldClass} />
       </label>
 
-      <fieldset className="space-y-3 rounded-xl bg-lilac p-4">
+      <fieldset className="space-y-3 rounded-xl bg-tint p-4">
         <legend className="px-1 text-sm font-medium">Quer que a gente fale com você? (opcional)</legend>
         <label className="block text-sm font-medium">
           Seu nome

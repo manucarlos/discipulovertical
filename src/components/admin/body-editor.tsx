@@ -37,7 +37,7 @@ function ToolButton({
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={`h-9 min-w-9 rounded-lg px-2 text-sm font-medium transition disabled:opacity-40 ${
-        active ? "bg-brand text-on-brand" : "text-foreground hover:bg-lilac"
+        active ? "bg-brand text-on-brand" : "text-foreground hover:bg-tint"
       }`}
     >
       {children}
@@ -165,7 +165,7 @@ export function BodyEditor({ initialDoc, onChange, readOnly = false }: Props) {
       )}
 
       {!readOnly && state.inTable && (
-        <div role="toolbar" aria-label="Edição da tabela" className="flex flex-wrap items-center gap-1 border-b border-line bg-lilac px-2 py-1.5 text-sm">
+        <div role="toolbar" aria-label="Edição da tabela" className="flex flex-wrap items-center gap-1 border-b border-line bg-tint px-2 py-1.5 text-sm">
           <span className="mr-1 text-muted">Tabela:</span>
           <ToolButton label="Adicionar linha abaixo" onClick={() => run().addRowAfter().run()}>
             + Linha

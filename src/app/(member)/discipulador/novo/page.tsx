@@ -33,7 +33,7 @@ export default async function NewGroupPage(props: PageProps<"/discipulador/novo"
       )}
 
       {tracks.length === 0 ? (
-        <p className="mt-4 rounded-xl bg-lilac px-4 py-3 text-sm">Ainda não há trilhas oficiais publicadas. Peça ao administrador que publique uma.</p>
+        <p className="mt-4 rounded-xl bg-tint px-4 py-3 text-sm">Ainda não há trilhas oficiais publicadas. Peça ao administrador que publique uma.</p>
       ) : (
         <form action={createGroup} className="mt-5 space-y-4">
           <label className="block text-sm font-medium">

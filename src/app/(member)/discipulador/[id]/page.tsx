@@ -125,7 +125,7 @@ export default async function GroupPanelPage(props: PageProps<"/discipulador/[id
           <div className="mt-3 overflow-x-auto rounded-xl border border-line">
             <table className="w-full min-w-[28rem] border-collapse text-left text-sm">
               <caption className="sr-only">Lições lidas por discípulo e por dia</caption>
-              <thead className="bg-lilac">
+              <thead className="bg-tint">
                 <tr>
                   <th scope="col" className="px-3 py-2 font-medium">
                     Discípulo
@@ -212,7 +212,7 @@ export default async function GroupPanelPage(props: PageProps<"/discipulador/[id
           Quem perde um dia lê depois, sem bloqueio.
         </p>
         <form action={setGroupStatus.bind(null, id, group.status === "active" ? "completed" : "active")} className="mt-3">
-          <button type="submit" className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-lilac">
+          <button type="submit" className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-tint">
             {group.status === "active" ? "Encerrar o grupo" : "Reabrir o grupo"}
           </button>
         </form>

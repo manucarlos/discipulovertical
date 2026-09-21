@@ -175,7 +175,7 @@ export function ReadingShell({ initialPosition, completed, openAction, saveActio
               aria-label={s.aria}
               aria-pressed={font === s.id}
               className={`${s.cls} size-11 rounded-lg font-serif font-medium ${
-                font === s.id ? "bg-brand text-on-brand" : "text-muted hover:bg-lilac"
+                font === s.id ? "bg-brand text-on-brand" : "text-muted hover:bg-tint"
               }`}
             >
               {s.label}
@@ -185,14 +185,14 @@ export function ReadingShell({ initialPosition, completed, openAction, saveActio
             type="button"
             onClick={toggleTheme}
             aria-pressed={theme === "dark"}
-            className="ml-2 h-11 rounded-lg px-3 text-sm text-muted hover:bg-lilac"
+            className="ml-2 h-11 rounded-lg px-3 text-sm text-muted hover:bg-tint"
           >
             {theme === "dark" ? "Modo claro" : "Modo escuro"}
           </button>
         </div>
 
         {resumed && (
-          <p role="status" className="mb-4 rounded-lg bg-lilac px-3 py-2 text-sm text-muted">
+          <p role="status" className="mb-4 rounded-lg bg-tint px-3 py-2 text-sm text-muted">
             Voltamos ao ponto em que você parou.
           </p>
         )}

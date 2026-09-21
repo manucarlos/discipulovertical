@@ -45,7 +45,7 @@ export function LegalPage({ doc, other }: { doc: LegalDocument; other: { href: s
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10">
       <h1 className="font-serif text-3xl">{doc.title}</h1>
       {isDraft && (
-        <p role="note" className="mt-4 rounded-xl bg-lilac p-4 text-sm text-muted">
+        <p role="note" className="mt-4 rounded-xl bg-tint p-4 text-sm text-muted">
           Este texto é uma <strong>minuta</strong> e passará por revisão jurídica antes do lançamento. Trechos marcados em destaque dependem de informações da igreja.
         </p>
       )}

@@ -35,7 +35,7 @@ const ALERT_STYLE: Record<AlertStatus, string> = {
 
 const inputClass = "mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-base text-foreground focus:border-brand";
 const primaryButton = "rounded-xl bg-brand px-5 py-2.5 font-medium text-on-brand hover:bg-brand-strong";
-const secondaryButton = "inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-lilac";
+const secondaryButton = "inline-flex min-h-11 items-center rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-tint";
 
 export function AlertBadge({ status }: { status: AlertStatus }) {
   return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ALERT_STYLE[status]}`}>Alerta: {ALERT_LABEL[status]}</span>;

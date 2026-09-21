@@ -68,7 +68,7 @@ Depois de o MVP passar nos passos acima. Cada recurso nasce desligado (**Adminis
 - [ ] **Segundo administrador** de confiança com acesso de emergência a todas as contas.
 - [ ] Mapa completo do que falta e de quem faz: [PENDENCIAS.md](PENDENCIAS.md).
 - [x] **Logotipo** no site, nos ícones do app e no certificado.
-- [ ] **Cores oficiais** definidas (o site usa vinho nos botões; o logotipo é laranja e preto).
+- [x] **Cores** do site iguais às do logotipo (laranja e preto). Para trocar: [MARCA.md](MARCA.md).
 - [ ] **Textos da igreja** enviados para resolver os `[PREENCHER]` do Ciclo 3 (história, valores, declaração de fé, liderança, ministérios, membresia) e para **Nossa Igreja** (pelo painel).
 - [ ] **Números de emergência** das lições (CVV 188, SAMU 192, Ligue 180, polícia 190) conferidos antes de publicar as lições sensíveis. **Revisão pastoral das 28 lições da biblioteca** (e de um profissional nas sensíveis: 9, 10, 12, 13, 14, 16, 17 e 28), preenchendo os `[PREENCHER]`.
 - [ ] Decisões pendentes de [DECISIONS.md](DECISIONS.md) respondidas (edição de lição publicada, tamanho das lições, lições sensíveis, botão do batismo).

@@ -9,6 +9,7 @@
  * alfabetos) aparecem como "?". Cobre o português e nomes latinos com acento.
  */
 
+import { PALETTE, pdfColor } from "@/lib/brand";
 import { LOGO_JPEG_BASE64, LOGO_JPEG_HEIGHT, LOGO_JPEG_WIDTH } from "./logo-data";
 
 const PAGE_W = 842;
@@ -91,11 +92,11 @@ const LOGO_W = (LOGO_H * LOGO_JPEG_WIDTH) / LOGO_JPEG_HEIGHT;
 export function buildCertificatePdf(data: CertificateData): Uint8Array {
   const lines: string[] = [
     // Moldura dupla.
-    "2 w 0.55 0.11 0.17 RG 30 30 782 535 re S",
+    `2 w ${pdfColor(PALETTE.brand)} RG 30 30 782 535 re S`,
     "0.5 w 42 42 758 511 re S",
     // O logotipo já traz o nome da igreja, então o nome não é repetido em texto.
     `q ${LOGO_W.toFixed(2)} 0 0 ${LOGO_H} ${((PAGE_W - LOGO_W) / 2).toFixed(2)} 480 cm /Im1 Do Q`,
-    "0.12 0.10 0.14 rg",
+    `${pdfColor(PALETTE.foreground)} rg`,
     centered("CERTIFICADO", 430, 42),
     centered("Certificamos que", 398, 16),
     centered(data.holderName, 355, 32),

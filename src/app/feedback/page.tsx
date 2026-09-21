@@ -37,7 +37,7 @@ export default async function FeedbackPage() {
           <FeedbackForm />
         </>
       ) : (
-        <p role="status" className="mt-4 rounded-xl bg-lilac px-4 py-3">
+        <p role="status" className="mt-4 rounded-xl bg-tint px-4 py-3">
           O formulário de feedback não está aberto no momento. Obrigado pelo interesse!
         </p>
       )}

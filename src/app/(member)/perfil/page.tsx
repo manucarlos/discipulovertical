@@ -75,7 +75,7 @@ export default async function ProfilePage() {
         <a
           href="/perfil/exportar"
           download
-          className="mt-3 inline-block rounded-xl border border-line px-5 py-3 text-sm font-medium hover:bg-lilac"
+          className="mt-3 inline-block rounded-xl border border-line px-5 py-3 text-sm font-medium hover:bg-tint"
         >
           Baixar meus dados
         </a>
