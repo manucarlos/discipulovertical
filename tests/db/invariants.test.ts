@@ -52,10 +52,13 @@ describe("tabelas", () => {
       "church_pages",
       "closure_events",
       "cycles",
+      "group_reflections",
       "lesson_internal_notes",
       "lessons",
       "quiz_questions",
       "reflections",
+      "track_days",
+      "tracks",
     ]);
   });
 
