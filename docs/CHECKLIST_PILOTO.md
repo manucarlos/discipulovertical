@@ -7,7 +7,7 @@ O código do MVP está pronto e testado, mas **nunca rodou contra um Supabase re
 ## Fase A: contas e banco (guia em [CONTAS.md](CONTAS.md))
 
 - [ ] Contas criadas: GitHub, Supabase (produção e homologação), Google Cloud, Vercel. Verificação em duas etapas ligada em todas.
-- [ ] As **22 migrações** aplicadas, em ordem, em cada projeto Supabase (CONTAS.md, passo 2). Nenhuma deu erro.
+- [ ] As **22 migrações** aplicadas, em ordem, em cada projeto Supabase (CONTAS.md, Fase 3, com o arquivo `banco-completo.sql`). Nenhuma deu erro.
 - [ ] Primeiro administrador definido **antes** do primeiro login (`app_config`).
 - [ ] Login com Google ligado ao Supabase e o app do Google **publicado** ("Em produção").
 - [ ] `.env.local` preenchido; `npm run dev` abre em <http://localhost:3000>.
@@ -52,7 +52,7 @@ Depois de o MVP passar nos passos acima. Cada recurso nasce desligado (**Adminis
 | **Prática e reflexão** | Como membro, marque a prática e escreva uma reflexão; em **Pessoas > ficha** o Admin a lê (e aparece `reflections_viewed` no log) |
 | **Vídeo** | Cole um link do YouTube no editor; como membro, o vídeo aparece com a transcrição; confira que **não** aparece cookie do YouTube antes de dar play |
 | **Cuidadores** | Dê o perfil a uma conta de teste, distribua, e veja os alertas com uma conta parada (ajuste as datas no SQL Editor) |
-| **Lembretes** | Configure ([CONTAS.md](CONTAS.md), passo 8), **Enviar teste para mim**, e chame `/api/cron/lembretes` com o `CRON_SECRET` (`curl -H "Authorization: Bearer ..."`). Confira o e-mail no celular e o link de **desligar** |
+| **Lembretes** | Configure ([CONTAS.md](CONTAS.md), Fase 9), **Enviar teste para mim**, e chame `/api/cron/lembretes` com o `CRON_SECRET` (`curl -H "Authorization: Bearer ..."`). Confira o e-mail no celular e o link de **desligar** |
 | **Encerramentos e certificados** | Crie um encontro, marque presença de quem concluiu o ciclo, emita, baixe o PDF no celular e confira o código em `/verificar` numa janela anônima |
 | **Planilhas** | Baixe as duas, abra no Excel (acentos, colunas) e confira o registro em `audit_log` |
 | **Sequência e marcos** | Como membro, veja "Sua jornada" em Minha trilha |

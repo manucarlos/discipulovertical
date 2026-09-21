@@ -57,7 +57,7 @@ Os testes incluem as **regras de acesso do banco** (quem pode ler e escrever o q
 
 ## 6. Primeiro administrador e promoções
 
-- O primeiro Admin é definido pelo e-mail em `app_config` antes do primeiro login (CONTAS.md, Passo 2.5).
+- O primeiro Admin é definido pelo e-mail em `app_config` antes do primeiro login (CONTAS.md, Fase 3).
 - Depois disso, só um Admin promove outro (tela de usuários, a construir). Toda promoção fica no log de auditoria.
 - Se ninguém for Admin (por exemplo, entrou antes de configurar), rode no SQL Editor:
 
@@ -125,11 +125,11 @@ _Se precisar, por SQL (SQL Editor do Supabase; não grava no log de auditoria):_
 
 ## 6g. Lembretes por e-mail
 
-- Configure uma vez ([CONTAS.md](CONTAS.md), passo 8). Depois, **Administração > Lembretes** mostra a **Situação** (o que falta), os **textos** (edite com tom de cuidado; as palavras entre chaves, como `{{nome}}`, são trocadas sozinhas) e os **últimos envios** com erro, se houver. **Enviar teste para mim** confere o serviço.
+- Configure uma vez ([CONTAS.md](CONTAS.md), Fase 9). Depois, **Administração > Lembretes** mostra a **Situação** (o que falta), os **textos** (edite com tom de cuidado; as palavras entre chaves, como `{{nome}}`, são trocadas sozinhas) e os **últimos envios** com erro, se houver. **Enviar teste para mim** confere o serviço.
 - Regras que o sistema aplica sozinho: só para quem aceitou; das 8h às 20h de Brasília; no máximo 2 lembretes por semana por pessoa; uma mensagem por ocorrência; quem voltou a ler não recebe convite.
 - **Se um e-mail falhar,** o motivo aparece na lista (por exemplo, "Resend respondeu 422": domínio não verificado). Falhas recentes são tentadas de novo por 2 dias.
 - **Se alguém pedir para parar:** cada e-mail tem o link para desligar; a pessoa também desliga em **Meu perfil**. Nunca reative por conta própria.
-- **Trocar o segredo do agendador:** invente outro, atualize `CRON_SECRET` na Vercel e rode de novo o `insert` do passo 8 com `update` no lugar (o valor guardado é só o resumo do segredo).
+- **Trocar o segredo do agendador:** invente outro, atualize `CRON_SECRET` na Vercel e rode de novo o `insert` da Fase 9b com `update` no lugar (o valor guardado é só o resumo do segredo).
 
 ## 6h. Encerramentos e certificados
 
@@ -140,7 +140,7 @@ _Se precisar, por SQL (SQL Editor do Supabase; não grava no log de auditoria):_
 
 ## 6i. Grupo de Discipulado
 
-- **Antes de abrir:** importe a biblioteca ([CONTAS.md](CONTAS.md), passo 2c), revise e publique as lições e as trilhas (**Administração > Grupos**), marque os **discipuladores** e ligue a chave.
+- **Antes de abrir:** importe a biblioteca ([CONTAS.md](CONTAS.md), Fase 7b), revise e publique as lições e as trilhas (**Administração > Grupos**), marque os **discipuladores** e ligue a chave.
 - **O discipulador** cria o grupo (**Discipulado > Criar grupo**), compartilha o **código do convite** e acompanha o **painel**: quem leu, quem está em atraso, quem merece um contato. Pode **pausar** o grupo (os dias da pausa não têm lição) e usa o **guia do encontro** para registrar presença e notas (só ele e o Admin leem).
 - **O discípulo** entra pelo código, lê o que o discipulador vai ver e aceita. Sair do grupo tira o acesso do discipulador aos dados dele.
 - **Pedidos de ajuda:** o discipulador atende e pode **escalar** com um botão; o discípulo também pode enviar **direto à equipe pastoral** (o discipulador não vê). Você atende em **Administração > Pedidos de ajuda** (os diretos aparecem primeiro). **Trate com sigilo**; cada atendimento fica no log, sem o texto.

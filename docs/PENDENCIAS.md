@@ -13,13 +13,13 @@ Este é o mapa único do que sobra. Em uma frase: **todo o código do plano (MVP
 | Prática e reflexão | lição | Prática e reflexão | Avisar as pessoas de que cuidador e liderança leem a reflexão |
 | Vídeo (YouTube/Vimeo) | editor + lição | Vídeo nas lições | Ter os vídeos e a transcrição |
 | Cuidadores e alertas | Cuidado, Meus membros | Cuidadores e alertas | Dar o perfil de Cuidador a alguém; rodar o rodízio |
-| Lembretes por e-mail | Lembretes | Lembretes por e-mail | Contas do Resend e do agendador ([CONTAS.md](CONTAS.md), passo 8) |
+| Lembretes por e-mail | Lembretes | Lembretes por e-mail | Contas do Resend e do agendador ([CONTAS.md](CONTAS.md), Fase 9) |
 | Encerramentos e presença | Encerramentos | Encerramentos presenciais | Marcar o encontro de cada ciclo |
 | Certificados em PDF + verificação pública | Encerramentos, Certificados, /verificar | Certificados | Conferir o desenho do PDF; logotipo (opcional) |
 | Planilhas CSV | Pessoas | sempre ligado (só Admin) | Nada |
 | Sequência de dias e marcos | Minha trilha | Sequência de dias e marcos | Nada |
 | Entrar com e-mail | Login | Entrar com e-mail | Ativar o provedor de e-mail no Supabase |
-| **Grupo de Discipulado** (grupos, calendário, painel, guia, presença, pedidos de ajuda) | Meu grupo, Discipulado, Admin > Grupos | Grupo de Discipulado | Importar a biblioteca ([CONTAS.md](CONTAS.md), passo 2c), revisar as lições, marcar os discipuladores |
+| **Grupo de Discipulado** (grupos, calendário, painel, guia, presença, pedidos de ajuda) | Meu grupo, Discipulado, Admin > Grupos | Grupo de Discipulado | Importar a biblioteca ([CONTAS.md](CONTAS.md), Fase 7b), revisar as lições, marcar os discipuladores |
 | Segurança do navegador (CSP) | todas as páginas | sempre ligado | Nada (já conferido num build de produção) |
 
 ## 2. O que só o pastor e a igreja podem fazer
@@ -29,7 +29,7 @@ Nenhum destes itens pode ser feito por mim: envolvem contas em seu nome, pagamen
 | # | Item | Quem | Por quê |
 | --- | --- | --- | --- |
 | 1 | Criar as contas: GitHub, Supabase, Google Cloud, Vercel (e Resend, se for usar e-mail) | Pastor | São contas suas, com a sua identidade e, às vezes, cartão. Guia em [CONTAS.md](CONTAS.md). **Nunca cole senhas ou chaves no chat** |
-| 2 | Aplicar as 22 migrações e importar o conteúdo (Ciclos e biblioteca) | Pastor, com o guia | Rodam no SQL Editor do seu Supabase |
+| 2 | Aplicar as 22 migrações e importar o conteúdo (Ciclos e biblioteca) | Pastor, com o guia | Um arquivo só (`banco-completo.sql`) cola no SQL Editor do seu Supabase; o guia tem o passo a passo |
 | 3 | **Autorização por escrito** para a NVI e a NTLH | Igreja | Sem ela, a plataforma só mostra referências e links (é o que faz hoje) |
 | 4 | **Revisão jurídica** dos Termos e da Política (as minutas estão em `/termos` e `/privacidade`) | Advogado da igreja | Convicção religiosa é dado sensível na LGPD. Trechos `[A PREENCHER PELA IGREJA]` não foram inventados |
 | 5 | Designar o **encarregado de dados (DPO)** e um segundo administrador de emergência | Igreja | Exigência da LGPD e do handoff |

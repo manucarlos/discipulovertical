@@ -163,7 +163,7 @@ export function AdminTrailView({
         ))}
         {cycles.length === 0 && (
           <p className="rounded-xl bg-lilac px-4 py-3 text-muted">
-            Ainda não há ciclos. Importe o conteúdo do handoff (veja o guia de contas, passo 2b).
+            Ainda não há ciclos. Importe o conteúdo do handoff (veja o guia de contas, Fase 7a).
           </p>
         )}
       </div>
