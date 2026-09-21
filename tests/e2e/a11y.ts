@@ -34,6 +34,13 @@ function accessibleName(el: HTMLElement, root: HTMLElement): string {
   if (["button", "a"].includes(el.tagName.toLowerCase())) {
     const own = text(el);
     if (own) return own;
+    // Um link só com imagem (o logotipo) tem como nome o `alt` da imagem, como os leitores de tela leem.
+    const imageAlt = el
+      .querySelectorAll("img")
+      .map((img) => img.getAttribute("alt")?.trim() ?? "")
+      .filter(Boolean)
+      .join(" ");
+    if (imageAlt) return imageAlt;
   }
   return el.getAttribute("title")?.trim() ?? "";
 }

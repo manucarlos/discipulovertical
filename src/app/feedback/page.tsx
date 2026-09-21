@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
+import { BrandLogo } from "@/components/brand-logo";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { getSupabaseEnv } from "@/lib/supabase/config";
 import { FeedbackForm } from "./feedback-form";
@@ -25,8 +26,8 @@ export default async function FeedbackPage() {
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-10">
-      <p className="text-sm font-medium uppercase tracking-widest text-brand">Vertical Church</p>
-      <h1 className="mt-2 font-serif text-3xl leading-tight">Conte como foi</h1>
+      <BrandLogo height={72} />
+      <h1 className="mt-4 font-serif text-3xl leading-tight">Conte como foi</h1>
 
       {open ? (
         <>

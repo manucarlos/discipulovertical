@@ -8,12 +8,14 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     lang: "pt-BR",
-    background_color: "#faf9fb",
+    // Branco: é o fundo dos ícones (o logotipo é preto e laranja), então a tela de abertura do app combina com eles.
+    background_color: "#ffffff",
     theme_color: "#8a1c2b",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      // "maskable": o sistema recorta o ícone (círculo, quadrado arredondado); esta versão tem margem de segurança.
+      { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }

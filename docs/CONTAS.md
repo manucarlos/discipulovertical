@@ -326,5 +326,5 @@ Estes itens andam em paralelo e **não dependem de código**. O mapa completo, c
 - Pedir a **autorização por escrito** aos titulares da NVI e da NTLH.
 - Contratar a **revisão jurídica** dos Termos de Uso e da Política de Privacidade (a plataforma trata convicção religiosa, dado sensível na LGPD).
 - Designar o **encarregado de dados (DPO)** e um **segundo administrador** de confiança.
-- Enviar **logotipo e cores oficiais** e os **textos da igreja** (história, valores, declaração de fé, liderança, ministérios, membresia).
+- Definir as **cores oficiais** (o logotipo já está no site) e enviar os **textos da igreja** (história, valores, declaração de fé, liderança, ministérios, membresia).
 - **Revisão pastoral** das lições da biblioteca e conferência dos telefones de emergência.

@@ -21,9 +21,25 @@ describe("buildCertificatePdf", () => {
     const startxref = Number(/startxref\n(\d+)/.exec(pdf)![1]);
     expect(pdf.slice(startxref, startxref + 4)).toBe("xref");
     const entries = [...pdf.slice(startxref).matchAll(/^(\d{10}) 00000 n $/gm)].map((m) => Number(m[1]));
-    expect(entries).toHaveLength(6);
+    expect(entries).toHaveLength(7);
     entries.forEach((offset, i) => expect(pdf.slice(offset, offset + `${i + 1} 0 obj`.length)).toBe(`${i + 1} 0 obj`));
-    expect(/trailer\n<< \/Size 7 \/Root 1 0 R/.test(pdf)).toBe(true);
+    expect(/trailer\n<< \/Size 8 \/Root 1 0 R/.test(pdf)).toBe(true);
+  });
+
+  it("embute o logotipo: imagem JPEG íntegra, com o tamanho declarado, desenhada na página", () => {
+    const bytes = Buffer.from(buildCertificatePdf(data));
+    const pdf = bytes.toString("latin1");
+    expect(pdf).toContain("/Subtype /Image");
+    expect(pdf).toContain("/Filter /DCTDecode");
+    expect(pdf).toContain("/XObject << /Im1 7 0 R >>");
+    expect(pdf).toContain("/Im1 Do");
+
+    const declared = Number(/\/Filter \/DCTDecode \/Length (\d+) >>\nstream\n/.exec(pdf)![1]);
+    const start = pdf.indexOf("stream\n", pdf.indexOf("/Subtype /Image")) + "stream\n".length;
+    const image = bytes.subarray(start, start + declared);
+    expect([image[0], image[1]]).toEqual([0xff, 0xd8]); // começa como todo JPEG
+    expect([image[image.length - 2], image[image.length - 1]]).toEqual([0xff, 0xd9]); // e termina como todo JPEG
+    expect(bytes.subarray(start + declared, start + declared + "\nendstream".length).toString("latin1")).toBe("\nendstream");
   });
 
   it("o comprimento declarado do conteúdo é o real", () => {

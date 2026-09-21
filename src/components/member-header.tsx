@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
+import { BrandLogo } from "@/components/brand-logo";
 
 export function MemberHeader({
   isStaff = false,
@@ -17,8 +18,8 @@ export function MemberHeader({
   return (
     <header className="border-b border-line bg-card">
       <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4 px-4 py-3">
-        <Link href="/" className="inline-flex min-h-11 items-center px-1.5 -ml-1.5 text-sm font-medium uppercase tracking-widest text-brand">
-          Vertical Church
+        <Link href="/" className="inline-flex min-h-11 items-center px-1.5 -ml-1.5">
+          <BrandLogo height={52} />
         </Link>
         <nav aria-label="Principal" className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm">
           <Link href="/" className="inline-flex min-h-11 items-center px-1.5 hover:underline">

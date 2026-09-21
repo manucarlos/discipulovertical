@@ -110,6 +110,7 @@ describe("o auditor de acessibilidade pega o que deve pegar (prova de que o test
         <button></button>
         <a href="/x"></a><a href="https://e.com" target="_blank">fora</a>
         <img src="/a.png">
+        <a href="/logo-sem-alt"><img src="/b.png"></a>
         <div role="progressbar"></div><div role="img"></div>
         <table><tr><td>1</td></tr></table>
         <p id="a"></p><p id="a"></p><span aria-labelledby="fantasma"></span>
@@ -123,6 +124,7 @@ describe("o auditor de acessibilidade pega o que deve pegar (prova de que o test
       'campo <select name="uf"> sem nome acessível',
       "botão sem texto",
       "link sem texto para /x",
+      "link sem texto para /logo-sem-alt", // imagem sem alt não dá nome ao link
       'rel="noopener"',
       "imagem /a.png sem alt",
       "barra de progresso sem nome",
@@ -143,6 +145,7 @@ describe("o auditor de acessibilidade pega o que deve pegar (prova de que o test
         <form><label>Nome <input name="n"></label><label for="e">E-mail</label><input id="e" name="e">
           <select aria-label="Perfil"><option>A</option></select><button type="submit">Enviar</button></form>
         <a href="https://e.com" target="_blank" rel="noopener noreferrer">Fora</a>
+        <a href="/"><img src="/brand/logo.png" alt="Vertical Church"></a>
         <div role="progressbar" aria-label="Progresso" aria-valuenow="10"></div>
         <table><caption>x</caption><tr><th scope="col">A</th></tr></table>
       </main>`;

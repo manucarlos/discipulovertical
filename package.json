@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
-    "icons": "node scripts/make-placeholder-icons.mjs",
+    "icons": "node scripts/make-brand-assets.mjs",
     "import:sql": "tsx scripts/import-content.ts",
     "import:library": "tsx scripts/import-library.ts",
     "db:bundle": "tsx scripts/build-db-bundle.ts"

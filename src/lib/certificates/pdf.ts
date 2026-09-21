@@ -1,12 +1,15 @@
 /**
  * Gerador mínimo de PDF para o certificado (RF-19): uma página A4 na horizontal, texto em Helvetica (fonte
- * padrão de todo leitor de PDF, sem embutir arquivo de fonte) e uma moldura. Sem biblioteca externa: o
+ * padrão de todo leitor de PDF, sem embutir arquivo de fonte), uma moldura e o logotipo da igreja (um JPEG
+ * embutido, gerado por scripts/make-brand-assets.mjs). Sem biblioteca externa: o
  * arquivo é montado à mão, com a tabela de referências cruzadas (xref) calculada, e um teste confere que
  * ele fecha (offsets certos, texto presente).
  *
  * Limitação: a codificação é WinAnsi (Latin-1 e pouco mais). Letras fora dela (por exemplo, de outros
  * alfabetos) aparecem como "?". Cobre o português e nomes latinos com acento.
  */
+
+import { LOGO_JPEG_BASE64, LOGO_JPEG_HEIGHT, LOGO_JPEG_WIDTH } from "./logo-data";
 
 const PAGE_W = 842;
 const PAGE_H = 595;
@@ -79,16 +82,22 @@ export interface CertificateData {
 const longDate = (d: Date) =>
   new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "numeric", month: "long", year: "numeric" }).format(d);
 
+// Logotipo no topo: JPEG embutido como está (filtro DCTDecode), sem biblioteca de imagem.
+const LOGO = Buffer.from(LOGO_JPEG_BASE64, "base64");
+const LOGO_H = 60;
+const LOGO_W = (LOGO_H * LOGO_JPEG_WIDTH) / LOGO_JPEG_HEIGHT;
+
 /** Monta o PDF do certificado. */
 export function buildCertificatePdf(data: CertificateData): Uint8Array {
   const lines: string[] = [
     // Moldura dupla.
     "2 w 0.55 0.11 0.17 RG 30 30 782 535 re S",
     "0.5 w 42 42 758 511 re S",
+    // O logotipo já traz o nome da igreja, então o nome não é repetido em texto.
+    `q ${LOGO_W.toFixed(2)} 0 0 ${LOGO_H} ${((PAGE_W - LOGO_W) / 2).toFixed(2)} 480 cm /Im1 Do Q`,
     "0.12 0.10 0.14 rg",
-    centered(data.churchName.toUpperCase(), 508, 14),
-    centered("CERTIFICADO", 455, 42),
-    centered("Certificamos que", 405, 16),
+    centered("CERTIFICADO", 430, 42),
+    centered("Certificamos que", 398, 16),
     centered(data.holderName, 355, 32),
     centered("concluiu o ciclo", 312, 16),
     centered(data.cycleTitle, 278, 26),
@@ -106,10 +115,12 @@ export function buildCertificatePdf(data: CertificateData): Uint8Array {
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_W} ${PAGE_H}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`,
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_W} ${PAGE_H}] /Resources << /Font << /F1 4 0 R >> /XObject << /Im1 7 0 R >> >> /Contents 5 0 R >>`,
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
     `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
-    `<< /Title (${escapePdf(`Certificado - ${data.holderName}`)}) /Producer (Vertical Church - Discipulado) >>`,
+    `<< /Title (${escapePdf(`Certificado - ${data.holderName}`)}) /Author (${escapePdf(data.churchName)}) /Producer (Vertical Church - Discipulado) >>`,
+    // Os bytes do JPEG entram como texto Latin-1 (um caractere por byte) e saem idênticos na conversão final.
+    `<< /Type /XObject /Subtype /Image /Width ${LOGO_JPEG_WIDTH} /Height ${LOGO_JPEG_HEIGHT} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${LOGO.length} >>\nstream\n${LOGO.toString("latin1")}\nendstream`,
   ];
 
   let pdf = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n";

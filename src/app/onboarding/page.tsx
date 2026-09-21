@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { BrandLogo } from "@/components/brand-logo";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseEnv } from "@/lib/supabase/config";
 import { OnboardingForm } from "./onboarding-form";
@@ -25,7 +26,8 @@ export default async function OnboardingPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-line bg-card p-8 shadow-sm">
-        <h1 className="font-serif text-3xl leading-tight">Que bom ter você aqui</h1>
+        <BrandLogo height={72} />
+        <h1 className="mt-4 font-serif text-3xl leading-tight">Que bom ter você aqui</h1>
         <p className="mt-2 text-muted">Antes de começar, precisamos de algumas informações.</p>
         <OnboardingForm
           defaultName={profile?.display_name ?? ""}

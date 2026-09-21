@@ -15,7 +15,7 @@ Este é o mapa único do que sobra. Em uma frase: **todo o código do plano (MVP
 | Cuidadores e alertas | Cuidado, Meus membros | Cuidadores e alertas | Dar o perfil de Cuidador a alguém; rodar o rodízio |
 | Lembretes por e-mail | Lembretes | Lembretes por e-mail | Contas do Resend e do agendador ([CONTAS.md](CONTAS.md), Fase 9) |
 | Encerramentos e presença | Encerramentos | Encerramentos presenciais | Marcar o encontro de cada ciclo |
-| Certificados em PDF + verificação pública | Encerramentos, Certificados, /verificar | Certificados | Conferir o desenho do PDF; logotipo (opcional) |
+| Certificados em PDF + verificação pública | Encerramentos, Certificados, /verificar | Certificados | Conferir o desenho do PDF (o logotipo já vem nele) |
 | Planilhas CSV | Pessoas | sempre ligado (só Admin) | Nada |
 | Sequência de dias e marcos | Minha trilha | Sequência de dias e marcos | Nada |
 | Entrar com e-mail | Login | Entrar com e-mail | Ativar o provedor de e-mail no Supabase |
@@ -34,7 +34,7 @@ Nenhum destes itens pode ser feito por mim: envolvem contas em seu nome, pagamen
 | 3 | **Autorização por escrito** para a NVI e a NTLH | Igreja | Sem ela, a plataforma só mostra referências e links (é o que faz hoje) |
 | 4 | **Revisão jurídica** dos Termos e da Política (as minutas estão em `/termos` e `/privacidade`) | Advogado da igreja | Convicção religiosa é dado sensível na LGPD. Trechos `[A PREENCHER PELA IGREJA]` não foram inventados |
 | 5 | Designar o **encarregado de dados (DPO)** e um segundo administrador de emergência | Igreja | Exigência da LGPD e do handoff |
-| 6 | **Logotipo e cores** oficiais | Igreja/comunicação | Os ícones atuais são provisórios (`npm run icons`) |
+| 6 | **Cores** oficiais | Igreja/comunicação | O **logotipo já está no site** (telas, ícones do app e da aba, certificado; `npm run icons` regenera a partir de `assets/brand/`). As cores do site ainda são provisórias: botões e destaques são vinho (`#8a1c2b`), e o logotipo é laranja (`#C14602`) e preto. Decidir se o site adota as cores do logotipo |
 | 7 | Os **textos da igreja** (história, valores, declaração de fé, liderança, ministérios, membresia) | Pastor | Aparecem como `[PREENCHER]` no Ciclo 3 e em Nossa Igreja |
 | 8 | **Revisão pastoral** de todas as lições da biblioteca (28 rascunhos) e, nas sensíveis (9, 10, 12, 13, 14, 16, 17 e 28), revisão de um profissional | Pastor + profissional | Regra 0.4.3 do handoff. O aviso de segurança e os telefones (CVV 188, SAMU 192, Ligue 180, 190) **precisam ser conferidos** antes de publicar |
 | 9 | Preencher os `[PREENCHER]` da biblioteca: contato do aconselhamento, apoio da igreja a quem está endividado ou sem emprego, formas de contribuir, política de proteção | Pastor | Enquanto houver `[PREENCHER]`, o banco **impede** a publicação (é proposital) |

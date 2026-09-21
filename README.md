@@ -38,7 +38,7 @@ Sem `.env.local` o app abre e mostra avisos de "em preparação"; o login só fu
 | `npm run import:sql` | Gera o SQL de importação das lições (`-- --cycle 1`) |
 | `npm run db:bundle` | Junta as 24 migrações num arquivo só para colar no Supabase (`content/generated/banco-completo.sql`) |
 | `npm run import:library` | Gera o SQL da biblioteca do Grupo de Discipulado (28 lições e 6 trilhas, em rascunho) |
-| `npm run icons` | Gera ícones provisórios do PWA |
+| `npm run icons` | Gera as imagens da marca (logo do site, ícones do app e da aba, logo do certificado) a partir de `assets/brand/vertical-church-logo.jpg` |
 
 ## Estrutura
 
