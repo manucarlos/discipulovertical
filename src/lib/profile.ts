@@ -1,3 +1,4 @@
+import { DEFAULT_CHURCH_NAME } from "@/lib/church";
 import { normalizeWhatsapp } from "./onboarding";
 import type { ConsentPurpose } from "./legal";
 
@@ -114,11 +115,11 @@ const PROGRESS_NAME: Record<string, string> = { available: "Disponível", in_pro
 const CYCLE_NAME: Record<string, string> = { in_progress: "Em andamento", completed: "Concluído" };
 
 /** Monta o arquivo que a pessoa baixa: tudo o que a plataforma guarda sobre ela, em português. */
-export function buildExport(source: ExportSource, now: Date) {
+export function buildExport(source: ExportSource, now: Date, churchName: string = DEFAULT_CHURCH_NAME) {
   const { profile } = source;
   return {
     aviso:
-      "Estes são os dados pessoais que a plataforma de discipulado da Vertical Church guarda sobre você. " +
+      `Estes são os dados pessoais que a plataforma de discipulado da ${churchName} guarda sobre você. ` +
       "Você pode corrigi-los ou excluir sua conta na página Meu perfil.",
     exportado_em: now.toISOString(),
     versao_do_formato: 1,

@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { requireMember } from "@/lib/auth";
-import { CONSENT_TEXT } from "@/lib/legal";
+import { loadSettings } from "@/lib/features";
+import { consentText } from "@/lib/legal";
 import { loadBibleVersions } from "@/lib/trail/queries";
 import { DeleteAccountForm, ProfileForm, RemindersForm } from "./profile-forms";
 
@@ -24,6 +25,7 @@ export default async function ProfilePage() {
   await connection();
   const { supabase, user } = await requireMember();
 
+  const { church } = await loadSettings(supabase);
   const [{ data: me }, versions, { data: consents }] = await Promise.all([
     supabase
       .from("profiles")
@@ -67,7 +69,7 @@ export default async function ProfilePage() {
         ) : (
           <p className="text-sm text-muted">Nenhum consentimento de dados ativo.</p>
         )}
-        <p className="mt-2 text-xs text-muted">{CONSENT_TEXT.data_processing}</p>
+        <p className="mt-2 text-xs text-muted">{consentText(church.name).data_processing}</p>
         <p className="mt-4 text-sm">
           Você pode receber uma cópia de tudo o que guardamos sobre você, em um arquivo que abre em qualquer editor de texto.
         </p>

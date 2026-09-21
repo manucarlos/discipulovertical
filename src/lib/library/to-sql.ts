@@ -1,3 +1,4 @@
+import { DEFAULT_CHURCH_NAME, withChurchDeep } from "../church";
 import { sqlText } from "@/lib/content/to-sql";
 import type { LessonContent } from "@/lib/content/types";
 import type { LibraryLesson, LibraryTrack } from "./types";
@@ -5,6 +6,8 @@ import type { LibraryLesson, LibraryTrack } from "./types";
 export interface LibrarySqlOptions {
   /** Só para homologação: publica as lições sem [PREENCHER] e as trilhas cujas lições estão todas publicadas. */
   publish?: boolean;
+  /** Nome da igreja: entra no lugar do marcador {{igreja}} dos textos das lições. */
+  churchName?: string;
 }
 
 export const PRACTICE_TITLE = "Desafio do dia";
@@ -28,7 +31,8 @@ export const lessonTags = (lesson: LibraryLesson) => [lesson.theme, ...(lesson.s
  * Gera o SQL que cria a biblioteca e as trilhas prontas (tudo como RASCUNHO). Seguro para repetir: lição ou trilha
  * que já existe é ignorada (nunca sobrescreve o que o pastor editou). Roda numa transação, no SQL Editor do Supabase.
  */
-export function buildLibrarySql(lessons: LibraryLesson[], tracks: LibraryTrack[], options: LibrarySqlOptions = {}): string {
+export function buildLibrarySql(lessonTemplates: LibraryLesson[], tracks: LibraryTrack[], options: LibrarySqlOptions = {}): string {
+  const lessons = withChurchDeep(lessonTemplates, options.churchName ?? DEFAULT_CHURCH_NAME);
   const out: string[] = [
     "-- Biblioteca do Grupo de Discipulado (gerada por scripts/import-library.ts). Não edite à mão.",
     `-- ${lessons.length} lição(ões) e ${tracks.length} trilha(s). Tudo entra como ${options.publish ? "PUBLICADO (exceto o que tem [PREENCHER])" : "RASCUNHO"}.`,

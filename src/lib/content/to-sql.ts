@@ -1,3 +1,4 @@
+import { DEFAULT_CHURCH_NAME, withChurchDeep } from "../church";
 import type { ParsedCycle, ParsedLesson } from "./types";
 
 export interface ImportSqlOptions {
@@ -6,6 +7,8 @@ export interface ImportSqlOptions {
    * Só para testes em homologação: em produção o pastor revisa e publica no painel.
    */
   publish?: boolean;
+  /** Nome da igreja: entra no lugar do marcador {{igreja}} dos textos das lições. */
+  churchName?: string;
 }
 
 /** Literal de texto do Postgres. Depende de standard_conforming_strings = on (padrão). */
@@ -23,7 +26,8 @@ const sqlTextArray = (values: string[]) => `array[${values.map(sqlText).join(", 
  *   - roda de uma vez só (transação): se algo falhar, nada é gravado.
  * Feito para o SQL Editor do Supabase, que executa como dono do banco (sem RLS, sem chaves).
  */
-export function buildImportSql(cycles: ParsedCycle[], options: ImportSqlOptions = {}): string {
+export function buildImportSql(template: ParsedCycle[], options: ImportSqlOptions = {}): string {
+  const cycles = withChurchDeep(template, options.churchName ?? DEFAULT_CHURCH_NAME);
   const out: string[] = [];
   const lessonCount = cycles.reduce((n, c) => n + c.lessons.length, 0);
 

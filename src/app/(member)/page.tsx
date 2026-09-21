@@ -17,7 +17,7 @@ export default async function Home() {
     return (
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="max-w-md rounded-2xl border border-line bg-card p-8 text-center shadow-sm">
-          <h1 className="font-serif text-3xl">Discipulado · Vertical Church</h1>
+          <h1 className="font-serif text-3xl">Discipulado</h1>
           <p className="mt-3 text-muted">
             A plataforma está em preparação. O banco de dados e o login ainda não foram conectados.
           </p>

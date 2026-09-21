@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateSettings } from "@/lib/admin/settings";
+import { DEFAULT_CHURCH_NAME } from "./church";
 import { ALL_OFF, FEATURES, isFeatureKey, resolveSettings } from "./features";
 
 describe("resolveSettings", () => {
@@ -7,7 +8,7 @@ describe("resolveSettings", () => {
     const s = resolveSettings([]);
     expect(s.flags).toEqual(ALL_OFF);
     expect(Object.values(s.flags).every((v) => v === false)).toBe(true);
-    expect(s.church).toEqual({ name: "Vertical Church", contactEmail: "" });
+    expect(s.church).toEqual({ name: DEFAULT_CHURCH_NAME, contactEmail: "" });
   });
 
   it("liga só o que é exatamente verdadeiro; qualquer outra coisa fica desligada", () => {
@@ -34,8 +35,8 @@ describe("resolveSettings", () => {
   });
 
   it("nome vazio ou de tipo errado volta ao padrão", () => {
-    expect(resolveSettings([{ key: "church.name", value: "   " }]).church.name).toBe("Vertical Church");
-    expect(resolveSettings([{ key: "church.name", value: 42 }]).church.name).toBe("Vertical Church");
+    expect(resolveSettings([{ key: "church.name", value: "   " }]).church.name).toBe(DEFAULT_CHURCH_NAME);
+    expect(resolveSettings([{ key: "church.name", value: 42 }]).church.name).toBe(DEFAULT_CHURCH_NAME);
   });
 
   it("cada recurso tem rótulo, fase e descrição", () => {

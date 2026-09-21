@@ -1,4 +1,5 @@
 import { requireMember } from "@/lib/auth";
+import { loadSettings } from "@/lib/features";
 import { buildExport, type ExportSource } from "@/lib/profile";
 
 /** Baixa um arquivo com todos os dados pessoais da própria pessoa (LGPD: acesso e portabilidade). */
@@ -58,12 +59,13 @@ export async function GET() {
       attendance: (attendance.data ?? []) as unknown as ExportSource["attendance"],
     },
     new Date(),
+    (await loadSettings(supabase)).church.name,
   );
 
   return new Response(JSON.stringify(body, null, 2), {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="meus-dados-vertical-discipulado.json"',
+      "Content-Disposition": 'attachment; filename="meus-dados-discipulado.json"',
       // Dados pessoais: nunca guardar em cache do navegador ou de intermediários.
       "Cache-Control": "no-store",
     },

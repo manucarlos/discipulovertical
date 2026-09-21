@@ -8,18 +8,20 @@ export function MemberHeader({
   showCertificates = false,
   showGroups = false,
   isDiscipler = false,
+  churchName,
 }: {
   isStaff?: boolean;
   isCaregiver?: boolean;
   showCertificates?: boolean;
   showGroups?: boolean;
   isDiscipler?: boolean;
+  churchName?: string;
 }) {
   return (
     <header className="border-b border-line bg-card">
       <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4 px-4 py-3">
         <Link href="/" className="inline-flex min-h-11 items-center px-1.5 -ml-1.5">
-          <BrandLogo height={52} />
+          <BrandLogo height={52} name={churchName} />
         </Link>
         <nav aria-label="Principal" className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm">
           <Link href="/" className="inline-flex min-h-11 items-center px-1.5 hover:underline">

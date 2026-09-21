@@ -2,19 +2,21 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { CONSENT_TEXT } from "@/lib/legal";
+import { consentText } from "@/lib/legal";
 import { completeOnboarding, type OnboardingState } from "./actions";
 
 interface Props {
   defaultName: string;
   versions: { code: string; name: string }[];
   defaultVersion: string;
+  churchName: string;
 }
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-line bg-white px-3 py-2.5 text-base focus:border-brand";
 
-export function OnboardingForm({ defaultName, versions, defaultVersion }: Props) {
+export function OnboardingForm({ defaultName, versions, defaultVersion, churchName }: Props) {
+  const CONSENT_TEXT = consentText(churchName);
   const [state, action, pending] = useActionState<OnboardingState, FormData>(completeOnboarding, null);
 
   return (

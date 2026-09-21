@@ -86,10 +86,27 @@ export function cssVariables(palette: Palette): Record<string, string> {
 /** As variáveis CSS do tema normal, para o atributo `style` da página. */
 export const ROOT_STYLE = cssVariables(PALETTE);
 
-/** A regra CSS do modo escuro da leitura. */
-export const READING_DARK_CSS = `.reading-dark{${Object.entries(cssVariables(READING_DARK))
-  .map(([name, value]) => `${name}:${value}`)
-  .join(";")}}`;
+/**
+ * A regra CSS do modo escuro da leitura. Só entra no CSS uma paleta válida (isPalette), então um valor estranho
+ * vindo do banco nunca vira código na página.
+ */
+export function readingDarkCss(palette: Palette): string {
+  if (!isPalette(palette)) palette = READING_DARK;
+  return `.reading-dark{${Object.entries(cssVariables(palette))
+    .map(([name, value]) => `${name}:${value}`)
+    .join(";")}}`;
+}
+
+/** A regra do modo escuro da leitura com a paleta padrão do código. */
+export const READING_DARK_CSS = readingDarkCss(READING_DARK);
+
+/** É mesmo uma paleta: os nove papéis, cada um um "#rrggbb" em minúsculas (e nada mais)? */
+export function isPalette(value: unknown): value is Palette {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const keys = Object.keys(CSS_NAMES);
+  const entries = Object.entries(value);
+  return entries.length === keys.length && keys.every((k) => typeof (value as Record<string, unknown>)[k] === "string" && /^#[0-9a-f]{6}$/.test((value as Record<string, string>)[k]));
+}
 
 /** Converte "#c14602" para o formato de cor do PDF ("0.76 0.27 0.01"). */
 export function pdfColor(hex: string): string {

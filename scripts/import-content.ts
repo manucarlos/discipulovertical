@@ -2,9 +2,11 @@
  * Lê a Parte 2 do handoff e gera o SQL de importação das lições (como rascunho).
  *
  * Uso:
- *   npm run import:sql                 -> todos os ciclos
- *   npm run import:sql -- --cycle 1    -> só o Ciclo 1
- *   npm run import:sql -- --publish    -> publica as lições sem [PREENCHER] (SÓ para homologação)
+ *   npm run import:sql -- --igreja "Nome da igreja"               -> todos os ciclos
+ *   npm run import:sql -- --igreja "Nome da igreja" --cycle 1      -> só o Ciclo 1
+ *   npm run import:sql -- --igreja "Nome da igreja" --publish      -> publica as lições sem [PREENCHER] (SÓ para homologação)
+ *
+ * --igreja é obrigatório: o nome entra no lugar do marcador {{igreja}} dos textos das lições.
  *
  * O arquivo sai em content/generated/. Cole o conteúdo no SQL Editor do Supabase e clique em Run.
  * Não usa nenhuma chave: o SQL Editor já roda com permissão de administrador do banco.
@@ -34,8 +36,14 @@ try {
     process.exit(1);
   }
 
+  const churchName = value("igreja")?.trim();
+  if (!churchName) {
+    console.error('Informe o nome da igreja, que entra nos textos das lições. Exemplo: npm run import:sql -- --igreja "Nome da igreja"');
+    process.exit(1);
+  }
+
   const publish = flag("publish");
-  const sql = buildImportSql(cycles, { publish });
+  const sql = buildImportSql(cycles, { publish, churchName });
 
   const outDir = path.join(root, "content", "generated");
   fs.mkdirSync(outDir, { recursive: true });

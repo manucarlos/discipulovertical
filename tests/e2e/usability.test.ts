@@ -48,6 +48,12 @@ import UnsubscribePage from "@/app/desinscrever/page";
 import ClosuresPage from "@/app/admin/encerramentos/page";
 import CertificatesPage from "@/app/(member)/certificados/page";
 import VerifyPage from "@/app/verificar/page";
+import BrandPage from "@/app/admin/marca/page";
+import { importBrand, resetBrand, saveBrandColors, uploadBrandImages } from "@/app/admin/marca/actions";
+import { GET as exportBrand } from "@/app/admin/marca/exportar/route";
+import { GET as brandImage } from "@/app/marca/[arquivo]/route";
+import { loadIdentity } from "@/lib/brand-store";
+import sharp from "sharp";
 import FeedbackPage from "@/app/feedback/page";
 import { submitFeedback } from "@/app/feedback/actions";
 import FeedbackAdminPage from "@/app/admin/feedback/page";
@@ -481,6 +487,142 @@ describe("Formulário de feedback do piloto: visitante sem login e administrador
     await world.login(CLAUDINHO);
     const result = await visit(FeedbackAdminPage);
     expect(result.redirect ?? (result.notFound ? "404" : null)).not.toBeNull();
+  });
+});
+
+describe("Marca da igreja: administrador troca cores e logotipo", () => {
+  const logoPng = () =>
+    sharp({ create: { width: 500, height: 500, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } })
+      .composite([{ input: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500"><rect x="100" y="150" width="300" height="140" fill="#1d4ed8"/></svg>`) }])
+      .png()
+      .toBuffer();
+  const fileForm = async (fields: Record<string, string | { name: string; type: string; bytes: Buffer }>) => {
+    const data = new FormData();
+    for (const [key, value] of Object.entries(fields)) {
+      if (typeof value === "string") data.set(key, value);
+      else data.set(key, new File([new Uint8Array(value.bytes)], value.name, { type: value.type }));
+    }
+    return data;
+  };
+  const getImage = (file: string) => brandImage(new Request(`http://site.test/marca/${file}`), { params: Promise.resolve({ arquivo: file }) });
+
+  it("a tela abre com a marca padrão e só o administrador entra", async () => {
+    await world.login(CLAUDIAO);
+    const page = await audit("marca (padrão)", BrandPage);
+    expect(page.text).toContain("marca padrão do projeto");
+    expect(page.text).toContain("Salvar cores");
+
+    await world.login(CLAUDINHO);
+    const blocked = await visit(BrandPage);
+    expect(blocked.redirect ?? (blocked.notFound ? "404" : null)).not.toBeNull();
+    await expect(outcome(() => saveBrandColors(null, new FormData()))).resolves.toMatchObject({ redirect: expect.any(String) });
+  });
+
+  it("salva as cores: a paleta é calculada no servidor e passa a valer para todo o site", async () => {
+    await world.login(CLAUDIAO);
+    const saved = await outcome(() => saveBrandColors(null, form({ brand: "#1d4ed8", foreground: "#111111", background: "#fafafa" })));
+    expect(saved.value).toEqual({ ok: expect.stringContaining("Cores salvas") });
+    const identity = await loadIdentity();
+    expect(identity.customColors).toBe(true);
+    expect(identity.palette.brand).toBe("#1d4ed8");
+    expect(identity.readingDark.onBrand).toMatch(/^#[0-9a-f]{6}$/);
+    const page = await audit("marca (com cores salvas)", BrandPage, { search: { ok: "Cores salvas." } });
+    expect(page.text).toContain("marca personalizada");
+    expect(page.html).toContain('value="#1d4ed8"');
+  });
+
+  it("avisa quando a cor escolhida é clara demais e usa uma versão mais escura", async () => {
+    const saved = await outcome(() => saveBrandColors(null, form({ brand: "#ffd400", foreground: "#111111", background: "#ffffff" })));
+    expect(saved.value).toEqual({ ok: expect.stringContaining("escurecida") });
+    expect((await loadIdentity()).palette.brand).not.toBe("#ffd400");
+  });
+
+  it("recusa cores inválidas, fundo escuro e texto que não contrasta, sem gravar nada", async () => {
+    const before = (await loadIdentity()).palette.brand;
+    for (const bad of [
+      { brand: "azul", foreground: "#111111", background: "#ffffff" },
+      { brand: "#1d4ed8", foreground: "#111111", background: "#101010" },
+      { brand: "#1d4ed8", foreground: "#dddddd", background: "#ffffff" },
+      { brand: "#1d4ed8;background:url(https://x.example)", foreground: "#111111", background: "#ffffff" },
+    ]) {
+      const r = await outcome(() => saveBrandColors(null, form(bad)));
+      expect(r.value, JSON.stringify(bad)).toEqual({ error: expect.any(String) });
+    }
+    expect((await loadIdentity()).palette.brand).toBe(before);
+  });
+
+  it("envia o logotipo, gera as imagens e as serve no endereço público", async () => {
+    const sent = await outcome(async () => uploadBrandImages(null, await fileForm({ logo: { name: "logo.png", type: "image/png", bytes: await logoPng() } })));
+    expect(sent.value).toEqual({ ok: expect.stringContaining("Logotipo salvo") });
+    const identity = await loadIdentity();
+    expect(identity.assets).toEqual(["icon-192", "icon-512", "icon-apple", "icon-maskable", "icon-tab", "logo", "logo-jpeg"]);
+
+    world.visitor(); // qualquer visitante lê a imagem da marca
+    for (const [file, size] of [["logo.png", null], ["icone-192.png", 192], ["icone-512.png", 512], ["icone-apple.png", 180], ["icone-aba.png", 64]] as const) {
+      const response = await getImage(file);
+      expect(response.status, file).toBe(200);
+      expect(response.headers.get("content-type")).toBe("image/png");
+      expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+      if (size) expect((await sharp(Buffer.from(await response.arrayBuffer())).metadata()).width, file).toBe(size);
+    }
+    const etag = (await getImage("logo.png")).headers.get("etag")!;
+    const again = await brandImage(new Request("http://site.test/marca/logo.png", { headers: { "if-none-match": etag } }), { params: Promise.resolve({ arquivo: "logo.png" }) });
+    expect(again.status).toBe(304);
+    expect((await getImage("../../etc/passwd")).status).toBe(404);
+    expect((await getImage("logo-jpeg")).status).toBe(404); // só os arquivos da lista
+  });
+
+  it("recusa arquivo que não é imagem, SVG e imagem pequena, com mensagem clara", async () => {
+    await world.login(CLAUDIAO);
+    const svg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><script>alert(1)</script></svg>`);
+    for (const [name, type, bytes, message] of [
+      ["x.txt", "text/plain", Buffer.from("olá"), /PNG ou JPG/],
+      ["x.svg", "image/svg+xml", svg, /PNG ou JPG/],
+    ] as const) {
+      const r = await outcome(async () => uploadBrandImages(null, await fileForm({ logo: { name, type, bytes } })));
+      expect(r.value, name).toEqual({ error: expect.stringMatching(message) });
+    }
+    const none = await outcome(() => uploadBrandImages(null, new FormData()));
+    expect(none.value).toEqual({ error: "Escolha o arquivo do logotipo." });
+  });
+
+  it("exporta a identidade, restaura o padrão e importa de volta", async () => {
+    const exported = await exportBrand();
+    expect(exported.headers.get("cache-control")).toBe("no-store");
+    const body = await exported.text();
+    const parsed = JSON.parse(body);
+    expect(parsed.formato).toBe("identidade-v1");
+    expect(parsed.inputs).toMatchObject({ foreground: "#111111" });
+    expect(parsed.images).toHaveLength(7);
+
+    const reset = await outcome(() => resetBrand());
+    expect(reset.redirect).toContain("ok=");
+    expect((await loadIdentity()).customColors).toBe(false);
+    expect((await loadIdentity()).assets).toEqual([]);
+    const page = await audit("marca (depois de restaurar)", BrandPage);
+    expect(page.text).toContain("marca padrão do projeto");
+
+    const imported = await outcome(async () => importBrand(null, await fileForm({ arquivo: { name: "identidade.json", type: "application/json", bytes: Buffer.from(body) } })));
+    expect(imported.value).toEqual({ ok: "Importado: cores e imagens." });
+    const restored = await loadIdentity();
+    expect(restored.customColors).toBe(true);
+    expect(restored.assets).toHaveLength(7);
+  });
+
+  it("recusa arquivo de importação adulterado: formato errado, imagem falsa e chave desconhecida", async () => {
+    const send = async (content: unknown) =>
+      (await outcome(async () => importBrand(null, await fileForm({ arquivo: { name: "x.json", type: "application/json", bytes: Buffer.from(typeof content === "string" ? content : JSON.stringify(content)) } })))).value;
+    expect(await send("isto não é json")).toEqual({ error: expect.stringContaining("não é um arquivo de identidade") });
+    expect(await send({ formato: "outro" })).toEqual({ error: expect.stringContaining("não é um arquivo de identidade") });
+    expect(await send({ formato: "identidade-v1" })).toEqual({ error: expect.stringContaining("não traz cores nem imagens") });
+    expect(await send({ formato: "identidade-v1", images: [{ key: "../x", content_type: "image/png", data: "AAAA" }] })).toEqual({ error: expect.stringContaining("desconhecida") });
+    expect(await send({ formato: "identidade-v1", images: [{ key: "logo", content_type: "image/png", data: Buffer.from("<script>").toString("base64") }] })).toEqual({ error: expect.stringContaining("logo") });
+    expect(await send({ formato: "identidade-v1", inputs: { brand: "x", foreground: "y", background: "z" } })).toEqual({ error: expect.stringContaining("cores do arquivo") });
+  });
+
+  it("volta ao padrão para não afetar as próximas telas", async () => {
+    await outcome(() => resetBrand());
+    expect((await loadIdentity()).customColors).toBe(false);
   });
 });
 

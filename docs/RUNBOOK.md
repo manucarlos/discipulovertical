@@ -38,7 +38,7 @@ Na pasta do projeto:
 | Conferir tipos | `npm run typecheck` |
 | Conferir estilo do código | `npm run lint` |
 | Gerar a versão de produção | `npm run build` |
-| Gerar o SQL de importação das lições | `npm run import:sql -- --cycle 1` |
+| Gerar o SQL de importação das lições | `npm run import:sql -- --igreja "Nome da igreja" --cycle 1` |
 
 Os testes incluem as **regras de acesso do banco** (quem pode ler e escrever o quê). Rode antes de qualquer mudança no banco.
 
@@ -156,6 +156,16 @@ O formulário público (`/feedback`, sem login) nasce **desligado**. Para o pilo
 
 - **Abuso:** o banco aceita no máximo 30 respostas por hora e ignora robôs simples. Se receber lixo, desligue a chave em Configurações.
 - **LGPD:** as respostas podem ter nome e contato (opcionais) e texto livre. Quem pedir para apagar: use **Apagar** na resposta. Ao fim do piloto, exporte o que importa (copie os textos), apague as respostas e **desligue o formulário**.
+
+## 6l. Marca da igreja
+
+**Administração > Marca** (só o Admin): escolha as **3 cores** (o site calcula o resto e só salva se tudo ficar legível), envie o **logotipo** (PNG ou JPG, até 2 MB) e, se quiser, um **símbolo** para o ícone da aba. **Baixar a identidade** faz backup; **Restaurar o padrão** volta à marca do projeto. Cada mudança fica no log. Guia: [MARCA.md](MARCA.md). O nome da igreja está em **Configurações**.
+
+## 6m. Instalar para outra igreja (kit)
+
+1. Copie `churches/exemplo.json` para `churches/<igreja>.json` e preencha (nome, e-mail do primeiro administrador, endereço, 3 cores, ciclos). Esses arquivos **não vão para o GitHub** (só o exemplo).
+2. Rode `npm run kit -- <igreja>`. Sai uma pasta `content/generated/kit-<igreja>/` com `1-banco.sql`, `2-identidade.sql`, `3-conteudo.sql`, `variaveis.env` e o **`roteiro.md`** personalizado.
+3. Siga o `roteiro.md` na ordem: projeto no Supabase, os SQLs, o login do Google, o site na Vercel. Cada igreja tem o **seu próprio** Supabase e Vercel. Antes de vender, veja as decisões de [EXPANSAO.md](EXPANSAO.md), seção 4.
 
 ## 7. Backup e restauração
 

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { DEFAULT_CHURCH_NAME } from "@/lib/church";
 
 /** Recursos que o Admin liga e desliga (RF-28). Nascem desligados: o piloto abre só com o MVP. */
 export const FEATURES = [
@@ -38,7 +39,7 @@ interface Row {
 /** Converte as linhas de app_settings em configurações, com padrão seguro (desligado) para o que faltar ou vier estranho. */
 export function resolveSettings(rows: Row[]): Settings {
   const flags: Flags = { ...ALL_OFF };
-  const church: ChurchSettings = { name: "Vertical Church", contactEmail: "" };
+  const church: ChurchSettings = { name: DEFAULT_CHURCH_NAME, contactEmail: "" };
   for (const row of rows) {
     if (row.key.startsWith("feature.")) {
       const key = row.key.slice("feature.".length) as FeatureKey;

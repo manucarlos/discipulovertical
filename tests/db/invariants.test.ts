@@ -102,13 +102,16 @@ describe("funções", () => {
     );
     // Cada uma exige algo que só o e-mail, o certificado ou o agendador têm (o código do descadastro, o código do
     // certificado ou o CRON_SECRET), ou não expõe nada: public_features devolve só duas chaves e submit_feedback só
-    // GRAVA (com a chave "feedback" ligada e no máximo 30 respostas por hora).
+    // GRAVA (com a chave "feedback" ligada e no máximo 30 respostas por hora); public_identity e public_brand_asset
+    // devolvem só o que já é público (nome, cores e imagens da marca).
     expect(rows.map((r) => r.proname)).toEqual([
       "cron_certificates",
       "cron_enqueue",
       "cron_report",
       "cron_snapshot",
+      "public_brand_asset",
       "public_features",
+      "public_identity",
       "submit_feedback",
       "unsubscribe_email",
       "verify_certificate",

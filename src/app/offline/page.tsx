@@ -1,14 +1,16 @@
 import { connection } from "next/server";
+import { loadIdentity } from "@/lib/brand-store";
 
 export const metadata = { title: "Sem internet" };
 
 /** Mostrada pelo service worker quando não há conexão. Página estática e pública, sem nenhum dado de pessoa. */
 export default async function OfflinePage() {
+  const { name: churchName } = await loadIdentity();
   await connection(); // renderizada a cada acesso: a política de segurança (CSP) usa um código novo por requisição
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm rounded-2xl border border-line bg-card p-8 text-center shadow-sm">
-        <p className="text-sm font-medium uppercase tracking-widest text-brand">Vertical Church</p>
+        <p className="text-sm font-medium uppercase tracking-widest text-brand">{churchName}</p>
         <h1 className="mt-2 font-serif text-3xl leading-tight">Você está sem internet</h1>
         <p className="mt-3 text-muted">
           Não conseguimos abrir esta página agora. Confira sua conexão e tente de novo. Nada do que você já concluiu se

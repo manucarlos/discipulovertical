@@ -1510,7 +1510,7 @@ status: draft
 ```
 
 
-**Objetivo:** conhecer a missão e a visão da Vertical Church e entender qual é o seu lugar nelas.
+**Objetivo:** conhecer a missão e a visão da {{igreja}} e entender qual é o seu lugar nelas.
 
 **Versículo-chave:** Mateus 5.13-16
 
@@ -1568,7 +1568,7 @@ Qual parte da missão e da visão mais fala ao seu coração? Onde Deus colocou 
 
 **Quiz**
 
-**Pergunta 1.** Qual é a missão da Vertical Church?
+**Pergunta 1.** Qual é a missão da {{igreja}}?
 
 - A) Ter o maior templo da cidade
 - B) Levar pessoas a um encontro genuíno com Jesus, trazendo restauração às suas famílias
@@ -2436,7 +2436,7 @@ status: draft
 ```
 
 
-**Objetivo:** conhecer a história da Vertical Church e entender por que lembrar o que Deus fez fortalece a fé e o sentimento de pertencer.
+**Objetivo:** conhecer a história da {{igreja}} e entender por que lembrar o que Deus fez fortalece a fé e o sentimento de pertencer.
 
 **Versículo-chave:** Salmo 78.4-7
 
@@ -2463,7 +2463,7 @@ Os marcos abaixo são o esqueleto da história. Conte também as dificuldades e 
 
 #### Nossa identidade
 
-O nome **Vertical Church** e o seu símbolo têm uma história: **[PREENCHER: o significado do nome e da identidade visual, se houver uma história para contar]**.
+O nome **{{igreja}}** e o seu símbolo têm uma história: **[PREENCHER: o significado do nome e da identidade visual, se houver uma história para contar]**.
 
 Uma observação sobre os cartazes de missão e visão: cada um traz uma imagem, e elas podem servir de guia para lembrar o essencial. A montanha acompanha a visão, a cruz acompanha a missão e as pessoas acompanham o cumprimento da missão. *(Sugestão de leitura; confirme se é essa a intenção.)*
 

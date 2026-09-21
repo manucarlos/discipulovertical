@@ -217,7 +217,7 @@ export const CAMINHADA_E_MORDOMIA: LibraryLesson[] = [
       ]),
       h("O que o dinheiro dado faz"),
       p("O que é entregue sustenta o ministério, a pregação, a ajuda aos necessitados e a missão. Você tem o direito de conhecer como a igreja cuida dos recursos, e a igreja tem o dever de ser transparente."),
-      p("[PREENCHER: como contribuir na Vertical Church (formas de entrega) e como a igreja presta contas dos recursos]"),
+      p("[PREENCHER: como contribuir na {{igreja}} (formas de entrega) e como a igreja presta contas dos recursos]"),
       p("Ninguém deve dar por medo, por culpa ou esperando retorno financeiro em troca. Se você está endividado ou sem condições agora, converse com o seu discipulador: dar começa no coração, e há muitas formas de ser generoso."),
     ],
     challenge: "Faça hoje uma oração de gratidão pelo que você recebeu. Depois, defina em oração um valor ou percentual para começar a separar para o Senhor, de acordo com a sua realidade.",

@@ -1,3 +1,4 @@
+import { DEFAULT_CHURCH_NAME } from "@/lib/church";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { renderEmail, type EmailKind } from "@/lib/email/templates";
 import type { EmailProvider } from "@/lib/email/provider";
@@ -48,7 +49,7 @@ export async function runReminders(options: {
   if (planned.length === 0) return { status: "ok", planned: 0, queued: 0, sent: 0, failed: 0 };
 
   const templates = new Map((snapshot.templates ?? []).map((t) => [t.kind, t]));
-  const churchName = snapshot.church?.name ?? "Vertical Church";
+  const churchName = snapshot.church?.name ?? DEFAULT_CHURCH_NAME;
   const subjectOf = (kind: EmailKind, vars: (typeof planned)[number]["vars"]) =>
     renderEmail(templates.get(kind)!, vars, { churchName, unsubscribeUrl: site }).subject;
 

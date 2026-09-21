@@ -1,0 +1,16 @@
+{
+  "slug": "igreja-exemplo",
+  "name": "Igreja Exemplo",
+  "contactEmail": "contato@igrejaexemplo.org",
+  "initialAdminEmail": "pastor@igrejaexemplo.org",
+  "siteUrl": "https://discipulado.igrejaexemplo.org",
+  "brand": {
+    "brand": "#1d4ed8",
+    "foreground": "#111111",
+    "background": "#fafafa"
+  },
+  "content": {
+    "cycles": [1, 2, 3],
+    "library": false
+  }
+}

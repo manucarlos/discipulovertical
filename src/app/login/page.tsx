@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { BrandLogo } from "@/components/brand-logo";
+import { loadIdentity } from "@/lib/brand-store";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { getSupabaseEnv } from "@/lib/supabase/config";
 import { EmailSignInForm } from "./email-sign-in-form";
@@ -21,11 +22,12 @@ export default async function LoginPage(props: PageProps<"/login">) {
   const { erro, conta } = await props.searchParams;
   const configured = getSupabaseEnv() !== null;
   const withEmail = configured && (await emailLoginEnabled());
+  const { name: churchName } = await loadIdentity();
 
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm rounded-2xl border border-line bg-card p-8 shadow-sm">
-        <BrandLogo height={96} />
+        <BrandLogo height={96} name={churchName} />
         <h1 className="mt-4 font-serif text-3xl leading-tight">Discipulado</h1>
         <p className="mt-3 text-muted">
           Sua caminhada com Jesus, um passo de cada vez. Entre para começar.

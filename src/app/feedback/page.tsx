@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { BrandLogo } from "@/components/brand-logo";
+import { loadIdentity } from "@/lib/brand-store";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { getSupabaseEnv } from "@/lib/supabase/config";
 import { FeedbackForm } from "./feedback-form";
@@ -23,10 +24,11 @@ export default async function FeedbackPage() {
   await connection();
   const configured = getSupabaseEnv() !== null;
   const open = configured && (await feedbackOpen());
+  const { name: churchName } = await loadIdentity();
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-10">
-      <BrandLogo height={72} />
+      <BrandLogo height={72} name={churchName} />
       <h1 className="mt-4 font-serif text-3xl leading-tight">Conte como foi</h1>
 
       {open ? (

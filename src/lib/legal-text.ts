@@ -9,6 +9,8 @@
  * Quando o texto for aprovado, troque TERMS_VERSION em legal.ts (tirando o "-rascunho"): os aceites passam a valer
  * para a versão aprovada.
  */
+import { withChurchDeep } from "./church";
+
 export interface LegalSection {
   title: string;
   paragraphs: string[];
@@ -26,12 +28,12 @@ export const PLACEHOLDER_PREFIX = "[A PREENCHER PELA IGREJA:";
 export const TERMS: LegalDocument = {
   title: "Termos de Uso",
   intro:
-    "Estes termos explicam como usar a plataforma de discipulado da Vertical Church. Ao entrar, você declara que leu e concorda com eles e com a Política de Privacidade.",
+    "Estes termos explicam como usar a plataforma de discipulado da {{igreja}}. Ao entrar, você declara que leu e concorda com eles e com a Política de Privacidade.",
   sections: [
     {
       title: "1. Quem somos",
       paragraphs: [
-        "A plataforma é mantida pela Vertical Church ([A PREENCHER PELA IGREJA: razão social, CNPJ e endereço da igreja]), a que chamamos de \"a igreja\".",
+        "A plataforma é mantida pela {{igreja}} ([A PREENCHER PELA IGREJA: razão social, CNPJ e endereço da igreja]), a que chamamos de \"a igreja\".",
       ],
     },
     {
@@ -105,12 +107,12 @@ export const TERMS: LegalDocument = {
 export const PRIVACY: LegalDocument = {
   title: "Política de Privacidade",
   intro:
-    "Esta política explica, em linguagem simples, quais dados pessoais a plataforma de discipulado da Vertical Church guarda, para quê, por quanto tempo e quais são os seus direitos, conforme a Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018).",
+    "Esta política explica, em linguagem simples, quais dados pessoais a plataforma de discipulado da {{igreja}} guarda, para quê, por quanto tempo e quais são os seus direitos, conforme a Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018).",
   sections: [
     {
       title: "1. Quem é o responsável",
       paragraphs: [
-        "O responsável (\"controlador\") pelos seus dados é a Vertical Church ([A PREENCHER PELA IGREJA: razão social, CNPJ e endereço]).",
+        "O responsável (\"controlador\") pelos seus dados é a {{igreja}} ([A PREENCHER PELA IGREJA: razão social, CNPJ e endereço]).",
         "O encarregado pelo tratamento de dados pessoais (DPO) é [A PREENCHER PELA IGREJA: nome e e-mail do encarregado]. É a ele que você pode dirigir dúvidas e pedidos sobre os seus dados.",
       ],
     },
@@ -209,3 +211,8 @@ export const PRIVACY: LegalDocument = {
     },
   ],
 };
+
+/** Os Termos com o nome da igreja no lugar do marcador {{igreja}}. */
+export const termsFor = (churchName: string): LegalDocument => withChurchDeep(TERMS, churchName);
+/** A Política de Privacidade com o nome da igreja no lugar do marcador {{igreja}}. */
+export const privacyFor = (churchName: string): LegalDocument => withChurchDeep(PRIVACY, churchName);

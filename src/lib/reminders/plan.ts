@@ -1,3 +1,4 @@
+import { DEFAULT_CHURCH_NAME } from "@/lib/church";
 import { computeLessonStates, type LessonState, type ReleaseLesson, type ReleaseProgress } from "@/lib/lessons/release";
 import type { EmailKind, Vars } from "@/lib/email/templates";
 
@@ -91,7 +92,7 @@ export function planReminders(snapshot: Snapshot, now: Date, siteUrl: string): P
   if (!snapshot.enabled || !isSendWindow(now)) return [];
 
   const site = siteUrl.replace(/\/+$/, "");
-  const churchName = snapshot.church?.name ?? "Vertical Church";
+  const churchName = snapshot.church?.name ?? DEFAULT_CHURCH_NAME;
   const members = snapshot.members ?? [];
   const lessons = snapshot.lessons ?? [];
   const cycles = new Map((snapshot.cycles ?? []).map((c) => [c.id, c]));

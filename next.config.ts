@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Envio do logotipo em Administração > Marca: até 2 MB por imagem (o logotipo e o símbolo) e o arquivo de importação.
+    serverActions: { bodySizeLimit: "6mb" },
+  },
   async headers() {
     return [
       {

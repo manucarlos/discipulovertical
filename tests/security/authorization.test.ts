@@ -62,7 +62,7 @@ describe("ações do servidor ('use server')", () => {
   }
 
   it("as ações do painel exigem equipe, e as de dados de outras pessoas exigem administrador", () => {
-    const admin = ["src/app/admin/pessoas/actions.ts", "src/app/admin/igreja/actions.ts", "src/app/admin/configuracoes/actions.ts", "src/app/admin/cuidado/actions.ts", "src/app/admin/lembretes/actions.ts", "src/app/admin/encerramentos/actions.ts", "src/app/admin/grupos/actions.ts", "src/app/admin/pedidos-de-ajuda/actions.ts", "src/app/admin/feedback/actions.ts"];
+    const admin = ["src/app/admin/pessoas/actions.ts", "src/app/admin/igreja/actions.ts", "src/app/admin/configuracoes/actions.ts", "src/app/admin/cuidado/actions.ts", "src/app/admin/lembretes/actions.ts", "src/app/admin/encerramentos/actions.ts", "src/app/admin/grupos/actions.ts", "src/app/admin/pedidos-de-ajuda/actions.ts", "src/app/admin/feedback/actions.ts", "src/app/admin/marca/actions.ts"];
     for (const f of admin) {
       const source = read(path.resolve(__dirname, "../..", f));
       for (const { name, body } of exportedFunctions(source)) {
@@ -87,7 +87,7 @@ describe("telas do painel (/admin)", () => {
     });
   }
   it("as telas com dados pessoais de outras pessoas exigem administrador", () => {
-    for (const p of pages.filter((f) => /admin\/(pessoas|igreja|configuracoes|cuidado|lembretes|encerramentos|grupos|pedidos-de-ajuda|feedback)\//.test(rel(f)))) {
+    for (const p of pages.filter((f) => /admin\/(pessoas|igreja|configuracoes|cuidado|lembretes|encerramentos|grupos|pedidos-de-ajuda|feedback|marca)\//.test(rel(f)))) {
       expect(read(p), rel(p)).toMatch(/requireAdmin\(/);
     }
     expect(read(files.find((f) => rel(f).endsWith("admin/painel/page.tsx"))!)).toMatch(/role === "admin"/); // o editor recebe só métricas de conteúdo
@@ -133,6 +133,13 @@ describe("telas do membro e rotas de dados", () => {
       } else if (rel(r) === "src/app/api/cron/lembretes/route.ts") {
         expect(source, "o agendador precisa provar que tem o CRON_SECRET").toMatch(/isAuthorizedCron\(/);
         expect(source, "sem CRON_SECRET configurado a rota recusa").toMatch(/if \(!secret\)/);
+      } else if (rel(r) === "src/app/admin/marca/exportar/route.ts") {
+        expect(source, "a identidade só sai para o administrador").toMatch(/requireAdmin\(/);
+        expect(source, "sem cache").toMatch(/"Cache-Control":\s*"no-store"/);
+      } else if (rel(r) === "src/app/marca/[arquivo]/route.ts") {
+        expect(source, "as imagens da marca são públicas de propósito, mas só de uma lista fixa de arquivos").toMatch(/const FILES: Record/);
+        expect(source, "e só pela função pública do banco (loadAsset)").toMatch(/loadAsset\(/);
+        expect(source, "arquivo desconhecido é 404").toMatch(/status: 404/);
       } else if (rel(r) === "src/app/api/descadastro/route.ts") {
         expect(source, "o código do e-mail precisa ser validado").toMatch(/UUID\.test\(token\)/);
         expect(source, "abrir o link (GET) nunca descadastra").not.toMatch(/export async function GET/);

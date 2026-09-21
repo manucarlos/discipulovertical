@@ -7,11 +7,11 @@ O código do MVP está pronto e testado, mas **nunca rodou contra um Supabase re
 ## Fase A: contas e banco (guia em [CONTAS.md](CONTAS.md))
 
 - [ ] Contas criadas: GitHub, Supabase (produção e homologação), Google Cloud, Vercel. Verificação em duas etapas ligada em todas.
-- [ ] As **24 migrações** aplicadas, em ordem, em cada projeto Supabase (CONTAS.md, Fase 3, com o arquivo `banco-completo.sql`). Nenhuma deu erro.
+- [ ] As **25 migrações** aplicadas, em ordem, em cada projeto Supabase (CONTAS.md, Fase 3, com o arquivo `banco-completo.sql`). Nenhuma deu erro.
 - [ ] Primeiro administrador definido **antes** do primeiro login (`app_config`).
 - [ ] Login com Google ligado ao Supabase e o app do Google **publicado** ("Em produção").
 - [ ] `.env.local` preenchido; `npm run dev` abre em <http://localhost:3000>.
-- [ ] Conteúdo importado (`npm run import:sql`) e colado no SQL Editor.
+- [ ] Conteúdo importado (`npm run import:sql -- --igreja "Nome da igreja"`) e colado no SQL Editor.
 
 ## Fase B: conferir no ambiente de verdade
 
@@ -68,7 +68,7 @@ Depois de o MVP passar nos passos acima. Cada recurso nasce desligado (**Adminis
 - [ ] **Segundo administrador** de confiança com acesso de emergência a todas as contas.
 - [ ] Mapa completo do que falta e de quem faz: [PENDENCIAS.md](PENDENCIAS.md).
 - [x] **Logotipo** no site, nos ícones do app e no certificado.
-- [x] **Cores** do site iguais às do logotipo (laranja e preto). Para trocar: [MARCA.md](MARCA.md).
+- [x] **Cores** do site iguais às do logotipo (laranja e preto). Para trocar: **Administração > Marca** ([MARCA.md](MARCA.md)).
 - [ ] **Textos da igreja** enviados para resolver os `[PREENCHER]` do Ciclo 3 (história, valores, declaração de fé, liderança, ministérios, membresia) e para **Nossa Igreja** (pelo painel).
 - [ ] **Números de emergência** das lições (CVV 188, SAMU 192, Ligue 180, polícia 190) conferidos antes de publicar as lições sensíveis. **Revisão pastoral das 28 lições da biblioteca** (e de um profissional nas sensíveis: 9, 10, 12, 13, 14, 16, 17 e 28), preenchendo os `[PREENCHER]`.
 - [ ] Decisões pendentes de [DECISIONS.md](DECISIONS.md) respondidas (edição de lição publicada, tamanho das lições, lições sensíveis, botão do batismo).

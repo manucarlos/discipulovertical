@@ -1,72 +1,53 @@
-# Futuro: tela de Marca e expansão para outras igrejas
+# Expansão: servir outras igrejas, cada uma com a sua identidade
 
-Este documento registra duas ideias para **depois do piloto**. Nenhuma está construída, e nenhuma é necessária para a Vertical Church hoje. O que já existe: a paleta e o logotipo são trocados em um arquivo só ([MARCA.md](MARCA.md)).
+Este documento registra a análise e o que já foi feito para a plataforma poder servir **outras igrejas**, cada uma com a sua marca. Em 21/09/2026 foram implantados os quatro itens de preparação (seção 3). O que falta são **decisões de negócio e jurídicas**, registradas na seção 4 para evolução posterior.
 
-## 1. Tela de Marca no painel (trocar cores e logo sem mexer em código)
+## 1. O modelo escolhido: uma instalação por igreja
 
-**Quando vale a pena:** se a igreja quiser trocar a identidade sem depender de quem mexe no código, ou se o produto for servir várias igrejas (seção 2). Enquanto a marca muda raramente, editar `src/lib/brand.ts` (5 minutos, com os testes de contraste avisando) é mais simples e não tem risco de derrubar o site.
+Cada igreja tem o **seu site e o seu banco**, do mesmo código. Por quê:
 
-### Cores (etapa 1: pequena e segura)
+- **Dados sensíveis.** Convicção religiosa é dado sensível na LGPD. Com bancos separados, um erro numa igreja não alcança outra. Numa plataforma única, uma regra de acesso errada vaza dados entre igrejas, e esse é o pior erro possível neste produto.
+- **O código serve como está.** Uma plataforma única exigiria reescrever o acesso a 35 tabelas e 101 regras (o mesmo trabalho do RF-29, "vários campi").
+- Cada igreja leva os seus dados se sair; dá para cobrar ou desligar por igreja.
+- **Custo:** fixo e mais alto por igreja (banco e hospedagem pagos por cada uma), e cada atualização precisa ser aplicada em cada instalação (automatizável). Serve até algumas dezenas de igrejas.
 
-- Página **Administração > Marca**: o Admin escolhe **2 ou 3 cores** (a da igreja, a do texto, a do fundo). O site **calcula o resto** (botão em foco, faixa suave, texto secundário, modo escuro da leitura) garantindo o contraste WCAG AA.
-- Prévia ao vivo. O botão Salvar **recusa** combinação ilegível. **Restaurar o padrão** e histórico (quem mudou o quê, no log de auditoria).
-- Guardada em **uma linha de uma tabela comum do Postgres** (jsonb), lida pelo layout com cache curto de alguns segundos. Se o banco falhar, o site usa o `brand.ts` atual, que continua existindo como **padrão de segurança**.
-- Leitura pública por uma função do banco (como `public_features`), porque o login também usa as cores. Escrita só do Admin.
-- **Segurança:** a cor vai para o CSS, então é validada como `#rrggbb` no servidor **e** por restrição no banco (nada de texto livre no CSS).
-
-### Logo (etapa 2: maior)
-
-- Envio de **PNG ou JPG** (SVG não: pode carregar código). O servidor gera as variações: logo transparente, ícones do app (inclusive o "maskable"), ícone do iPhone, ícone da aba e o logo do certificado (o que `npm run icons` faz hoje).
-- Guardado **dentro do banco** (arquivo pequeno), não no Supabase Storage, e servido por rotas do próprio site com endereço versionado (cache). Assim não amarra a nenhum serviço.
-- **Mais trabalho:** ícones e manifesto hoje são arquivos fixos e passariam a rotas; o service worker precisa de cache versionado; o ícone da aba (hoje só a cruz laranja, extraída pela cor) pede um **símbolo enviado à parte**; quem já instalou o app pode ver o ícone antigo até reinstalar.
-
-### Para não aumentar a amarração com Supabase ou hospedagem
-
-- **Um módulo só** (`brand-store`) lê e grava a marca: trocar de banco seria trocar um arquivo.
-- Tabela SQL comum, exportável por `pg_dump`; sem Storage, realtime ou funções do Supabase.
-- Cache **na memória do servidor**, nada específico da Vercel.
-- **Exportar e importar a identidade** (arquivo com cores e logo), para backup e para levar a outra plataforma.
-
-## 2. Servir outras igrejas, cada uma com identidade própria
+**Quando reavaliar a plataforma única (multi-tenant):** acima de 15 a 20 igrejas, ou se atualizar cada instalação virar o gargalo. Nesse ponto já haverá casos reais para desenhá-la com segurança.
 
 ### Amarração de hoje (medida em 21/09/2026)
 
 | Camada | Situação | Se trocar |
 | --- | --- | --- |
-| Hospedagem (Vercel) | Só o agendador (`vercel.json`) e uma variável de ambiente | Fácil: é um Next.js comum, roda em qualquer servidor Node |
+| Hospedagem (Vercel) | Só o agendador (`vercel.json`) e variáveis de ambiente | Fácil: é um Next.js comum, roda em qualquer servidor Node |
 | Supabase | 136 consultas e 53 chamadas de função em 32 arquivos; 88 funções SQL; 101 regras de acesso por `auth.uid()`; login pelo Supabase Auth | Grande: semanas, porque as regras de quem vê o quê vivem no banco |
-| "Vertical Church" fixo | ~15 pontos no código (títulos, manifesto, textos legais, consentimento, e-mails, página offline), mais o conteúdo das lições | Pequeno, mas precisa ser feito antes da primeira outra igreja |
+| Nome da igreja | Vem da configuração; nenhum texto do aplicativo repete "Vertical Church" | Nada a fazer |
 
-### Três caminhos
+## 2. Comparação dos caminhos
 
-| | **A. Uma instalação por igreja** | **B. Uma plataforma para todas** (multi-tenant) |
+| | **A. Uma instalação por igreja** (escolhido) | **B. Uma plataforma para todas** (multi-tenant) |
 | --- | --- | --- |
-| Como é | Cada igreja tem o seu site e o seu banco, do mesmo código | Um site e um banco; cada linha diz de qual igreja é |
-| Isolamento dos dados | **Total.** Convicção religiosa é dado sensível (LGPD): um erro numa igreja não alcança outra | Por regras. **Um erro em uma regra vaza dados entre igrejas**, o pior erro possível neste produto |
-| Esforço para construir | **Quase nenhum**: o código de hoje serve; falta o kit de instalação | **Grande**: 35 tabelas e 101 regras passam a considerar a igreja (o mesmo trabalho do RF-29, "vários campi") |
-| Identidade própria | Cada instalação tem cores, logo, domínio e login do Google com o nome da igreja | Cores e logo por igreja no banco; domínio e login do Google por igreja são mais complexos |
-| Custo por igreja | Fixo e mais alto (banco e hospedagem pagos por igreja) | Menor, dividido entre todas |
-| Atualizações | Aplicar em cada instalação (automatizável com script) | Uma vez, para todas |
+| Isolamento dos dados | **Total** | Por regras: um erro vaza entre igrejas |
+| Esforço para construir | **Pouco** (o kit de instalação, seção 3) | **Grande** (35 tabelas e 101 regras passam a considerar a igreja) |
+| Identidade própria | Cores, logo, domínio e login do Google por instalação | Cores e logo por igreja no banco; domínio e login por igreja são mais complexos |
+| Custo por igreja | Fixo e mais alto | Menor, dividido |
+| Atualizações | Em cada instalação (script) | Uma vez, para todas |
 | Serve até | Algumas dezenas de igrejas | Centenas |
 
-### Recomendação: começar em A e só considerar B com demanda real
+## 3. O que foi implantado (21/09/2026)
 
-1. **Comece em A** com um **kit de instalação**: roteiro e script que criam o projeto no Supabase, aplicam o `banco-completo.sql` (já existe), configuram a hospedagem e o login do Google. Hoje isso é o [CONTAS.md](CONTAS.md), feito à mão em cerca de 2 horas.
-2. **Passe para B só se** passar de umas 15 a 20 igrejas, ou se a operação de atualizar cada instalação virar o gargalo. Nesse ponto já haverá casos reais para desenhar B com segurança.
+1. **Nome da igreja fora do código.** O nome vem de **Administração > Configurações** (`church.name`) e chega ao título das páginas, ao manifesto do app, aos Termos de Uso e à Política de Privacidade, ao texto de consentimento, ao arquivo "Baixar meus dados", aos e-mails e às lições (o marcador `{{igreja}}` é trocado no importador). O nome de reserva, se o banco não responder, é o da variável `NEXT_PUBLIC_CHURCH_NAME` (ou "Igreja").
+2. **Tela de Marca no painel** (**Administração > Marca**): as 3 cores (o site calcula o resto e só aceita o que for legível), o logotipo (com todos os ícones gerados dele), exportar e importar a identidade, e voltar ao padrão. Detalhes e o que foi feito para **não amarrar** a nenhum serviço: [MARCA.md](MARCA.md).
+3. **Kit de instalação** (`npm run kit -- exemplo`): a partir de um arquivo `churches/<igreja>.json` (nome, contato, administrador inicial, endereço, 3 cores, ciclos), gera em `content/generated/kit-<igreja>/` o banco completo, a identidade (nome, primeiro administrador, cores, e a limpeza dos textos de exemplo de Nossa Igreja), as lições com o nome da igreja, as variáveis do site e um **roteiro em Markdown personalizado**. Não usa contas nem chaves: só gera arquivos. O SQL do kit é testado contra um banco novo, inclusive com nomes de igreja com aspas e comandos SQL.
+4. **Conteúdo separado do código.** Os textos das lições que citavam a Vertical usam `{{igreja}}`. O Ciclo 3 e o Nossa Igreja continuam sendo **da própria igreja** (`[PREENCHER]` e páginas vazias): o kit não inventa nada no lugar. Os Termos e a Política são minutas com campos `[A PREENCHER PELA IGREJA]` (razão social, CNPJ, encarregado de dados).
 
-### O que preparar agora (barato, mantém as duas portas abertas)
+**O que o kit não faz (evolução futura):** criar os projetos no Supabase e na Vercel por conta própria. Isso exigiria guardar chaves de API de quem opera, e hoje quem cola os SQLs e cria as contas é uma pessoa, seguindo o roteiro. Automatizar pelas APIs dos dois serviços é possível depois, se o número de igrejas justificar.
 
-1. **Tirar o texto fixo:** o nome e os dados da igreja devem vir da configuração (`church.name` já existe em Configurações), não de texto no código.
-2. **Tela de Marca** (seção 1): passa de "conforto" a necessária, para cada igreja se autoatender.
-3. **Kit de instalação** (acima).
-4. **Conteúdo separado do código:** os Ciclos e a biblioteca são da Vertical (o importador lê o `HANDOFF.md`). Outras igrejas precisam de um **pacote base neutro e editável**, e o Ciclo 3 (história, valores, liderança) é sempre da própria igreja.
-5. **Textos legais como modelo com campos da igreja:** já são minutas com `[A PREENCHER PELA IGREJA]`.
-6. **Continuar neutro de hospedagem e de banco**, como hoje.
+## 4. Decisões registradas para evolução posterior
 
-### Decisões de negócio e jurídicas antes de vender
+Nenhuma destas é código. Ficam anotadas para quando o projeto for oferecido a outras igrejas.
 
-- **Papel na LGPD:** cada igreja é a controladora dos dados dos seus membros; quem vende a plataforma é operador. Isso pede contrato (DPA), política própria e encarregado de dados.
+- **Papel na LGPD:** cada igreja é a **controladora** dos dados dos seus membros; quem vende a plataforma é **operador**. Isso pede contrato (DPA), política própria e encarregado de dados.
 - **Hospedagem comercial:** o plano gratuito da Vercel é para uso não comercial. Vender exige plano pago (conferir os termos atuais), além do custo do Supabase por instalação.
 - **Licença do conteúdo:** as lições são da Vertical Church. É preciso decidir o que se pode repassar e em que termos. O texto bíblico (NVI, NTLH) exige autorização por uso e por igreja; a plataforma hoje só mostra referências e links.
 - **Login do Google:** cada igreja precisa da própria tela de consentimento, com o nome e o logo dela (e a verificação do Google, que leva dias), ou usa-se uma conta única com nome neutro.
 - **Preço, suporte, prazo de resposta, backup e retenção de dados.**
+- **Plataforma única (multi-tenant)** e **automação da criação dos projetos**: só quando a demanda real pedir (ver seção 1).
