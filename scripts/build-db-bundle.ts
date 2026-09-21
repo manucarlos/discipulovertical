@@ -1,5 +1,5 @@
 /**
- * Junta as 22 migrações num arquivo só, para colar UMA vez no SQL Editor do Supabase.
+ * Junta as 23 migrações num arquivo só, para colar UMA vez no SQL Editor do Supabase.
  *
  * Uso: npm run db:bundle   ->  content/generated/banco-completo.sql
  *

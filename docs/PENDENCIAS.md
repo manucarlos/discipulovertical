@@ -29,7 +29,7 @@ Nenhum destes itens pode ser feito por mim: envolvem contas em seu nome, pagamen
 | # | Item | Quem | Por quê |
 | --- | --- | --- | --- |
 | 1 | Criar as contas: GitHub, Supabase, Google Cloud, Vercel (e Resend, se for usar e-mail) | Pastor | São contas suas, com a sua identidade e, às vezes, cartão. Guia em [CONTAS.md](CONTAS.md). **Nunca cole senhas ou chaves no chat** |
-| 2 | Aplicar as 22 migrações e importar o conteúdo (Ciclos e biblioteca) | Pastor, com o guia | Um arquivo só (`banco-completo.sql`) cola no SQL Editor do seu Supabase; o guia tem o passo a passo |
+| 2 | Aplicar as 23 migrações e importar o conteúdo (Ciclos e biblioteca) | Pastor, com o guia | Um arquivo só (`banco-completo.sql`) cola no SQL Editor do seu Supabase; o guia tem o passo a passo |
 | 3 | **Autorização por escrito** para a NVI e a NTLH | Igreja | Sem ela, a plataforma só mostra referências e links (é o que faz hoje) |
 | 4 | **Revisão jurídica** dos Termos e da Política (as minutas estão em `/termos` e `/privacidade`) | Advogado da igreja | Convicção religiosa é dado sensível na LGPD. Trechos `[A PREENCHER PELA IGREJA]` não foram inventados |
 | 5 | Designar o **encarregado de dados (DPO)** e um segundo administrador de emergência | Igreja | Exigência da LGPD e do handoff |

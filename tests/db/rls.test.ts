@@ -61,6 +61,58 @@ describe("perfis e papéis", () => {
     expect(row.role).toBe("member");
   });
 
+  // Estes testes criam contas com o e-mail do primeiro Admin; cada um apaga o que criou
+  // para não sobrar Admin extra nos testes seguintes.
+  const roleOf = async (id: string) =>
+    (await q<{ role: string }>("select role from public.profiles where id = $1", [id]))[0].role;
+  const cleanup = (id: string) => q("delete from auth.users where id = $1", [id]);
+
+  it("como no Supabase de verdade (criado sem confirmar, confirmado depois), o e-mail inicial vira Admin, com registro", async () => {
+    const id = await createUser(db, "Pastor@example.com", { confirmed: false });
+    try {
+      expect(await roleOf(id)).toBe("member");
+
+      await q("update auth.users set email_confirmed_at = now() where id = $1", [id]);
+      expect(await roleOf(id)).toBe("admin");
+      expect(
+        await q("select 1 from public.audit_log where action = 'initial_admin_assigned' and entity_id = $1", [id]),
+      ).toHaveLength(1);
+    } finally {
+      await cleanup(id);
+    }
+  });
+
+  it("confirmar o e-mail de outra pessoa depois da criação não promove ninguém", async () => {
+    const id = await createUser(db, "intruso@example.com", { confirmed: false });
+    try {
+      await q("update auth.users set email_confirmed_at = now() where id = $1", [id]);
+      expect(await roleOf(id)).toBe("member");
+    } finally {
+      await cleanup(id);
+    }
+  });
+
+  it("e-mail já confirmado no INSERT também vira Admin (SQL Editor, outros provedores)", async () => {
+    const id = await createUser(db, "PASTOR@example.com", { confirmedOnInsert: true });
+    try {
+      expect(await roleOf(id)).toBe("admin");
+    } finally {
+      await cleanup(id);
+    }
+  });
+
+  it("uma segunda atualização da confirmação não promove de novo quem foi rebaixado", async () => {
+    const id = await createUser(db, "pastor@example.com");
+    try {
+      expect(await roleOf(id)).toBe("admin");
+      await q("update public.profiles set role = 'member' where id = $1", [id]);
+      await q("update auth.users set email_confirmed_at = now() where id = $1", [id]);
+      expect(await roleOf(id)).toBe("member");
+    } finally {
+      await cleanup(id);
+    }
+  });
+
   it("membro vê só o próprio perfil; Admin vê todos", async () => {
     const own = await asUser(db, member1, () => q("select id from public.profiles"));
     expect(own).toHaveLength(1);

@@ -54,19 +54,28 @@ export async function createDb(): Promise<PGlite> {
   return db;
 }
 
-/** Cria um usuário como o login Google faria (dispara o gatilho que cria o perfil). */
+/**
+ * Cria um usuário como o login Google faz no Supabase de verdade: o INSERT vem SEM e-mail
+ * confirmado (dispara o gatilho que cria o perfil) e a confirmação chega logo depois, num UPDATE.
+ * Com `confirmedOnInsert`, o e-mail já nasce confirmado (outros provedores, ou o SQL Editor).
+ */
 export async function createUser(
   db: PGlite,
   email: string,
-  opts: { confirmed?: boolean; name?: string } = {},
+  opts: { confirmed?: boolean; confirmedOnInsert?: boolean; name?: string } = {},
 ): Promise<string> {
-  const { confirmed = true, name = "" } = opts;
+  const { confirmed = true, confirmedOnInsert = false, name = "" } = opts;
+  const now = new Date().toISOString();
   const res = await db.query<{ id: string }>(
     `insert into auth.users (email, email_confirmed_at, raw_user_meta_data)
      values ($1, $2, $3::jsonb) returning id`,
-    [email, confirmed ? new Date().toISOString() : null, JSON.stringify({ full_name: name })],
+    [email, confirmed && confirmedOnInsert ? now : null, JSON.stringify({ full_name: name })],
   );
-  return res.rows[0].id;
+  const id = res.rows[0].id;
+  if (confirmed && !confirmedOnInsert) {
+    await db.query("update auth.users set email_confirmed_at = $2 where id = $1", [id, now]);
+  }
+  return id;
 }
 
 /** Executa `fn` como um usuário logado (papel `authenticated`), como o PostgREST faz. */

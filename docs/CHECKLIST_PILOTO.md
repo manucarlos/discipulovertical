@@ -7,7 +7,7 @@ O código do MVP está pronto e testado, mas **nunca rodou contra um Supabase re
 ## Fase A: contas e banco (guia em [CONTAS.md](CONTAS.md))
 
 - [ ] Contas criadas: GitHub, Supabase (produção e homologação), Google Cloud, Vercel. Verificação em duas etapas ligada em todas.
-- [ ] As **22 migrações** aplicadas, em ordem, em cada projeto Supabase (CONTAS.md, Fase 3, com o arquivo `banco-completo.sql`). Nenhuma deu erro.
+- [ ] As **23 migrações** aplicadas, em ordem, em cada projeto Supabase (CONTAS.md, Fase 3, com o arquivo `banco-completo.sql`). Nenhuma deu erro.
 - [ ] Primeiro administrador definido **antes** do primeiro login (`app_config`).
 - [ ] Login com Google ligado ao Supabase e o app do Google **publicado** ("Em produção").
 - [ ] `.env.local` preenchido; `npm run dev` abre em <http://localhost:3000>.
