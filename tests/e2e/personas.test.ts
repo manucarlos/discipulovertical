@@ -19,6 +19,7 @@ vi.mock("next/server", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/server")>()),
   connection: async () => {},
 }));
+vi.mock("next/cache", () => ({ revalidatePath() {} }));
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useRouter: () => ({ refresh() {}, push() {}, replace() {}, back() {}, prefetch() {} }),
@@ -30,7 +31,7 @@ import HomePage from "@/app/(member)/page";
 import CyclePage from "@/app/(member)/ciclo/[slug]/page";
 import LessonPage from "@/app/(member)/licao/[slug]/page";
 import ChurchPage from "@/app/(member)/igreja/page";
-import { completeLesson, openLesson, saveReadingPosition } from "@/app/(member)/licao/[slug]/actions";
+import { completeLesson, openLesson, saveReadingPosition, saveReflection, submitQuiz, togglePractice } from "@/app/(member)/licao/[slug]/actions";
 import AdminTrailPage from "@/app/admin/trilha/page";
 import EditLessonPage from "@/app/admin/licao/[slug]/page";
 import PreviewPage from "@/app/admin/licao/[slug]/previa/page";
@@ -856,6 +857,140 @@ describe("Claudião, administrador: liga e desliga recursos", () => {
     const direct = await client().from("app_settings").update({ value: true }).eq("key", "feature.groups").select("key");
     expect(direct.data).toEqual([]);
     expect((await loadSettings(client())).flags.groups).toBe(false);
+    await world.login(CLAUDIAO);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// HISTÓRIA 4d · quiz, prática e reflexão (RF-12, RF-13, RN-02, RN-03), com os recursos ligados pelo Claudião
+// ---------------------------------------------------------------------------------------------
+
+describe("Claudinho faz o quiz, marca a prática e escreve a reflexão", () => {
+  let slug = "";
+  let lessonId = "";
+  let questions: { position: number; correct_option: string; explanation: string }[] = [];
+
+  const answersFor = (right: number) =>
+    form(Object.fromEntries(questions.map((q, i) => [`q${q.position}`, i < right ? q.correct_option : q.correct_option === "A" ? "B" : "A"])));
+  const idle = { status: "idle" } as const;
+
+  it("o Claudião liga o quiz e a reflexão", async () => {
+    await world.login(CLAUDIAO);
+    const saved = await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "", feature_quiz: true, feature_reflections: true })));
+    expect(decodeURIComponent(saved.redirect!.replace(/\+/g, " "))).toContain("Configurações salvas");
+  });
+
+  it("a próxima lição do Claudinho mostra o quiz sem entregar o gabarito, e o botão de concluir fica escondido", async () => {
+    await world.login(CLAUDINHO);
+    let trail = await loadTrail(client(), CLAUDINHO.id!);
+    if (!trail.current?.lessons.some((l) => l.state.state === "available" || l.state.state === "in_progress")) {
+      await world.passDays(10);
+      trail = await loadTrail(client(), CLAUDINHO.id!);
+    }
+    const item = trail.current!.lessons.find((l) => l.state.state === "available" || l.state.state === "in_progress")!;
+    slug = item.slug;
+    lessonId = item.id;
+    questions = await world.sql(
+      "select position, correct_option, explanation from public.quiz_questions where lesson_id = $1 order by position",
+      [lessonId],
+    );
+    expect(questions.length).toBeGreaterThanOrEqual(2);
+
+    const page = await visit(LessonPage, { params: { slug } });
+    expect(page.text).toContain("Para fixar");
+    expect(page.text).toContain(`Acerte pelo menos ${Math.max(1, Math.ceil((questions.length * 2) / 3))} de ${questions.length}`);
+    expect(page.text).toContain("Responda ao quiz acima");
+    expect(page.text).not.toContain("Concluir lição");
+    for (const q of questions) if (q.explanation) expect(page.text).not.toContain(q.explanation);
+    expect(page.text).toContain("Sua prática");
+  });
+
+  it("concluir sem ser aprovado não funciona: nem pela ação, nem direto no banco", async () => {
+    await openLesson(slug); // o navegador faz isso ao abrir a lição
+    const attempt = await outcome(() => completeLesson(slug));
+    expect(attempt.redirect).toBe(`/licao/${slug}?quiz=1`);
+    const direct = await client().from("lesson_progress").update({ status: "completed", completed_at: new Date().toISOString() }).eq("lesson_id", lessonId);
+    expect(direct.error?.message).toMatch(/acerte o quiz/);
+    expect(await world.sql("select 1 from public.lesson_progress where user_id = $1 and lesson_id = $2 and status = 'completed'", [CLAUDINHO.id, lessonId])).toHaveLength(0);
+  });
+
+  it("responder pela metade pede que responda tudo; errar não aprova e não entrega o gabarito", async () => {
+    const partial = await submitQuiz(slug, idle, form({ [`q${questions[0].position}`]: "A" }));
+    expect(partial).toMatchObject({ status: "error", message: expect.stringMatching(/todas as perguntas/) });
+
+    const failed = await submitQuiz(slug, idle, answersFor(0));
+    expect(failed).toMatchObject({ status: "done", result: { correctCount: 0, passed: false } });
+    expect(JSON.stringify(failed)).not.toContain("correct_option");
+  });
+
+  it("acertar aprova, o botão de concluir aparece e a lição conclui", async () => {
+    const passed = await submitQuiz(slug, idle, answersFor(questions.length));
+    expect(passed).toMatchObject({ status: "done", result: { correctCount: questions.length, passed: true } });
+
+    const page = await visit(LessonPage, { params: { slug } });
+    expect(page.text).toContain("Você já foi aprovado neste quiz");
+    expect(page.text).toContain("Concluir lição");
+
+    const done = await outcome(() => completeLesson(slug));
+    expect(done.redirect).toContain(`concluida=${slug}`);
+    expect(await world.sql("select 1 from public.quiz_attempts where user_id = $1 and lesson_id = $2", [CLAUDINHO.id, lessonId])).toHaveLength(2);
+  });
+
+  it("marca a prática, escreve a reflexão; texto grande demais é recusado", async () => {
+    await outcome(() => togglePractice(slug, form({ done: "1" })));
+    expect((await world.sql<{ practice_done: boolean }>("select practice_done from public.lesson_progress where user_id = $1 and lesson_id = $2", [CLAUDINHO.id, lessonId]))[0].practice_done).toBe(true);
+
+    const saved = await outcome(() => saveReflection(slug, form({ body: "Deus me mostrou que preciso perdoar." })));
+    expect(saved.redirect).toContain("salvo=reflexao");
+    const page = await visit(LessonPage, { params: { slug }, search: { salvo: "reflexao" } });
+    expect(page.html).toContain("Deus me mostrou que preciso perdoar.");
+    expect(page.text).toContain("Prática feita");
+    expect(page.text).toContain("Reflexão salva");
+
+    const big = await outcome(() => saveReflection(slug, form({ body: "x".repeat(5001) })));
+    expect(decodeURIComponent(big.redirect!.replace(/\+/g, " "))).toContain("no máximo 5000");
+    expect(await world.sql("select 1 from public.reflections where user_id = $1", [CLAUDINHO.id])).toHaveLength(1);
+  });
+
+  it("o Claudião lê a reflexão na ficha do Claudinho, e a consulta fica registrada", async () => {
+    await world.login(CLAUDIAO);
+    const before = await world.sql("select 1 from public.audit_log where action = 'reflections_viewed'");
+    const page = await visit(PersonPage, { params: { id: CLAUDINHO.id! } });
+    expect(page.text).toContain("Reflexões");
+    expect(page.text).toContain("Deus me mostrou que preciso perdoar.");
+    expect(await world.sql("select 1 from public.audit_log where action = 'reflections_viewed'")).toHaveLength(before.length + 1);
+  });
+
+  it("o arquivo de dados do Claudinho inclui a reflexão e as tentativas de quiz", async () => {
+    await world.login(CLAUDINHO);
+    const data = JSON.parse(await (await exportMyData()).text());
+    expect(data.reflexoes).toHaveLength(1);
+    expect(data.reflexoes[0]).toMatchObject({ licao: slug, texto: "Deus me mostrou que preciso perdoar." });
+    expect(data.tentativas_de_quiz.map((t: { aprovado: boolean }) => t.aprovado)).toEqual([false, true]);
+  });
+
+  it("o Claudio (outra pessoa) não lê a reflexão do Claudinho pelo banco", async () => {
+    await world.login(CLAUDIO);
+    expect((await client().from("reflections").select("body")).data).toEqual([]);
+    expect((await client().rpc("person_reflections", { p_target: CLAUDINHO.id })).error?.message).toMatch(/não autorizado/);
+  });
+
+  it("com os recursos desligados de novo, a lição volta a ser a do MVP e a ficha não mostra reflexões", async () => {
+    await world.login(CLAUDIAO);
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "" })));
+    expect((await visit(PersonPage, { params: { id: CLAUDINHO.id! } })).text).not.toContain("Reflexões");
+
+    await world.login(CLAUDINHO);
+    const page = await visit(LessonPage, { params: { slug } });
+    expect(page.text).not.toContain("Para fixar");
+    expect(page.text).not.toContain("Sua prática");
+    // A reflexão já escrita continua guardada (nada é apagado ao desligar).
+    expect(await world.sql("select 1 from public.reflections where user_id = $1", [CLAUDINHO.id])).toHaveLength(1);
+
+    // Devolve o estado anterior para as próximas histórias.
+    await world.sql("delete from public.reflections");
+    await world.sql("delete from public.quiz_attempts");
+    await world.sql("delete from public.lesson_progress where user_id = $1 and lesson_id = $2", [CLAUDINHO.id, lessonId]);
     await world.login(CLAUDIAO);
   });
 });

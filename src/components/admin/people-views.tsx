@@ -16,7 +16,7 @@ import {
   type PersonRow,
   type UserRole,
 } from "@/lib/admin/people";
-import type { PersonDetail } from "@/lib/admin/people-queries";
+import type { PersonDetail, PersonReflection } from "@/lib/admin/people-queries";
 import { lockedMessage } from "@/lib/trail/format";
 import type { TrailView } from "@/lib/trail/view";
 
@@ -201,6 +201,7 @@ export function PersonDetailView({
   roleAction,
   ok,
   erro,
+  reflections = null,
   backHref = "/admin/pessoas",
 }: {
   detail: PersonDetail;
@@ -210,6 +211,8 @@ export function PersonDetailView({
   roleAction: (formData: FormData) => Promise<void>;
   ok?: string;
   erro?: string;
+  /** Reflexões da pessoa (RN-03). `null` quando o recurso está desligado: a seção nem aparece. */
+  reflections?: PersonReflection[] | null;
   backHref?: string;
 }) {
   const p = detail.summary;
@@ -342,6 +345,29 @@ export function PersonDetailView({
           </div>
         )}
       </section>
+
+      {reflections && (
+        <section aria-labelledby="reflexoes" className="rounded-2xl border border-line bg-card p-5">
+          <h2 id="reflexoes" className="font-serif text-xl">
+            Reflexões
+          </h2>
+          <p className="mt-1 text-sm text-muted">Textos privados escritos pela pessoa. Cada consulta fica registrada.</p>
+          {reflections.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">Nenhuma reflexão escrita.</p>
+          ) : (
+            <ul className="mt-3 space-y-4">
+              {reflections.map((r) => (
+                <li key={r.lessonSlug}>
+                  <p className="text-sm font-medium">
+                    {r.lessonTitle} <span className="font-normal text-muted">· {shortDate.format(new Date(r.updatedAt))}</span>
+                  </p>
+                  <p className="mt-1 whitespace-pre-line text-sm">{r.body}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section aria-labelledby="consentimentos" className="rounded-2xl border border-line bg-card p-5">
         <h2 id="consentimentos" className="font-serif text-xl">

@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PersonDetailView } from "@/components/admin/people-views";
-import { loadPerson } from "@/lib/admin/people-queries";
+import { loadPerson, loadPersonReflections } from "@/lib/admin/people-queries";
 import { requireAdmin } from "@/lib/auth";
+import { loadSettings } from "@/lib/features";
 import { loadTrail } from "@/lib/trail/queries";
 import { changeRole } from "../actions";
 
@@ -26,6 +27,9 @@ export default async function PersonPage(props: PageProps<"/admin/pessoas/[id]">
   const { error: logError } = await supabase.rpc("audit_person_view", { p_target: id });
   if (logError) throw new Error(`Falha ao registrar a consulta: ${logError.message}`);
 
+  // RN-03: as reflexões só aparecem com o recurso ligado, e a leitura delas também fica registrada.
+  const reflections = (await loadSettings(supabase)).flags.reflections ? await loadPersonReflections(supabase, id) : null;
+
   // A trilha "vista" por essa pessoa: mesmas regras de liberação, aplicadas ao progresso dela.
   const now = new Date();
   const trail = await loadTrail(supabase, id, now);
@@ -40,6 +44,7 @@ export default async function PersonPage(props: PageProps<"/admin/pessoas/[id]">
         roleAction={changeRole.bind(null, id)}
         ok={first(search.ok)}
         erro={first(search.erro)}
+        reflections={reflections}
       />
     </main>
   );

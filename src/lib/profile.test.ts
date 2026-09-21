@@ -93,6 +93,6 @@ describe("buildExport", () => {
 
   it("não vaza nada que não seja da própria pessoa (só o que foi passado entra)", () => {
     const json = JSON.stringify(out);
-    expect(json).not.toMatch(/quiz|gabarito|nota para revisão|audit/i);
+    expect(json).not.toMatch(/quiz_questions|correct_option|gabarito|nota para revisão|audit/i);
   });
 });

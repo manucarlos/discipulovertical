@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { LessonView } from "@/components/lesson-view";
+import { PracticeSection } from "@/components/practice-section";
+import { QuizForm } from "@/components/quiz-form";
 import { ReadingShell } from "@/components/reading-shell";
 import { createExternalLinkProvider } from "@/lib/bible/provider";
 import { resolvePassageLinks } from "@/lib/bible/resolve";
 import { requireMember } from "@/lib/auth";
 import { collectLessonTexts } from "@/lib/content/text";
+import { loadSettings } from "@/lib/features";
+import { hasPassedQuiz, loadQuiz, passingScore } from "@/lib/quiz";
 import { loadBibleVersions, loadLessonDetail, loadTrail } from "@/lib/trail/queries";
 import { findLesson } from "@/lib/trail/view";
-import { completeLesson, openLesson, saveReadingPosition } from "./actions";
+import { completeLesson, openLesson, saveReadingPosition, saveReflection, submitQuiz, togglePractice } from "./actions";
 
 export const metadata = { title: "Lição" };
 
@@ -52,6 +56,8 @@ async function archivedLesson(slug: string) {
 
 export default async function LessonPage(props: PageProps<"/licao/[slug]">) {
   const { slug } = await props.params;
+  const search = await props.searchParams;
+  const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
   const { supabase, user, profile } = await requireMember();
 
   const trail = await loadTrail(supabase, user.id);
@@ -71,6 +77,26 @@ export default async function LessonPage(props: PageProps<"/licao/[slug]">) {
   );
 
   const completed = item.state.state === "completed";
+  const { flags } = await loadSettings(supabase);
+
+  // RF-12 / RN-02: com o quiz ligado, a lição que tem perguntas só conclui depois de acertar 2 de 3.
+  const questions = flags.quiz && !completed ? await loadQuiz(supabase, item.id) : [];
+  const quizPassed = questions.length > 0 ? await hasPassedQuiz(supabase, user.id, item.id) : true;
+
+  // RF-13: prática autodeclarada e reflexão privada.
+  let practiceDone = false;
+  let reflection = "";
+  if (flags.reflections) {
+    const [progressRes, reflectionRes] = await Promise.all([
+      supabase.from("lesson_progress").select("practice_done").eq("user_id", user.id).eq("lesson_id", item.id).maybeSingle(),
+      supabase.from("reflections").select("body").eq("user_id", user.id).eq("lesson_id", item.id).maybeSingle(),
+    ]);
+    practiceDone = progressRes.data?.practice_done === true;
+    reflection = (reflectionRes.data?.body as string | undefined) ?? "";
+  }
+  const saved = first(search.salvo) === "pratica" || first(search.salvo) === "reflexao" ? (first(search.salvo) as "pratica" | "reflexao") : undefined;
+  const errorMessage = first(search.erro);
+
   const next = trail.current?.lessons.find(
     (l) => l.slug !== slug && (l.state.state === "available" || l.state.state === "in_progress"),
   );
@@ -82,6 +108,10 @@ export default async function LessonPage(props: PageProps<"/licao/[slug]">) {
         Voltar para o ciclo
       </Link>
     </div>
+  ) : !quizPassed ? (
+    <p role={first(search.quiz) === "1" ? "alert" : undefined} className="rounded-xl bg-lilac px-4 py-3 text-center text-sm">
+      Responda ao quiz acima e acerte pelo menos {passingScore(questions.length)} de {questions.length} para concluir a lição.
+    </p>
   ) : (
     <form action={completeLesson.bind(null, slug)}>
       <button
@@ -112,6 +142,25 @@ export default async function LessonPage(props: PageProps<"/licao/[slug]">) {
         content={detail.content}
         links={links}
         versionCode={profile.bible_version}
+        extras={
+          <>
+            {errorMessage && (
+              <p role="alert" className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">
+                {errorMessage}
+              </p>
+            )}
+            {flags.reflections && (
+              <PracticeSection
+                practiceDone={practiceDone}
+                reflection={reflection}
+                practiceAction={togglePractice.bind(null, slug)}
+                reflectionAction={saveReflection.bind(null, slug)}
+                saved={saved}
+              />
+            )}
+            {questions.length > 0 && <QuizForm questions={questions} action={submitQuiz.bind(null, slug)} alreadyPassed={quizPassed} />}
+          </>
+        }
         footer={footer}
       />
     </ReadingShell>

@@ -99,6 +99,8 @@ export interface ExportSource {
     completed_at: string | null;
     cycles: { slug: string; title: string } | null;
   }[];
+  reflections?: { body: string; created_at: string; updated_at: string; lessons: { slug: string; title: string } | null }[];
+  quizAttempts?: { correct_count: number; total: number; passed: boolean; created_at: string; lessons: { slug: string; title: string } | null }[];
 }
 
 const CONSENT_NAME: Record<string, string> = {
@@ -151,6 +153,21 @@ export function buildExport(source: ExportSource, now: Date) {
       situacao: CYCLE_NAME[c.status] ?? c.status,
       iniciado_em: c.started_at,
       concluido_em: c.completed_at,
+    })),
+    reflexoes: (source.reflections ?? []).map((r) => ({
+      licao: r.lessons?.slug ?? null,
+      titulo: r.lessons?.title ?? null,
+      texto: r.body,
+      escrita_em: r.created_at,
+      atualizada_em: r.updated_at,
+    })),
+    tentativas_de_quiz: (source.quizAttempts ?? []).map((a) => ({
+      licao: a.lessons?.slug ?? null,
+      titulo: a.lessons?.title ?? null,
+      acertos: a.correct_count,
+      perguntas: a.total,
+      aprovado: a.passed,
+      feita_em: a.created_at,
     })),
   };
 }

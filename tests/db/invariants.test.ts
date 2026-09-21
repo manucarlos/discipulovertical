@@ -53,6 +53,7 @@ describe("tabelas", () => {
       "lesson_internal_notes",
       "lessons",
       "quiz_questions",
+      "reflections",
     ]);
   });
 

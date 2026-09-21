@@ -14,6 +14,7 @@ vi.mock("next/server", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/server")>()),
   connection: async () => {},
 }));
+vi.mock("next/cache", () => ({ revalidatePath() {} }));
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useRouter: () => ({ refresh() {}, push() {}, replace() {}, back() {}, prefetch() {} }),
@@ -139,6 +140,11 @@ describe("Claudinho, membro novo: cada tela que ele vê", () => {
     await audit("ciclo (recém-chegado)", CyclePage, { params: { slug: "c1" } });
     await audit("ciclo (aviso de lição bloqueada)", CyclePage, { params: { slug: "c1" }, search: { bloqueada: "1" } });
     await audit("lição 1", LessonPage, { params: { slug: "c1-l01" } });
+    await world.sql("update public.app_settings set value = 'true'::jsonb where key in ('feature.quiz', 'feature.reflections')");
+    const withExtras = await audit("lição 1 (quiz e reflexão ligados)", LessonPage, { params: { slug: "c1-l01" } });
+    expect(withExtras.text).toContain("Para fixar");
+    expect(withExtras.text).toContain("Sua prática");
+    await world.sql("update public.app_settings set value = 'false'::jsonb where key in ('feature.quiz', 'feature.reflections')");
     await openLesson("c1-l01");
     await audit("minha trilha (lição em andamento)", HomePage);
     await outcome(() => completeLesson("c1-l01"));

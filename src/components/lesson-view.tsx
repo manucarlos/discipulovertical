@@ -12,6 +12,8 @@ export interface LessonViewProps {
   content: LessonContent;
   links: Record<string, string>;
   versionCode: string;
+  /** Entre a prática e o rodapé: reflexão e quiz (recursos que o Admin liga). */
+  extras?: ReactNode;
   /** Área abaixo da prática (botão de concluir, navegação). */
   footer?: ReactNode;
 }
@@ -25,6 +27,7 @@ export function LessonView({
   content,
   links,
   versionCode,
+  extras,
   footer,
 }: LessonViewProps) {
   const rich = (text: string) => <RichText text={text} links={links} versionCode={versionCode} />;
@@ -89,6 +92,8 @@ export function LessonView({
           </ol>
         </section>
       )}
+
+      {extras}
 
       {footer && <div className="mt-10">{footer}</div>}
     </article>

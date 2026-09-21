@@ -5,7 +5,7 @@ import { buildExport, type ExportSource } from "@/lib/profile";
 export async function GET() {
   const { supabase, user } = await requireMember();
 
-  const [profile, consents, lessonProgress, cycleProgress] = await Promise.all([
+  const [profile, consents, lessonProgress, cycleProgress, reflections, quizAttempts] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, display_name, email, photo_url, whatsapp, bible_version, role, created_at, onboarded_at")
@@ -22,6 +22,16 @@ export async function GET() {
       .select("status, started_at, completed_at, cycles(slug, title)")
       .eq("user_id", user.id)
       .order("started_at"),
+    supabase
+      .from("reflections")
+      .select("body, created_at, updated_at, lessons(slug, title)")
+      .eq("user_id", user.id)
+      .order("created_at"),
+    supabase
+      .from("quiz_attempts")
+      .select("correct_count, total, passed, created_at, lessons(slug, title)")
+      .eq("user_id", user.id)
+      .order("created_at"),
   ]);
 
   if (profile.error || !profile.data) {
@@ -34,6 +44,8 @@ export async function GET() {
       consents: (consents.data ?? []) as ExportSource["consents"],
       lessonProgress: (lessonProgress.data ?? []) as unknown as ExportSource["lessonProgress"],
       cycleProgress: (cycleProgress.data ?? []) as unknown as ExportSource["cycleProgress"],
+      reflections: (reflections.data ?? []) as unknown as ExportSource["reflections"],
+      quizAttempts: (quizAttempts.data ?? []) as unknown as ExportSource["quizAttempts"],
     },
     new Date(),
   );

@@ -66,6 +66,25 @@ export interface PersonDetail {
   history: { action: string; createdAt: string; actorName: string | null; details: Record<string, unknown> }[];
 }
 
+export interface PersonReflection {
+  lessonSlug: string;
+  lessonTitle: string;
+  body: string;
+  updatedAt: string;
+}
+
+/** Reflexões de uma pessoa (só o Admin; a função do banco confere e registra a consulta). */
+export async function loadPersonReflections(supabase: SupabaseClient, id: string): Promise<PersonReflection[]> {
+  const { data, error } = await supabase.rpc("person_reflections", { p_target: id });
+  if (error) throw new Error(`Falha ao carregar as reflexões: ${error.message}`);
+  return ((data ?? []) as { lesson_slug: string; lesson_title: string; body: string; updated_at: string }[]).map((r) => ({
+    lessonSlug: r.lesson_slug,
+    lessonTitle: r.lesson_title,
+    body: r.body,
+    updatedAt: r.updated_at,
+  }));
+}
+
 /** Ficha de uma pessoa: resumo, contato, consentimentos e histórico de mudanças de perfil. */
 export async function loadPerson(supabase: SupabaseClient, id: string): Promise<PersonDetail | null> {
   const { data: profile, error } = await supabase
@@ -93,6 +112,7 @@ export async function loadPerson(supabase: SupabaseClient, id: string): Promise<
       .eq("entity", "profile")
       .eq("entity_id", id)
       .neq("action", "person_viewed") // as consultas ficam no log, mas não poluem a ficha
+      .neq("action", "reflections_viewed")
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
