@@ -53,7 +53,7 @@ describe("ações do servidor ('use server')", () => {
   }
 
   it("as ações do painel exigem equipe, e as de dados de outras pessoas exigem administrador", () => {
-    const admin = ["src/app/admin/pessoas/actions.ts", "src/app/admin/igreja/actions.ts"];
+    const admin = ["src/app/admin/pessoas/actions.ts", "src/app/admin/igreja/actions.ts", "src/app/admin/configuracoes/actions.ts"];
     for (const f of admin) {
       const source = read(path.resolve(__dirname, "../..", f));
       for (const { name, body } of exportedFunctions(source)) {
@@ -78,7 +78,7 @@ describe("telas do painel (/admin)", () => {
     });
   }
   it("as telas com dados pessoais de outras pessoas exigem administrador", () => {
-    for (const p of pages.filter((f) => /admin\/(pessoas|igreja)\//.test(rel(f)))) {
+    for (const p of pages.filter((f) => /admin\/(pessoas|igreja|configuracoes)\//.test(rel(f)))) {
       expect(read(p), rel(p)).toMatch(/requireAdmin\(/);
     }
     expect(read(files.find((f) => rel(f).endsWith("admin/painel/page.tsx"))!)).toMatch(/role === "admin"/); // o editor recebe só métricas de conteúdo

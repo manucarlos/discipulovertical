@@ -37,6 +37,7 @@ import PeoplePage from "@/app/admin/pessoas/page";
 import PersonPage from "@/app/admin/pessoas/[id]/page";
 import DashboardPage from "@/app/admin/painel/page";
 import EditChurchPage from "@/app/admin/igreja/page";
+import SettingsPage from "@/app/admin/configuracoes/page";
 import { changeRole } from "@/app/admin/pessoas/actions";
 import { MemberHeader } from "@/components/member-header";
 import { AdminHeader } from "@/components/admin/admin-header";
@@ -198,6 +199,7 @@ describe("Claudião, administrador, e um editor: painel de conteúdo", () => {
     await audit("ficha (com mensagem)", PersonPage, { params: { id: CLAUDIO.id! }, search: { ok: "Perfil atualizado." } });
     await audit("ficha (a própria)", PersonPage, { params: { id: CLAUDIAO.id! } });
     await audit("editor de Nossa Igreja", EditChurchPage);
+    await audit("configurações", SettingsPage);
   });
 
   it("um editor vê o painel e a trilha sem dados de pessoas", async () => {

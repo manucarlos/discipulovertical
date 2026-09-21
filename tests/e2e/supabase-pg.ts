@@ -136,6 +136,8 @@ function convertRow(row: Record<string, unknown>, fields: { name: string; dataTy
   return out;
 }
 
+const JSONB_COLUMNS = new Set(["app_settings.value"]);
+
 type Op = "select" | "insert" | "upsert" | "update" | "delete";
 interface Filter {
   column: string;
@@ -279,7 +281,7 @@ class QueryBuilder implements PromiseLike<Result> {
         .map((row) => {
           const cells = keys.map((k) => {
             const v = row[k];
-            params.push(v !== null && typeof v === "object" && !Array.isArray(v) ? JSON.stringify(v) : v);
+            params.push(this.cell(k, v));
             return `$${params.length}`;
           });
           return `(${cells.join(", ")})`;
@@ -299,13 +301,19 @@ class QueryBuilder implements PromiseLike<Result> {
     if (this.op === "update") {
       const row = this.payload[0];
       const sets = Object.entries(row).map(([k, v]) => {
-        params.push(v !== null && typeof v === "object" && !Array.isArray(v) ? JSON.stringify(v) : v);
+        params.push(this.cell(k, v));
         return `${ident(k)} = $${params.length}`;
       });
       return { sql: `update ${table} t set ${sets.join(", ")}${this.where(params)}${returning}`, params, returns: this.returning };
     }
 
     return { sql: `delete from ${table} t${this.where(params)}${returning}`, params, returns: this.returning };
+  }
+
+  /** Colunas jsonb: o cliente real manda JSON, e o Postgres o lê como jsonb (texto, número e booleano incluídos). */
+  private cell(column: string, v: unknown): unknown {
+    if (JSONB_COLUMNS.has(`${this.table}.${column}`)) return JSON.stringify(v);
+    return v !== null && typeof v === "object" && !Array.isArray(v) ? JSON.stringify(v) : v;
   }
 
   private async execute(): Promise<Result> {

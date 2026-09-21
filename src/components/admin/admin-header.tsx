@@ -23,6 +23,9 @@ export function AdminHeader({ role }: { role: "editor" | "admin" }) {
               <Link href="/admin/igreja" className="inline-flex min-h-11 items-center px-1.5 hover:underline">
                 Nossa Igreja
               </Link>
+              <Link href="/admin/configuracoes" className="inline-flex min-h-11 items-center px-1.5 hover:underline">
+                Configurações
+              </Link>
             </>
           )}
           <Link href="/" className="inline-flex min-h-11 items-center px-1.5 hover:underline">

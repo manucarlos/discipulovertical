@@ -39,6 +39,9 @@ import PersonPage from "@/app/admin/pessoas/[id]/page";
 import DashboardPage from "@/app/admin/painel/page";
 import EditChurchPage from "@/app/admin/igreja/page";
 import { saveChurchPage } from "@/app/admin/igreja/actions";
+import SettingsPage from "@/app/admin/configuracoes/page";
+import { saveSettings } from "@/app/admin/configuracoes/actions";
+import { loadSettings } from "@/lib/features";
 import LoginPage from "@/app/login/page";
 import ProfilePage from "@/app/(member)/perfil/page";
 import { deleteAccount, updateProfile, updateReminders } from "@/app/(member)/perfil/actions";
@@ -800,6 +803,60 @@ describe("Claudião arquiva lições: quem já concluiu continua podendo reler",
 
   it("uma lição que nunca existiu também dá 'não encontrada' (sem revelar nada)", async () => {
     expect((await visit(LessonPage, { params: { slug: "nao-existe" } })).notFound).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// HISTÓRIA 4c · o Claudião liga e desliga recursos (RF-28)
+// ---------------------------------------------------------------------------------------------
+
+describe("Claudião, administrador: liga e desliga recursos", () => {
+  it("a tela mostra todos os recursos desligados, com o nome da igreja", async () => {
+    await world.login(CLAUDIAO);
+    const page = await visit(SettingsPage);
+    expect(page.html).toContain('value="Vertical Church"');
+    expect(page.text).toContain("Quiz das lições");
+    expect(page.text).toContain("Grupo de Discipulado");
+    expect(page.html).not.toContain("checked");
+    expect(Object.values((await loadSettings(client())).flags).every((v) => v === false)).toBe(true);
+  });
+
+  it("liga o quiz, a mudança vale para todos e fica registrada; desligar volta ao que era", async () => {
+    const saved = await outcome(() => saveSettings(form({ church_name: "Igreja Vertical", contact_email: "contato@igreja.org", feature_quiz: true })));
+    expect(decodeURIComponent(saved.redirect!.replace(/\+/g, " "))).toContain("Configurações salvas");
+
+    await world.login(CLAUDINHO);
+    const asMember = await loadSettings(client());
+    expect(asMember.flags.quiz).toBe(true);
+    expect(asMember.flags.groups).toBe(false);
+    expect(asMember.church).toEqual({ name: "Igreja Vertical", contactEmail: "contato@igreja.org" });
+
+    await world.login(CLAUDIAO);
+    expect((await visit(SettingsPage)).html).toMatch(/name="feature_quiz"[^>]*checked/);
+    const log = await world.sql<{ details: { key: string; value: boolean } }>(
+      "select details from public.audit_log where action = 'setting_changed' and entity_id = 'feature.quiz'",
+    );
+    expect(log.length).toBeGreaterThanOrEqual(1);
+
+    await outcome(() => saveSettings(form({ church_name: "Igreja Vertical", contact_email: "" })));
+    expect((await loadSettings(client())).flags.quiz).toBe(false);
+  });
+
+  it("nome em branco e e-mail inválido não são aceitos", async () => {
+    const blank = await outcome(() => saveSettings(form({ church_name: "  ", contact_email: "" })));
+    expect(decodeURIComponent(blank.redirect!.replace(/\+/g, " "))).toContain("nome da igreja");
+    const bad = await outcome(() => saveSettings(form({ church_name: "Igreja", contact_email: "sem-arroba" })));
+    expect(decodeURIComponent(bad.redirect!.replace(/\+/g, " "))).toContain("e-mail");
+  });
+
+  it("um membro não abre a tela, não salva pela ação e não altera pelo banco", async () => {
+    await world.login(CLAUDINHO);
+    expect((await visit(SettingsPage)).redirect).toBe("/");
+    expect((await outcome(() => saveSettings(form({ church_name: "Hack", feature_groups: true })))).redirect).toBe("/");
+    const direct = await client().from("app_settings").update({ value: true }).eq("key", "feature.groups").select("key");
+    expect(direct.data).toEqual([]);
+    expect((await loadSettings(client())).flags.groups).toBe(false);
+    await world.login(CLAUDIAO);
   });
 });
 
