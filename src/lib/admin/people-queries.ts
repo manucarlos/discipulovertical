@@ -92,6 +92,7 @@ export async function loadPerson(supabase: SupabaseClient, id: string): Promise<
       .select("action, created_at, actor_id, details")
       .eq("entity", "profile")
       .eq("entity_id", id)
+      .neq("action", "person_viewed") // as consultas ficam no log, mas não poluem a ficha
       .order("created_at", { ascending: false })
       .limit(20),
   ]);

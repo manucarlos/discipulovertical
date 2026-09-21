@@ -154,6 +154,12 @@ describe("admin_member_overview", () => {
     expect(await overview({ search: "não existe" })).toEqual([]);
   });
 
+  it("a busca ignora acentos e maiúsculas, nos dois sentidos", async () => {
+    expect((await overview({ search: "flavia" })).map((r) => r.email)).toEqual(["flavia@example.com"]);
+    expect((await overview({ search: "FLÁVIA" })).map((r) => r.email)).toEqual(["flavia@example.com"]);
+    expect((await overview({ search: "Ânã" })).map((r) => r.email)).toEqual(["ana@example.com"]);
+  });
+
   it("combina filtros", async () => {
     expect((await overview({ search: "a", status: "stalled", role: "member" })).map((r) => r.email).sort()).toEqual([
       "bia@example.com",
@@ -191,5 +197,32 @@ describe("admin_member_overview", () => {
     const rows = byEmail(await overview());
     expect(rows["caio@example.com"].status).toBe("in_progress");
     expect(rows["caio@example.com"].completed_lessons).toBe(8);
+  });
+});
+
+describe("audit_person_view (consulta de ficha)", () => {
+  const view = (user: string, target: string) => asUser(db, user, () => q("select public.audit_person_view($1)", [target]));
+  const logged = async () =>
+    (await q<{ n: number }>("select count(*)::int as n from public.audit_log where action = 'person_viewed'"))[0].n;
+
+  it("só administrador registra; editor e membro são recusados", async () => {
+    await expect(view(editor, people["ana@example.com"])).rejects.toThrow(/não autorizado/);
+    await expect(view(people["ana@example.com"], people["bia@example.com"])).rejects.toThrow(/não autorizado/);
+  });
+
+  it("registra quem consultou a ficha de quem, sem repetir na mesma janela de 10 minutos", async () => {
+    await view(admin, people["ana@example.com"]);
+    await view(admin, people["ana@example.com"]);
+    expect(await logged()).toBe(1);
+    await view(admin, people["bia@example.com"]);
+    expect(await logged()).toBe(2);
+    const [row] = await q<{ actor_id: string; entity_id: string }>("select actor_id, entity_id from public.audit_log where action = 'person_viewed' order by id limit 1");
+    expect(row).toEqual({ actor_id: admin, entity_id: people["ana@example.com"] });
+  });
+
+  it("olhar a própria ficha não conta como acesso a dados de terceiros", async () => {
+    const before = await logged();
+    await view(admin, admin);
+    expect(await logged()).toBe(before);
   });
 });

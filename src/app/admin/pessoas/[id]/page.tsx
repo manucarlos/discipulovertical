@@ -22,6 +22,10 @@ export default async function PersonPage(props: PageProps<"/admin/pessoas/[id]">
   const detail = await loadPerson(supabase, id);
   if (!detail) notFound();
 
+  // LGPD: consultar os dados de outra pessoa fica registrado (e, se o registro falhar, a ficha não abre).
+  const { error: logError } = await supabase.rpc("audit_person_view", { p_target: id });
+  if (logError) throw new Error(`Falha ao registrar a consulta: ${logError.message}`);
+
   // A trilha "vista" por essa pessoa: mesmas regras de liberação, aplicadas ao progresso dela.
   const now = new Date();
   const trail = await loadTrail(supabase, id, now);

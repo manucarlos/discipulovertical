@@ -590,8 +590,9 @@ describe("Claudião, administrador: acompanha as pessoas", () => {
     expect(stalled.text).toContain("1 pessoa com estes filtros");
     expect(stalled.text).toContain("Claudinho da Silva");
     expect((await visit(PeoplePage, { search: { situacao: "in_progress" } })).text).toContain("Nenhuma pessoa encontrada.");
-    expect((await visit(PeoplePage, { search: { q: "cláud" } })).text).toContain("Nenhuma pessoa"); // a busca ainda diferencia acento
-    expect((await visit(PeoplePage, { search: { q: "claudi" } })).text).toContain("3 pessoas");
+    expect((await visit(PeoplePage, { search: { q: "cláud" } })).text).toContain("3 pessoas"); // a busca ignora acentos
+    expect((await visit(PeoplePage, { search: { q: "CLAUDIÃO" } })).text).toContain("1 pessoa");
+    expect((await visit(PeoplePage, { search: { q: "zzz" } })).text).toContain("Nenhuma pessoa");
   });
 
   it("o painel mostra os números da igreja: só membros contam, e quem parou de vir aparece", async () => {
@@ -662,6 +663,16 @@ describe("Claudião, administrador: acompanha as pessoas", () => {
     expect(page.text).toContain("Tratamento dos dados");
     expect(page.text).toContain("Lembretes por WhatsApp");
     expect(page.text).toContain("Perfil de acesso");
+  });
+
+  it("abrir a ficha de alguém fica registrado no log, e abrir a própria não", async () => {
+    await world.login(CLAUDIAO);
+    await visit(PersonPage, { params: { id: CLAUDIO.id! } });
+    await visit(PersonPage, { params: { id: CLAUDIO.id! } }); // repetir logo em seguida não duplica
+    const rows = await world.sql<{ actor_id: string }>("select actor_id from public.audit_log where action = 'person_viewed' and entity_id = $1", [CLAUDIO.id]);
+    expect(rows).toEqual([{ actor_id: CLAUDIAO.id }]);
+    await visit(PersonPage, { params: { id: CLAUDIAO.id! } });
+    expect(await world.sql("select 1 from public.audit_log where action = 'person_viewed' and entity_id = $1", [CLAUDIAO.id])).toHaveLength(0);
   });
 
   it("um endereço de ficha inválido ou inexistente dá 'não encontrado', não erro", async () => {
@@ -751,6 +762,44 @@ describe("Claudião, administrador: acompanha as pessoas", () => {
     expect(await changeLessonStatus("c3-l13", "archived")).toEqual({ ok: true });
     const logged = await world.sql<{ n: number }>("select count(*)::int as n from public.audit_log where action = 'lesson_status_changed'");
     expect(logged[0].n).toBeGreaterThan(28);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// HISTÓRIA 4b · lição arquivada (RN-11)
+// ---------------------------------------------------------------------------------------------
+
+describe("Claudião arquiva lições: quem já concluiu continua podendo reler", () => {
+  it("a lição arquivada some da trilha, mas segue aberta (só leitura) para quem a concluiu", async () => {
+    await world.login(CLAUDIAO);
+    expect(await changeLessonStatus("c1-l01", "archived")).toEqual({ ok: true });
+    expect(await changeLessonStatus("c1-l08", "archived")).toEqual({ ok: true });
+
+    // Claudinho concluiu a c1-l01 (mas não a c1-l08).
+    await world.login(CLAUDINHO);
+    const trail = await loadTrail(client(), CLAUDINHO.id!);
+    expect(trail.cycles[0].lessons.map((l) => l.slug)).not.toContain("c1-l01");
+
+    const cycle = await visit(CyclePage, { params: { slug: "c1" } });
+    expect(cycle.text).toContain("Lições que saíram da trilha");
+    expect(cycle.text).toContain("Bem-vindo(a) à família de Deus");
+    expect(cycle.text).not.toContain("Nossa igreja, quem somos"); // a c1-l08 ele nunca concluiu
+
+    const reread = await visit(LessonPage, { params: { slug: "c1-l01" } });
+    expect(reread.redirect).toBeNull();
+    expect(reread.text).toContain("Esta lição saiu da trilha");
+    expect(reread.text).toContain("Objetivo:");
+    expect(reread.text).not.toContain("Concluir lição"); // só leitura: nada a concluir
+  });
+
+  it("quem nunca a concluiu não a enxerga: 'não encontrada', e o banco não a entrega", async () => {
+    expect((await visit(LessonPage, { params: { slug: "c1-l08" } })).notFound).toBe(true);
+    const direct = await client().from("lessons").select("slug").eq("slug", "c1-l08");
+    expect(direct.data).toEqual([]);
+  });
+
+  it("uma lição que nunca existiu também dá 'não encontrada' (sem revelar nada)", async () => {
+    expect((await visit(LessonPage, { params: { slug: "nao-existe" } })).notFound).toBe(true);
   });
 });
 

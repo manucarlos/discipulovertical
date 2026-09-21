@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CycleDetail } from "@/components/trail-views";
 import { requireMember } from "@/lib/auth";
-import { loadTrail } from "@/lib/trail/queries";
+import { loadArchivedHistory, loadTrail } from "@/lib/trail/queries";
 
 export const metadata = { title: "Ciclo" };
 
@@ -17,6 +17,7 @@ export default async function CyclePage(props: PageProps<"/ciclo/[slug]">) {
   const cycle = view.cycles.find((c) => c.slug === slug);
   if (!cycle) notFound();
 
+  const archived = (await loadArchivedHistory(supabase, user.id)).filter((a) => a.cycleSlug === slug);
   const justCompleted = cycle.lessons.find((l) => l.slug === first(search.concluida));
 
   return (
@@ -24,6 +25,7 @@ export default async function CyclePage(props: PageProps<"/ciclo/[slug]">) {
       <CycleDetail
         cycle={cycle}
         now={now}
+        archived={archived}
         banners={{
           completedLesson: justCompleted?.title,
           cycleCompleted: first(search.ciclo) === "1" && cycle.complete,

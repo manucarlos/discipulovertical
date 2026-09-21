@@ -143,7 +143,18 @@ export interface CycleBanners {
 }
 
 /** Tela "Ciclo" (RF-06): lista de lições com estado, tempo estimado e data de liberação. */
-export function CycleDetail({ cycle, now, banners = {} }: { cycle: CycleView; now: Date; banners?: CycleBanners }) {
+export function CycleDetail({
+  cycle,
+  now,
+  banners = {},
+  archived = [],
+}: {
+  cycle: CycleView;
+  now: Date;
+  banners?: CycleBanners;
+  /** RN-11: lições que saíram da trilha, mas que a pessoa já concluiu. */
+  archived?: { slug: string; title: string; completedAt: string }[];
+}) {
   return (
     <div>
       <Link href="/" className="text-sm text-muted underline">
@@ -231,6 +242,28 @@ export function CycleDetail({ cycle, now, banners = {} }: { cycle: CycleView; no
           );
         })}
       </ol>
+
+      {archived.length > 0 && (
+        <section aria-labelledby="arquivadas" className="mt-10">
+          <h2 id="arquivadas" className="font-serif text-xl">
+            Lições que saíram da trilha
+          </h2>
+          <p className="mt-1 text-sm text-muted">Você concluiu estas lições antes de elas serem arquivadas. Pode reler quando quiser.</p>
+          <ul className="mt-3 space-y-2">
+            {archived.map((a) => (
+              <li key={a.slug}>
+                <Link
+                  href={`/licao/${a.slug}`}
+                  className="block rounded-2xl border border-dashed border-line p-4 transition hover:border-brand"
+                >
+                  <span className="font-medium">{a.title}</span>
+                  <span className="block text-xs text-muted">Concluída em {new Date(a.completedAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

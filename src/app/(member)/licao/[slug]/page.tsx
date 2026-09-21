@@ -12,13 +12,51 @@ import { completeLesson, openLesson, saveReadingPosition } from "./actions";
 
 export const metadata = { title: "Lição" };
 
+/**
+ * RN-11: uma lição que saiu da trilha (arquivada) continua aberta, só para leitura, para quem já a concluiu.
+ * Para os demais ela não existe (a RLS do banco não a entrega a quem não tem progresso nela).
+ */
+async function archivedLesson(slug: string) {
+  const { supabase, profile } = await requireMember();
+  const [detail, versions] = await Promise.all([loadLessonDetail(supabase, slug, "archived"), loadBibleVersions(supabase)]);
+  if (!detail) notFound();
+
+  const links = await resolvePassageLinks(
+    createExternalLinkProvider(versions),
+    [...collectLessonTexts(detail.content), ...(detail.keyVerseRef ? [detail.keyVerseRef] : [])],
+    profile.bible_version,
+  );
+  return (
+    <ReadingShell initialPosition={null} completed>
+      <p role="status" className="mb-6 rounded-xl bg-lilac px-4 py-3 text-sm text-muted">
+        Esta lição saiu da trilha (foi arquivada), mas você a concluiu e pode reler quando quiser.
+      </p>
+      <LessonView
+        title={detail.title}
+        objective={detail.objective}
+        estimatedMinutes={detail.estimatedMinutes}
+        tags={detail.tags}
+        keyVerse={detail.keyVerseRef}
+        content={detail.content}
+        links={links}
+        versionCode={profile.bible_version}
+        footer={
+          <Link href="/" className="text-sm underline">
+            ← Minha trilha
+          </Link>
+        }
+      />
+    </ReadingShell>
+  );
+}
+
 export default async function LessonPage(props: PageProps<"/licao/[slug]">) {
   const { slug } = await props.params;
   const { supabase, user, profile } = await requireMember();
 
   const trail = await loadTrail(supabase, user.id);
   const item = findLesson(trail, slug);
-  if (!item) notFound();
+  if (!item) return await archivedLesson(slug);
   // RN-01: lição ainda não liberada volta para a lista do ciclo, que mostra quando ela abre.
   if (item.state.state === "locked") redirect(`/ciclo/${item.cycleSlug}?bloqueada=1`);
 

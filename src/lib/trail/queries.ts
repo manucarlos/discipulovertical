@@ -43,6 +43,7 @@ export interface LessonDetail {
   estimatedMinutes: number | null;
   tags: string[];
   keyVerseRef: string | null;
+  status: "published" | "archived";
   content: LessonContent;
 }
 
@@ -50,12 +51,16 @@ export interface LessonDetail {
  * Carrega o texto de uma lição publicada. Só lê colunas próprias do membro:
  * notas internas e quiz ficam em outras tabelas e a RLS não os entrega.
  */
-export async function loadLessonDetail(supabase: SupabaseClient, slug: string): Promise<LessonDetail | null> {
+export async function loadLessonDetail(
+  supabase: SupabaseClient,
+  slug: string,
+  status: "published" | "archived" = "published",
+): Promise<LessonDetail | null> {
   const { data: lesson, error } = await supabase
     .from("lessons")
     .select("id, title, objective, estimated_minutes, tags, key_verse_ref, current_version_id")
     .eq("slug", slug)
-    .eq("status", "published")
+    .eq("status", status)
     .maybeSingle();
   if (error) throw new Error(`Falha ao carregar a lição: ${error.message}`);
   if (!lesson?.current_version_id) return null;
@@ -77,8 +82,47 @@ export async function loadLessonDetail(supabase: SupabaseClient, slug: string): 
     estimatedMinutes: lesson.estimated_minutes,
     tags: lesson.tags ?? [],
     keyVerseRef: lesson.key_verse_ref,
+    status,
     content,
   };
+}
+
+export interface ArchivedLesson {
+  slug: string;
+  title: string;
+  cycleSlug: string;
+  completedAt: string;
+}
+
+/**
+ * RN-11: lições arquivadas que ESTA pessoa já concluiu. Ficam de fora da trilha, mas continuam abertas
+ * para releitura. (A RLS só entrega lição arquivada a quem tem progresso nela; aqui filtramos pelo que
+ * a pessoa concluiu, já que a equipe enxerga todas as arquivadas.)
+ */
+export async function loadArchivedHistory(supabase: SupabaseClient, userId: string): Promise<ArchivedLesson[]> {
+  const progress = check<{ lesson_id: string; completed_at: string }[]>(
+    await supabase.from("lesson_progress").select("lesson_id, completed_at").eq("user_id", userId).eq("status", "completed"),
+    "o histórico",
+  );
+  if (progress.length === 0) return [];
+
+  const lessons = check<{ id: string; slug: string; title: string; cycles: { slug: string } | { slug: string }[] | null }[]>(
+    await supabase
+      .from("lessons")
+      .select("id, slug, title, cycles(slug)")
+      .eq("status", "archived")
+      .in("id", progress.map((p) => p.lesson_id)),
+    "as lições arquivadas",
+  );
+  const completedAt = new Map(progress.map((p) => [p.lesson_id, p.completed_at]));
+  return lessons
+    .map((l) => ({
+      slug: l.slug,
+      title: l.title,
+      cycleSlug: (Array.isArray(l.cycles) ? l.cycles[0]?.slug : l.cycles?.slug) ?? "",
+      completedAt: completedAt.get(l.id) ?? "",
+    }))
+    .sort((a, b) => a.completedAt.localeCompare(b.completedAt));
 }
 
 export async function loadBibleVersions(supabase: SupabaseClient): Promise<BibleVersionInfo[]> {
