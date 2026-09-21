@@ -31,11 +31,15 @@ Este guia é para o pastor. Você faz cada passo; o Claude acompanha e tira dúv
 4. Em cada projeto, aplique o banco de dados:
    1. Abra **SQL Editor > New query**.
    2. Abra o arquivo `supabase/migrations/20260919000001_base.sql`, copie **todo** o conteúdo, cole no editor e clique em **Run**. Deve aparecer "Success".
-   3. Repita, **nesta ordem**, com todos os outros arquivos da pasta `supabase/migrations`:
+   3. Repita, **nesta ordem**, com todos os outros arquivos da pasta `supabase/migrations` (a ordem é a do nome do arquivo):
       `…000002_content`, `…000003_progress`, `…000004_church_pages`, `…000005_lesson_button_suggestion`,
       `…000006_lesson_editor`, `20260920000007_member_overview`, `…000008_tighten_function_privileges`,
-      `…000009_delete_my_account`, `…000010_member_situation`, `…000011_church_pages_audit` e `…000012_dashboard`
-      (são 12 arquivos no total; a ordem é a do nome). Se algum der erro, **pare e avise o Claude**: não pule nenhum.
+      `…000009_delete_my_account`, `…000010_member_situation`, `…000011_church_pages_audit`, `…000012_dashboard`,
+      `…000013_search_and_access_log`, `…000014_app_settings`, `…000015_quiz_and_reflections`, `…000016_caregivers`,
+      `…000017_email_reminders`, `…000018_closures_certificates`, `…000019_export_log`, `…000020_public_features`,
+      `…000021_groups` e `…000022_group_roster`
+      (são **22 arquivos** no total; a ordem é a do nome). Se algum der erro, **pare e avise o Claude**: não pule nenhum.
+      As migrações 14 em diante criam os recursos além do MVP, que **nascem desligados**: aplicá-las não muda nada para as pessoas.
 5. **Defina quem é o primeiro Administrador, antes de entrar pela primeira vez.** No SQL Editor, rode (troque pelo e-mail Google que você vai usar para entrar):
 
    ```sql
@@ -56,6 +60,15 @@ Os textos das lições já estão escritos (Parte 2 do [handoff](HANDOFF.md)). P
 4. Para revisar e publicar, use o painel **Conteúdo** do app (veja o [RUNBOOK](RUNBOOK.md), seção 6b).
 
 É seguro repetir: o que já existe é ignorado, então suas edições nunca são sobrescritas. Para os Ciclos 2 e 3, use `--cycle 2` e `--cycle 3` (as lições do Ciclo 3 com `[PREENCHER]` entram, mas ficam **impedidas de publicar** até você preencher os dados da igreja).
+
+### Passo 2c. Colocar a biblioteca do Grupo de Discipulado no banco (quando for abrir os grupos)
+
+São 24 lições em 6 temas, 4 lições de formação do discipulador e 6 trilhas prontas, todas escritas como **rascunho**:
+
+1. Rode na pasta do projeto: `npm run import:library`. Ele cria `content/generated/biblioteca.sql` e lista as 28 lições, marcando as **sensíveis** e as **bloqueadas para publicação** (com `[PREENCHER]`).
+2. Cole **todo** o arquivo no **SQL Editor** do Supabase e clique em **Run**. É seguro repetir: o que já existe é ignorado.
+3. Em **Administração > Grupos**, veja a tabela da biblioteca. Edite cada lição no editor, faça a revisão pastoral (e a de um profissional nas sensíveis), preencha os `[PREENCHER]`, publique e depois publique as trilhas.
+4. Marque quem será discipulador (Grupos > Discipuladores) e ligue a chave **Grupo de Discipulado** em Configurações.
 
 ## Passo 3. Google Cloud (o botão "Entrar com Google")
 
@@ -96,6 +109,33 @@ Os textos das lições já estão escritos (Parte 2 do [handoff](HANDOFF.md)). P
 
 Escolha o endereço (por exemplo `discipulado.suaigreja.com.br`) e avise o Claude. Ele guia a configuração na Vercel e no provedor do domínio.
 
+## Passo 8. E-mail de lembretes (só quando for ligar o recurso)
+
+O envio usa o **Resend** (<https://resend.com>) e um **agendador** que chama o site de tempos em tempos. Nada disso é necessário para o MVP.
+
+1. Crie a conta no Resend e **verifique o seu domínio** (o endereço de envio precisa ser dele, por exemplo `discipulado@suaigreja.com.br`). Crie uma chave de API do Resend.
+2. Invente o **segredo do agendador**: um texto longo e aleatório (32 caracteres ou mais). Anote no gerenciador de senhas. **Não cole no chat.**
+3. Guarde só o **resumo (hash)** do segredo no banco. No SQL Editor, troque `SEU-SEGREDO` pelo texto que você inventou e rode:
+
+   ```sql
+   insert into public.app_config (key, value)
+   values ('cron_secret_hash', encode(sha256(convert_to('SEU-SEGREDO', 'UTF8')), 'hex'));
+   ```
+
+4. Na **Vercel** (Settings > Environment Variables), acrescente e faça um novo deploy:
+   - `CRON_SECRET` = o mesmo segredo do passo 2;
+   - `RESEND_API_KEY` = a chave do Resend;
+   - `EMAIL_FROM` = por exemplo `Vertical Church <discipulado@suaigreja.com.br>`;
+   - `NEXT_PUBLIC_SITE_URL` = o endereço do site, sem barra no fim.
+5. O arquivo `vercel.json` já agenda uma chamada por dia (12h UTC, 9h em Brasília) a `/api/cron/lembretes`; a Vercel envia o `CRON_SECRET` sozinha. Chamadas mais frequentes exigem o plano Pro da Vercel, ou um serviço de agendamento externo que faça `GET` na mesma rota com o cabeçalho `Authorization: Bearer <CRON_SECRET>`.
+6. Em **Administração > Lembretes**, confira o quadro "Situação", ajuste os textos e use **Enviar teste para mim**. Depois ligue **Lembretes por e-mail** em Configurações.
+
+Regras que valem sempre: só para quem aceitou, das 8h às 20h de Brasília, no máximo 2 lembretes por semana por pessoa, e todo e-mail traz o link para desligar.
+
+## Passo 9. Entrar com e-mail (opcional, V3)
+
+No Supabase, em **Authentication > Providers > Email**, deixe o provedor ativo e escolha o envio de "Magic Link". Em **Authentication > URL Configuration**, o endereço do site e `/auth/callback` já devem estar nas URLs permitidas (o mesmo do login Google). Depois ligue **Entrar com e-mail** em Configurações. Para muitos e-mails por hora, configure um SMTP próprio no Supabase.
+
 ---
 
 ## Além das contas: o que a igreja precisa providenciar
@@ -106,4 +146,5 @@ Estes itens andam em paralelo e **não dependem de código**. Veja o detalhament
 - Contratar a **revisão jurídica** dos Termos de Uso e da Política de Privacidade (a plataforma trata convicção religiosa, dado sensível na LGPD).
 - Designar o **encarregado de dados (DPO)** e um **segundo administrador** de confiança para acesso de emergência.
 - Enviar **logotipo e cores oficiais**.
+- Ler o mapa completo do que falta em [PENDENCIAS.md](PENDENCIAS.md).
 - Enviar os **textos da igreja** (história, valores, declaração de fé, liderança, ministérios, membresia), que hoje aparecem como `[PREENCHER]` no Ciclo 3.

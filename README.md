@@ -11,6 +11,7 @@ Aplicativo web (PWA) de discipulado da Vertical Church: leva o novo convertido, 
 | [docs/RUNBOOK.md](docs/RUNBOOK.md) | Onde ficam as contas, como publicar, backup e emergências |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Decisões técnicas e o que ainda falta |
 | [docs/RELATORIO_USABILIDADE.md](docs/RELATORIO_USABILIDADE.md) | Testes de usabilidade com Claudião, Claudinho e Claudio: o que foi testado e achado |
+| [docs/PENDENCIAS.md](docs/PENDENCIAS.md) | O mapa do que está pronto, do que só o pastor e a igreja podem fazer e do que não foi construído |
 | [docs/CHECKLIST_PILOTO.md](docs/CHECKLIST_PILOTO.md) | Roteiro para conferir no Supabase de verdade e o que falta antes do piloto |
 
 ## Rodar no computador
@@ -35,6 +36,7 @@ Sem `.env.local` o app abre e mostra avisos de "em preparação"; o login só fu
 | `npm run lint` | Confere o estilo do código |
 | `npm run build` | Versão de produção |
 | `npm run import:sql` | Gera o SQL de importação das lições (`-- --cycle 1`) |
+| `npm run import:library` | Gera o SQL da biblioteca do Grupo de Discipulado (28 lições e 6 trilhas, em rascunho) |
 | `npm run icons` | Gera ícones provisórios do PWA |
 
 ## Estrutura
@@ -59,9 +61,15 @@ src/proxy.ts  renova a sessão e protege as rotas
 
 ## Status
 
-**MVP (Fase 1) completo no código.** Pronto e testado: banco com RLS, login Google (código), primeiro acesso com consentimentos, importador dos Ciclos 1 a 3, trilha, ciclo, lição com leitura ajustável, "Concluir lição", Nossa Igreja (editável), **editor de lições**, **Pessoas** (lista, ficha, perfis), **painel de indicadores**, **perfil do membro** (dados, lembretes, baixar e excluir os próprios dados) e PWA instalável com página de "sem internet".
+**O plano inteiro está no código: MVP, V2, V3 e o Grupo de Discipulado.** Tudo além do MVP nasce **desligado**, atrás de chaves em Administração > Configurações (regra 0.6 do handoff: validar o MVP antes de abrir o resto).
 
-**O que ainda não foi feito, e por quê:** nada disso rodou contra um Supabase real (as contas ainda não existem). O que foi provado: a lógica, o banco (Postgres em memória, com as regras de segurança reais), o código real das páginas e ações com três pessoas simuladas, acessibilidade e segurança. Próximo passo: o roteiro de [docs/CHECKLIST_PILOTO.md](docs/CHECKLIST_PILOTO.md). Decisões e perguntas em aberto em [docs/DECISIONS.md](docs/DECISIONS.md); resultado dos testes de usabilidade em [docs/RELATORIO_USABILIDADE.md](docs/RELATORIO_USABILIDADE.md).
+- **MVP:** banco com RLS, login Google, primeiro acesso com consentimentos, importador dos Ciclos 1 a 3, trilha, ciclo, lição com leitura ajustável, Nossa Igreja editável, editor de lições, Pessoas, painel de indicadores, perfil do membro (baixar e excluir os próprios dados) e PWA.
+- **V2 (desligado):** quiz, prática e reflexão, vídeo, cuidadores com alertas de quem parou, lembretes por e-mail (com agendador seguro e descadastro em um clique), encerramentos e presença, certificados em PDF com verificação pública, planilhas CSV.
+- **V3 (desligado):** sequência de dias e marcos, entrar com e-mail.
+- **Grupo de Discipulado (desligado):** discipuladores, grupos com calendário diário (pausas, atraso, entrada tardia), painel, guia do encontro, presença, reflexões compartilhadas por escolha, pedidos de ajuda pastoral (com escalada), trilhas oficiais e a **biblioteca de 28 lições em rascunho** (`npm run import:library`).
+- **Segurança:** política de conteúdo (CSP) com nonce, RLS conferida por testes em todo o schema, autorização conferida em todo o código.
+
+**O que ainda não foi feito, e por quê:** nada disso rodou contra um Supabase real (as contas ainda não existem, e criá-las é com o pastor). O que foi provado: a lógica, o banco (Postgres em memória, com as regras de segurança reais), o código real das páginas e ações com pessoas simuladas, acessibilidade e segurança. **O mapa completo do que falta, e quem faz, está em [docs/PENDENCIAS.md](docs/PENDENCIAS.md).** Próximo passo: o roteiro de [docs/CHECKLIST_PILOTO.md](docs/CHECKLIST_PILOTO.md). Decisões em [docs/DECISIONS.md](docs/DECISIONS.md); testes de usabilidade em [docs/RELATORIO_USABILIDADE.md](docs/RELATORIO_USABILIDADE.md).
 
 Para ver as telas sem Supabase: `npm run dev` e abra `/dev/trilha`, `/dev/ciclo/c1`, `/dev/licao/c1-l01`, `/dev/editor/c1-l02`, `/dev/admin`, `/dev/pessoas`, `/dev/painel` e `/dev/cabecalhos`.
 

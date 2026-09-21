@@ -9,7 +9,7 @@ Registro das escolhas feitas na construção, com o motivo. As decisões de prod
 | Pasta do projeto | `Documents/github/vertical-discipulado`, separada do projeto `diretorio-igreja` |
 | Stack | Next.js 16 (App Router) + TypeScript + Tailwind 4, Supabase, Vercel. Gerenciador de pacotes: `npm` |
 | Idioma do código | Identificadores em inglês (`profiles`, `lessons`…). Interface, mensagens e conteúdo em português do Brasil |
-| Editor de blocos | TipTap, salvando JSON (a construir) |
+| Editor de blocos | TipTap, salvando JSON |
 | Ambientes | Homologação e produção na nuvem; desenvolvimento no computador |
 
 ## Tomadas durante a construção
@@ -183,12 +183,71 @@ Registro das escolhas feitas na construção, com o motivo. As decisões de prod
 
 ### Segurança
 
-- **Invariantes em todo o schema** (`tests/db/invariants.test.ts`): toda tabela tem RLS; o papel anônimo não tem privilégio em tabela nem função nenhuma; ninguém recebe TRUNCATE, REFERENCES ou TRIGGER; só cinco tabelas aceitam DELETE por usuário logado; nenhuma política de escrita libera tudo; toda função `SECURITY DEFINER` fixa o `search_path`. Vale para migrações futuras.
+- **Invariantes em todo o schema** (`tests/db/invariants.test.ts`): toda tabela tem RLS; o papel anônimo não tem privilégio em nenhuma tabela e só executa uma lista **fechada** de sete funções (agendador, descadastro, verificação de certificado e `public_features`, cada uma protegida por um segredo ou código); ninguém recebe TRUNCATE, REFERENCES ou TRIGGER; só onze tabelas aceitam DELETE por usuário logado, sempre atrás de política; nenhuma política de escrita libera tudo; toda função `SECURITY DEFINER` fixa o `search_path`. Vale para migrações futuras.
 - **Achou:** 7 funções executáveis pelo papel anônimo (sem dano possível, mas indevidas). Migração 0008 fechou e passou a fechar por padrão as futuras.
-- **Autorização em código** (`tests/security/authorization.test.ts`, 38 verificações): toda ação do servidor confere a identidade, as ações do painel exigem equipe e as de dados de outras pessoas exigem administrador, toda tela do painel confere de novo (além do layout), rotas de dados exigem login, o retorno do Google valida o destino (sem redirecionamento aberto), páginas `/dev` somem em produção e nenhum código usa a chave secreta.
+- **Autorização em código** (`tests/security/authorization.test.ts`, mais de 100 verificações, que crescem sozinhas com cada ação e tela nova): toda ação do servidor confere a identidade, as ações do painel exigem equipe e as de dados de outras pessoas exigem administrador, toda tela do painel confere de novo (além do layout), rotas de dados exigem login, o retorno do Google valida o destino (sem redirecionamento aberto), páginas `/dev` somem em produção e nenhum código usa a chave secreta.
 - **Cabeçalhos de segurança** (`next.config.ts`): `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`.
 - **Dependências:** `npm audit` sem vulnerabilidades. Nenhum `dangerouslySetInnerHTML`, `eval` ou similar no código.
-- **Não feito:** política de conteúdo (CSP), porque o Next injeta scripts próprios e exigiria *nonces*; fica como melhoria. Limites de tentativas de login e proteção de bots são do Supabase e do Google (ver checklist).
+- **Política de conteúdo (CSP)** feita em `src/proxy.ts` + `src/lib/csp.ts`, com um *nonce* novo por requisição. Scripts: só os da página (sem `unsafe-inline` nem `unsafe-eval` em produção); conexões: o site e o Supabase; vídeo: só YouTube em modo de privacidade e Vimeo; ninguém embute o app; formulários só para o próprio site. Estilos usam `unsafe-inline` (um atributo `style` não aceita nonce, e o editor injeta estilos): risco bem menor que script. **Conferido num build de produção no navegador:** todos os scripts levam o nonce, o botão do login hidrata e funciona, sem violações. Efeito colateral: as páginas que eram estáticas (`/termos`, `/privacidade`, `/offline`) passam a ser renderizadas a cada acesso.
+- Limites de tentativas de login e proteção de bots são do Supabase e do Google (ver checklist).
+
+### Recursos que nascem desligados (RF-28)
+
+- **Chaves em `app_settings`** (Administração > Configurações), só o Admin grava, cada mudança no log. A regra 0.6 do handoff manda não abrir V2, V3 e Grupos antes de validar o MVP; assim tudo está pronto, mas **desligado**. O banco confere a chave (função `feature_enabled`) dentro das políticas e funções, então desligar esconde tudo mesmo que alguém chame a API direto.
+- Chaves: quiz, reflexão, vídeo, cuidadores, lembretes, encerramentos, certificados, grupos, sequência de dias, entrar com e-mail. Só chaves conhecidas e valores do tipo certo entram (restrições no banco).
+- Leitura com falha = tudo desligado (nunca liga "por engano").
+
+### Quiz, prática e reflexão (RF-12, RF-13, RN-02, RN-03)
+
+- **O gabarito nunca sai do banco:** o membro pede as perguntas por `get_quiz()` (sem resposta certa nem explicação) e corrige por `submit_quiz()`, que devolve só acertou/errou e a explicação. Aprovação: 2 de 3 (arredondando para cima; nunca menos de 1). Refazer é ilimitado.
+- Com o quiz ligado, uma lição que tem perguntas só conclui com tentativa aprovada, **no banco** (gatilho em `lesson_progress`), não só na tela. Quem já tinha concluído antes de o quiz ser ligado não é afetado.
+- Reflexão privada (uma por lição); o dono a lê, o cuidador e o Admin leem por `person_reflections()`, que **registra cada consulta** (sem o conteúdo). A pergunta de reflexão da lição aparece acima do campo. Excluir a conta apaga tudo.
+
+### Cuidadores e alertas (RF-20, RF-21, RF-25, RN-07, RN-13)
+
+- O cuidador vê **só os membros atribuídos**, pelo banco: progresso por política em `lesson_progress`; contato e reflexões por funções que conferem a atribuição e registram a consulta. **Notas de cuidado**: só o autor e o Admin leem; só acrescentar e apagar as próprias.
+- Um cuidador ativo por membro; rodízio por menor carga; quem deixa de ser cuidador devolve os membros para a fila do Admin.
+- **Alertas** (14 dias parado): abertos e fechados pela função `sync_stalled_alerts()`, chamada ao abrir as telas. Depois de resolvido por uma pessoa, não abre outro por 14 dias; quem volta a ler tem o alerta fechado sozinho. Sem cuidador, o alerta é do Admin.
+
+### Lembretes por e-mail (RF-16, seção 10)
+
+- **Sem a chave secreta do Supabase no site.** O agendador chama `/api/cron/lembretes` com `CRON_SECRET`; a rota fala com o banco só por três funções (`cron_snapshot`, `cron_enqueue`, `cron_report`, mais `cron_certificates`) que exigem o mesmo segredo, guardado **só como hash** em `app_config`. Quem tem o segredo lê o necessário para montar os avisos; nada mais. Elas são as únicas funções (além do descadastro, da verificação de certificado e de `public_features`) executáveis sem login, e um teste de invariantes trava essa lista.
+- **Planejador puro** (`src/lib/reminders/plan.ts`, testado): consentimento; 8h a 20h de Brasília; **2 lembretes por semana** (conferido de novo no banco); uma mensagem por ocorrência; a espera pela lição não conta como ausência; quem voltou não recebe convite; falha recente é reenviada por 2 dias. Provedor trocável (`src/lib/email`): Resend por HTTP e um provedor de mentirinha nos testes.
+- Textos editáveis pelo Admin (variáveis validadas ao salvar), rodapé de descadastro sempre presente, **descadastro em um clique** por código do e-mail (GET nunca descadastra; POST ou botão sim), registro de cada envio com status e erro.
+- O agendador diário do `vercel.json` cabe no plano gratuito; frequência maior pede plano Pro ou um agendador externo.
+
+### Encerramentos e certificados (RF-18, RF-19, RN-05, RN-06)
+
+- O encontro **não trava** o ciclo seguinte (RN-05); vira "marco pendente". Presença confirmada pelo Admin por lista; certificado só para quem **concluiu o ciclo e teve presença** (RN-06), com código único `VC-XXXX-XXXX-XXXX` e o nome gravado como estava.
+- **PDF sem biblioteca:** gerado à mão (Helvetica, A4 na horizontal), com tabela de referências calculada; um teste confere offsets e comprimentos, e o arquivo foi aberto num leitor de PDF de verdade (MuPDF) para conferir acentos e centralização. Limite: alfabetos fora do latino viram "?".
+- **Verificação pública** `/verificar`: só nome, ciclo e data, por código (48 bits). Excluir a conta apaga o certificado.
+- O "não haverá certificado" da seção 17 vale para as **trilhas do grupo** (RG-14); o handoff prevê certificado nos ciclos (RF-19, RN-06).
+
+### Planilhas CSV (RF-26)
+
+- Só o Admin; UTF-8 com BOM, separador `;` (Excel em português), **neutralização de fórmulas** (`=`, `+`, `-`, `@` ganham apóstrofo: um nome cadastrado não vira fórmula). Sem WhatsApp (mínimo necessário). **Sem registro, sem arquivo:** se o log falhar, nada é baixado.
+
+### Vídeo, sequência de dias e entrar com e-mail (RF-11, RF-30, RF-31)
+
+- **Vídeo:** só YouTube e Vimeo, guardando tipo e código (nunca o link inteiro), em modo de privacidade (`youtube-nocookie`, `dnt=1`), com transcrição. Link inválido é recusado ao salvar, nunca descartado em silêncio.
+- **Sequência e marcos:** discretos, só comemoram (sem "você perdeu a sequência").
+- **Entrar com e-mail:** link sem senha, feito no navegador (o Supabase guarda ali o código de verificação). A tela de login sabe se está ligado por `public_features()`, que devolve só essa informação.
+
+### Grupo de Discipulado (seções 17 a 20)
+
+- **Progresso do grupo em tabela própria** (`group_progress`, `group_reflections`), em vez de mudar a chave de `lesson_progress`, como a seção 18 descrevia: não mexe no progresso da trilha de novos convertidos, que já está em uso.
+- **O discipulador** é uma marca (`is_discipler`) que o Admin dá; a mesma pessoa acumula perfis. Lições da **biblioteca** (`kind = 'library'`, sem ciclo) só abrem para quem está, ou conduz, um grupo cuja trilha as inclui.
+- **Privacidade no banco:** o discipulador lê só dados de quem **ainda está** no grupo (sair tira o acesso) e, das reflexões, **só as compartilhadas**; nem o Admin lê as reflexões do grupo. Nome dos membros vem por `group_roster()`, sem e-mail nem WhatsApp. Um pedido de ajuda **direto à equipe pastoral não é visto pelo discipulador**. O calendário (uma lição por dia ativo, pausas, "em atraso", entrada tardia) é código puro testado (`src/lib/groups/calendar.ts`).
+- **Biblioteca:** 24 lições + 4 de formação do discipulador + 6 trilhas prontas, geradas por `npm run import:library` como rascunho. Escrevi em linguagem pastoral, sem texto bíblico literal, sem inventar contato da igreja (`[PREENCHER]` bloqueia a publicação), com avisos de segurança nas sensíveis. **Precisam de revisão pastoral e, nas sensíveis, de um profissional.** Testes conferem títulos, temas, sensibilidade e trilhas contra a tabela do handoff.
+- Alertas (RG-11) aparecem no painel do discipulador; o resumo semanal por e-mail do grupo fica para depois.
+
+### Termos e Política (minutas)
+
+- Textos-base completos em `src/lib/legal-text.ts`, exibidos em `/termos` e `/privacidade` com aviso de minuta e os pontos que dependem da igreja **em destaque** (`[A PREENCHER PELA IGREJA: ...]`). Não inventei razão social, CNPJ, encarregado, contato nem foro. Testes garantem que a política descreve os acessos como o sistema realmente funciona.
+
+### Busca e log de consultas
+
+- A busca em Pessoas ignora acentos e maiúsculas (função `normalize_text`). Consultar a ficha de alguém grava `person_viewed` (uma vez a cada 10 minutos por pessoa; se o registro falhar, a ficha não abre).
 
 ## Perguntas em aberto para o pastor
 
@@ -196,23 +255,14 @@ Registro das escolhas feitas na construção, com o motivo. As decisões de prod
 | --- | --- |
 | Editar uma lição **já publicada** deve valer na hora (como está) ou passar por revisão antes de ir ao ar? | Hoje só o Admin edita lição publicada e a mudança é imediata; o histórico permite desfazer |
 | As lições têm de **355 a 616 palavras**, mas o molde da seção 15 pede **700 a 1.200**. Está bom assim ou devemos ampliar? | O texto mais curto combina com leitura no celular, mas foge do molde aprovado |
-| Alguma lição dos Ciclos 1 a 3 deve ser marcada como **sensível**? Candidatas: Ciclo 2, lições de finanças e de perdão | A caixa existe no editor, mas o aviso e o botão "Pedir ajuda pastoral" ao membro ainda não |
+| Alguma lição dos Ciclos 1 a 3 deve ser marcada como **sensível**? Candidatas: Ciclo 2, lições de finanças e de perdão | A caixa existe no editor. O aviso e o botão "Pedir ajuda pastoral" já existem, mas só valem nas lições do **Grupo de Discipulado**; na trilha de novos convertidos a marcação ainda não muda nada para o membro |
 | O "Botão sugerido" do batismo ("Quero me batizar") deve virar chamada para ação real? | Precisa do link do formulário de inscrição |
-| Quer registrar no log também **quem consultou a ficha** de uma pessoa? | Hoje só as mudanças de perfil ficam registradas (o handoff só exige registro para notas de cuidado e reflexões, que são V2) |
-| O que a igreja quer que o membro veja depois de **arquivar** uma lição que ele já concluiu? | Hoje ela some da trilha e o membro não consegue reabri-la (o progresso continua no banco) |
+| ~~Registrar quem consultou a ficha de uma pessoa?~~ | **Feito (padrão adotado):** cada consulta do Admin ou do cuidador fica no log (`person_viewed`, uma vez a cada 10 minutos por pessoa), assim como a leitura de reflexões. Se preferir não registrar, é só dizer |
+| ~~O que o membro vê depois de **arquivar** uma lição que já concluiu?~~ | **Feito (RN-11):** ela sai da trilha, mas quem a concluiu pode reabrir e reler (só leitura), numa seção "Lições que saíram da trilha" |
+| As **28 lições da biblioteca** ficaram mais curtas (230 a 500 palavras) que o molde (400 a 700). Ampliar? | O texto curto combina com leitura diária no celular; a revisão pastoral decide |
+| Quais telefones de emergência devem aparecer nas lições sensíveis? | Usei **CVV 188**, **SAMU 192**, **Ligue 180** e **190**. Precisam ser conferidos antes de publicar |
+| O consentimento do grupo (o que o discipulador vê) está adequado? | Texto em `src/lib/groups/forms.ts`; passa pela revisão jurídica junto com os termos |
 
-## Ainda não feito (propositalmente)
+## Ainda não feito
 
-| Item | Motivo |
-| --- | --- |
-| **Grupo de Discipulado** (discipulador, grupos, biblioteca de 24 lições e 5 trilhas, pedidos de ajuda) | Fase posterior do plano (G1 e G2), depois do piloto do MVP. O "discípulo" dos testes é um membro avançado na trilha |
-| Uso offline das lições, com sincronização | Precisa de desenho de privacidade; ver "Uso offline" |
-| Quiz, reflexão e prática marcável para o membro (RF-12, RF-13) | V2. Os dados já estão no banco |
-| Lembretes por e-mail e WhatsApp, alertas de parados (RF-16, RF-25) | V2. Os consentimentos já são gravados |
-| Cuidadores, encerramentos e certificados (RF-18 a RF-21) | V2 |
-| Exportar em CSV (RF-26) | V2 |
-| Filtro por ciclo e por cuidador na lista de pessoas | Por cuidador depende da V2 |
-| Criar ciclo pela tela; arrastar e soltar lições | O importador cria os ciclos; as setas reordenam |
-| Política de conteúdo (CSP), Sentry e Resend | Melhorias e V2 |
-| Ícones definitivos, cores e logotipo | Aguardam o material oficial da igreja (`npm run icons` gera os provisórios) |
-| Termos de Uso e Política de Privacidade | Páginas com aviso "em elaboração"; o texto depende de revisão jurídica |
+Tudo o que o plano previa foi construído. O que sobra depende de contas, contratos ou decisões da igreja e está no mapa completo em [PENDENCIAS.md](PENDENCIAS.md): WhatsApp (RF-17, exige provedor), vários campi (RF-29), Ciclo 4, e-mails do Grupo de Discipulado, criar lição da biblioteca pela tela, montar trilha arrastando, monitoramento de erros e o uso offline das lições com sincronização.

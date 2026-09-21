@@ -103,13 +103,52 @@ _Se precisar, por SQL (SQL Editor do Supabase; não grava no log de auditoria):_
 ## 6c. Pedidos das pessoas (LGPD) e Nossa Igreja
 
 - **"Quero meus dados":** a própria pessoa baixa em **Meu perfil > Baixar meus dados**. Você não precisa fazer nada.
-- **"Quero excluir minha conta":** a própria pessoa faz em **Meu perfil > Excluir minha conta**. Apaga o perfil, os consentimentos e o progresso. Se for **o único administrador**, o sistema não deixa: promova outra pessoa antes.
+- **"Quero excluir minha conta":** a própria pessoa faz em **Meu perfil > Excluir minha conta**. Apaga o perfil, os consentimentos, o progresso, as reflexões, as notas, as presenças, os certificados e a participação em grupos. Se for **o único administrador**, o sistema não deixa: promova outra pessoa antes.
 - **Corrigir dados de alguém:** a pessoa corrige em **Meu perfil**. O Admin vê tudo em **Pessoas**, mas não altera nome nem e-mail de terceiros.
 - **Textos de Nossa Igreja:** **Conteúdo > Nossa Igreja** (só o Admin). Cada mudança fica no log de auditoria.
 
 ## 6d. O painel de indicadores
 
 **Conteúdo > Painel** (Admin) mostra quantos chegaram, quantos começaram em 7 dias, **quantos estão parados**, quantos concluíram, e em que lições mais gente para. O Editor vê só o painel de conteúdo, sem dados de pessoas. Use o filtro **Parado** em Pessoas para saber quem precisa de um contato. Como cada número é calculado está no rodapé do painel.
+
+## 6e. Ligar e desligar recursos (Configurações)
+
+**Administração > Configurações** (só o Admin). Cada recurso além do MVP tem uma caixa; **todos nascem desligados**. Desligar esconde o recurso na hora e **não apaga nada**: os dados voltam quando você religar. Cada mudança fica no log de auditoria. Ordem sugerida na [PENDENCIAS.md](PENDENCIAS.md). Aqui também ficam o **nome da igreja** e o e-mail de contato.
+
+## 6f. Cuidadores e alertas
+
+1. Dê o perfil **Cuidador** a alguém em **Pessoas** (a ficha explica o que cada perfil pode).
+2. **Cuidado** (Admin): **Distribuir por rodízio** atribui a fila sem cuidador a quem tem menos membros; ou atribua um a um (também na ficha da pessoa).
+3. O cuidador vê **Meus membros**: contato, progresso, reflexões, alerta e **notas de cuidado** (só ele e o Admin leem).
+4. Quem passa de **14 dias** sem ler abre um alerta (aberto, em contato, resolvido). Sem cuidador, o alerta é seu, em **Cuidado**. Quem volta a ler tem o alerta fechado sozinho.
+5. Quem deixa de ser cuidador devolve os membros para a fila.
+
+## 6g. Lembretes por e-mail
+
+- Configure uma vez ([CONTAS.md](CONTAS.md), passo 8). Depois, **Administração > Lembretes** mostra a **Situação** (o que falta), os **textos** (edite com tom de cuidado; as palavras entre chaves, como `{{nome}}`, são trocadas sozinhas) e os **últimos envios** com erro, se houver. **Enviar teste para mim** confere o serviço.
+- Regras que o sistema aplica sozinho: só para quem aceitou; das 8h às 20h de Brasília; no máximo 2 lembretes por semana por pessoa; uma mensagem por ocorrência; quem voltou a ler não recebe convite.
+- **Se um e-mail falhar,** o motivo aparece na lista (por exemplo, "Resend respondeu 422": domínio não verificado). Falhas recentes são tentadas de novo por 2 dias.
+- **Se alguém pedir para parar:** cada e-mail tem o link para desligar; a pessoa também desliga em **Meu perfil**. Nunca reative por conta própria.
+- **Trocar o segredo do agendador:** invente outro, atualize `CRON_SECRET` na Vercel e rode de novo o `insert` do passo 8 com `update` no lugar (o valor guardado é só o resumo do segredo).
+
+## 6h. Encerramentos e certificados
+
+1. **Administração > Encerramentos**: crie o encontro de cada ciclo (título, data e hora de Brasília, local).
+2. O membro que concluiu o ciclo vê o encontro na tela do ciclo. **O encontro não trava o ciclo seguinte:** sem presença confirmada, é só um "marco pendente".
+3. Depois do encontro, marque a **presença** de quem esteve e clique em **Emitir certificados**: saem só para quem **concluiu o ciclo e teve presença**. Cada um recebe um código; o membro baixa o PDF em **Certificados**, e qualquer pessoa confere o código em `/verificar`.
+4. Um erro no nome do certificado: o nome fica como estava no dia da emissão. Se precisar corrigir, fale com o Claude (não há tela para reemitir, de propósito).
+
+## 6i. Grupo de Discipulado
+
+- **Antes de abrir:** importe a biblioteca ([CONTAS.md](CONTAS.md), passo 2c), revise e publique as lições e as trilhas (**Administração > Grupos**), marque os **discipuladores** e ligue a chave.
+- **O discipulador** cria o grupo (**Discipulado > Criar grupo**), compartilha o **código do convite** e acompanha o **painel**: quem leu, quem está em atraso, quem merece um contato. Pode **pausar** o grupo (os dias da pausa não têm lição) e usa o **guia do encontro** para registrar presença e notas (só ele e o Admin leem).
+- **O discípulo** entra pelo código, lê o que o discipulador vai ver e aceita. Sair do grupo tira o acesso do discipulador aos dados dele.
+- **Pedidos de ajuda:** o discipulador atende e pode **escalar** com um botão; o discípulo também pode enviar **direto à equipe pastoral** (o discipulador não vê). Você atende em **Administração > Pedidos de ajuda** (os diretos aparecem primeiro). **Trate com sigilo**; cada atendimento fica no log, sem o texto.
+- **Trocar o discipulador** de um grupo: **Administração > Grupos > Transferir**. Se o discipulador excluir a conta, o grupo fica sem discipulador até você transferir.
+
+## 6j. Planilhas
+
+**Pessoas** tem os links **Baixar planilha de pessoas** e **de progresso por lição** (CSV para Excel). Cada download fica no log. Trate o arquivo como dado pessoal: guarde em local seguro e apague quando terminar.
 
 ## 7. Backup e restauração
 

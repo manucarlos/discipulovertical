@@ -1,7 +1,10 @@
+import { connection } from "next/server";
+
 export const metadata = { title: "Sem internet" };
 
 /** Mostrada pelo service worker quando não há conexão. Página estática e pública, sem nenhum dado de pessoa. */
-export default function OfflinePage() {
+export default async function OfflinePage() {
+  await connection(); // renderizada a cada acesso: a política de segurança (CSP) usa um código novo por requisição
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm rounded-2xl border border-line bg-card p-8 text-center shadow-sm">
