@@ -53,7 +53,7 @@ describe("ações do servidor ('use server')", () => {
   }
 
   it("as ações do painel exigem equipe, e as de dados de outras pessoas exigem administrador", () => {
-    const admin = ["src/app/admin/pessoas/actions.ts", "src/app/admin/igreja/actions.ts", "src/app/admin/configuracoes/actions.ts", "src/app/admin/cuidado/actions.ts"];
+    const admin = ["src/app/admin/pessoas/actions.ts", "src/app/admin/igreja/actions.ts", "src/app/admin/configuracoes/actions.ts", "src/app/admin/cuidado/actions.ts", "src/app/admin/lembretes/actions.ts"];
     for (const f of admin) {
       const source = read(path.resolve(__dirname, "../..", f));
       for (const { name, body } of exportedFunctions(source)) {
@@ -78,7 +78,7 @@ describe("telas do painel (/admin)", () => {
     });
   }
   it("as telas com dados pessoais de outras pessoas exigem administrador", () => {
-    for (const p of pages.filter((f) => /admin\/(pessoas|igreja|configuracoes|cuidado)\//.test(rel(f)))) {
+    for (const p of pages.filter((f) => /admin\/(pessoas|igreja|configuracoes|cuidado|lembretes)\//.test(rel(f)))) {
       expect(read(p), rel(p)).toMatch(/requireAdmin\(/);
     }
     expect(read(files.find((f) => rel(f).endsWith("admin/painel/page.tsx"))!)).toMatch(/role === "admin"/); // o editor recebe só métricas de conteúdo
@@ -108,6 +108,12 @@ describe("telas do membro e rotas de dados", () => {
       const source = read(r);
       if (rel(r) === "src/app/auth/callback/route.ts") {
         expect(source, "o parâmetro next precisa ser validado (redirecionamento aberto)").toMatch(/startsWith\("\/"\)\s*&&\s*!value\.startsWith\("\/\/"\)/);
+      } else if (rel(r) === "src/app/api/cron/lembretes/route.ts") {
+        expect(source, "o agendador precisa provar que tem o CRON_SECRET").toMatch(/isAuthorizedCron\(/);
+        expect(source, "sem CRON_SECRET configurado a rota recusa").toMatch(/if \(!secret\)/);
+      } else if (rel(r) === "src/app/api/descadastro/route.ts") {
+        expect(source, "o código do e-mail precisa ser validado").toMatch(/UUID\.test\(token\)/);
+        expect(source, "abrir o link (GET) nunca descadastra").not.toMatch(/export async function GET/);
       } else {
         expect(source, rel(r)).toMatch(/requireMember\(/);
       }

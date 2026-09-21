@@ -20,6 +20,10 @@ vi.mock("next/server", async (importOriginal) => ({
   connection: async () => {},
 }));
 vi.mock("next/cache", () => ({ revalidatePath() {} }));
+vi.mock("@/lib/supabase/anon", async () => {
+  const { session } = await import("./session");
+  return { createAnonClient: () => session.client };
+});
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useRouter: () => ({ refresh() {}, push() {}, replace() {}, back() {}, prefetch() {} }),
@@ -50,6 +54,14 @@ import { GET as exportMyData } from "@/app/(member)/perfil/exportar/route";
 import { changeLessonStatus, restoreLessonVersion, saveLesson } from "@/app/admin/licao/[slug]/actions";
 import { createLesson, moveLesson, saveCycleSettings } from "@/app/admin/actions";
 import { changeRole } from "@/app/admin/pessoas/actions";
+import RemindersPage from "@/app/admin/lembretes/page";
+import { saveEmailTemplate, sendTestEmail } from "@/app/admin/lembretes/actions";
+import UnsubscribePage from "@/app/desinscrever/page";
+import { GET as unsubscribeGet, POST as unsubscribePost } from "@/app/api/descadastro/route";
+import { GET as cronGet } from "@/app/api/cron/lembretes/route";
+import { FakeEmailProvider } from "@/lib/email/fake";
+import type { EmailProvider } from "@/lib/email/provider";
+import { runReminders } from "@/lib/reminders/run";
 import CarePage from "@/app/(member)/cuidado/page";
 import CareMemberPage from "@/app/(member)/cuidado/[id]/page";
 import { addCareNote, updateCareAlert } from "@/app/(member)/cuidado/actions";
@@ -1148,6 +1160,186 @@ describe("Cuidado: o Claudio cuida do Claudinho, e o alerta aparece quando ele p
     await world.sql("delete from public.care_notes");
     await world.sql("delete from public.care_alerts");
     await world.sql("delete from public.care_assignments");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// HISTÓRIA 4f · lembretes por e-mail (RF-16, seção 10)
+// O Claudião liga os lembretes e ajusta um texto; o Claudinho sumiu por 5 dias e recebe um convite gentil.
+// ---------------------------------------------------------------------------------------------
+
+describe("Lembretes por e-mail: o Claudinho sumiu por alguns dias", () => {
+  const SECRET = "segredo-do-teste-e2e-com-mais-de-32-caracteres";
+  const SITE = "https://discipulado.example.org";
+  const fake = new FakeEmailProvider();
+  /** Meio-dia de Brasília de hoje: dentro do horário de envio, seja qual for a hora em que o teste roda. */
+  const noon = () => {
+    const d = new Date();
+    d.setUTCHours(15, 0, 0, 0);
+    return d;
+  };
+  const run = async (now = noon(), provider: EmailProvider = fake) => {
+    world.visitor(); // o agendador não tem sessão
+    return runReminders({ supabase: client(), secret: SECRET, provider, siteUrl: SITE, now });
+  };
+  /** Ajusta os carimbos do Claudinho para que a última atividade dele tenha sido há `days` dias. */
+  const makeIdle = async (days: number) => {
+    const [row] = await world.sql<{ last: Date }>(
+      "select greatest(max(updated_at), max(started_at), max(completed_at)) as last from public.lesson_progress where user_id = $1",
+      [CLAUDINHO.id],
+    );
+    const idleNow = (Date.now() - new Date(row.last).getTime()) / 1000;
+    const secs = -(days * 86_400 - idleNow);
+    await world.sql(
+      `update public.lesson_progress set started_at = started_at + make_interval(secs => $2),
+         completed_at = completed_at + make_interval(secs => $2), updated_at = updated_at + make_interval(secs => $2)
+       where user_id = $1`,
+      [CLAUDINHO.id, secs],
+    );
+  };
+  let unsubscribeToken = "";
+
+  it("o Claudião prepara o envio: segredo no banco, recurso ligado e um texto ajustado", async () => {
+    await world.sql("insert into public.app_config (key, value) values ('cron_secret_hash', encode(sha256(convert_to($1, 'UTF8')), 'hex'))", [SECRET]);
+    await world.sql("insert into public.consents (user_id, purpose, term_version) values ($1, 'email_reminders', 'v1') on conflict do nothing", [CLAUDINHO.id]);
+    await world.sql("update public.consents set revoked_at = null where user_id = $1 and purpose = 'email_reminders'", [CLAUDINHO.id]);
+
+    await world.login(CLAUDIAO);
+    const before = await visit(RemindersPage);
+    expect(before.text).toContain("Lembretes por e-mail");
+    expect(before.text).toContain("Boas-vindas");
+    expect(before.text).toContain("Nenhum e-mail foi enviado ainda");
+    expect(before.text).toContain("falta configurar"); // o serviço de e-mail ainda não está no site
+    expect(before.html).not.toMatch(/RESEND_API_KEY=|re_[A-Za-z0-9]{10}/); // nunca mostra valores
+
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "", feature_reminders: true })));
+
+    const bad = await outcome(() => saveEmailTemplate("nudge_3d", form({ subject: "Oi {{apelido}}", body: "Texto" })));
+    expect(decodeURIComponent(bad.redirect!.replace(/\+/g, " "))).toContain("{{apelido}}");
+    const good = await outcome(() =>
+      saveEmailTemplate("nudge_3d", form({ subject: "Sentimos sua falta, {{nome}}", body: "Oi {{nome}}, a lição {{licao}} te espera: {{link}}" })),
+    );
+    expect(decodeURIComponent(good.redirect!.replace(/\+/g, " "))).toContain("Texto salvo");
+    expect(await world.sql("select 1 from public.audit_log where action = 'email_template_updated' and entity_id = 'nudge_3d'")).toHaveLength(1);
+  });
+
+  it("um membro não edita os textos, nem lê o registro de envios", async () => {
+    await world.login(CLAUDINHO);
+    expect((await visit(RemindersPage)).redirect).toBe("/");
+    expect((await outcome(() => saveEmailTemplate("nudge_3d", form({ subject: "Hack", body: "hack" })))).redirect).toBe("/");
+    expect((await client().from("email_templates").select("kind")).data).toEqual([]);
+    expect((await client().from("notifications").select("id")).data).toEqual([]);
+    const direct = await client().from("email_templates").update({ subject: "Hack" }).eq("kind", "nudge_3d").select("kind");
+    expect(direct.data).toEqual([]);
+  });
+
+  it("quem está em dia não recebe nada", async () => {
+    await makeIdle(0.1);
+    const result = await run();
+    expect(result).toMatchObject({ status: "ok", sent: 0 });
+    expect(fake.sent).toEqual([]);
+  });
+
+  it("fora do horário (3h da manhã em Brasília) nada é enviado, mesmo com alguém precisando", async () => {
+    await makeIdle(5);
+    const night = noon();
+    night.setUTCHours(6, 0, 0, 0);
+    expect(await run(night)).toEqual({ status: "outside_window" });
+    expect(fake.sent).toEqual([]);
+  });
+
+  it("5 dias sem acesso: um convite gentil, com o link da lição e o de desligar; um envio que falhou aparece no registro", async () => {
+    const failing = new FakeEmailProvider();
+    failing.failFor.add(CLAUDINHO.email);
+    const first = await run(noon(), failing);
+    expect(first).toMatchObject({ status: "ok", queued: 1, sent: 0, failed: 1 });
+
+    await world.login(CLAUDIAO);
+    const log = await visit(RemindersPage);
+    expect(log.text).toContain("Claudinho da Silva");
+    expect(log.text).toContain("Falhou");
+    expect(log.text).toContain("falha simulada");
+    expect(log.text).not.toContain("claudinho@example.com"); // o registro mostra o nome, não o e-mail
+
+    // Na rodada seguinte o envio que falhou é tentado de novo, e agora chega.
+    const second = await run();
+    expect(second).toMatchObject({ status: "ok", queued: 1, sent: 1, failed: 0 });
+    expect(fake.sent).toHaveLength(1);
+    const mail = fake.sent[0];
+    expect(mail.to).toBe(CLAUDINHO.email);
+    expect(mail.subject).toBe("Sentimos sua falta, Claudinho");
+    expect(mail.text).toContain(`${SITE}/licao/`);
+    expect(mail.text).toContain("Para não receber mais estes e-mails:");
+    expect(mail.headers?.["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
+    unsubscribeToken = /desinscrever\?t=([0-9a-f-]{36})/.exec(mail.text)![1];
+
+    const rows = await world.sql<{ status: string; kind: string }>("select status, kind from public.notifications");
+    expect(rows).toEqual([{ status: "sent", kind: "nudge_3d" }]);
+    expect(rows).toHaveLength(1); // a mesma linha foi reaproveitada, não duplicada
+  });
+
+  it("rodar de novo não repete o e-mail, e ninguém mais (equipe, quem concluiu tudo) recebe", async () => {
+    expect(await run()).toMatchObject({ status: "ok", sent: 0 });
+    expect(fake.sent).toHaveLength(1);
+  });
+
+  it("abrir o link do e-mail não desliga nada; só o botão de confirmação, e vale para o próximo aviso", async () => {
+    world.visitor();
+    const page = await visit(UnsubscribePage, { search: { t: unsubscribeToken } });
+    expect(page.text).toContain("Sim, parar de receber");
+    expect((await visit(UnsubscribePage, { search: { t: "lixo" } })).text).toContain("não é válido");
+
+    const get = await unsubscribeGet(new Request(`${SITE}/api/descadastro?t=${unsubscribeToken}`));
+    expect(get.status).toBe(303);
+    expect(await world.sql("select 1 from public.consents where user_id = $1 and purpose = 'email_reminders' and revoked_at is null", [CLAUDINHO.id])).not.toHaveLength(0);
+
+    expect((await unsubscribePost(new Request(`${SITE}/api/descadastro?t=lixo`, { method: "POST" }))).status).toBe(400);
+    expect((await unsubscribePost(new Request(`${SITE}/api/descadastro?t=00000000-0000-4000-8000-000000000000`, { method: "POST" }))).status).toBe(404);
+
+    const done = await unsubscribePost(new Request(`${SITE}/api/descadastro?t=${unsubscribeToken}`, { method: "POST", body: "" }));
+    expect(done.status).toBe(303);
+    expect(done.headers.get("location")).toContain("/desinscrever?feito=1");
+    expect(await world.sql("select 1 from public.consents where user_id = $1 and purpose = 'email_reminders' and revoked_at is null", [CLAUDINHO.id])).toHaveLength(0);
+    expect((await visit(UnsubscribePage, { search: { feito: "1" } })).text).toContain("Você não vai mais receber");
+
+    // O botão "cancelar inscrição" do aplicativo de e-mail (um clique) também funciona, e repetir não dá erro.
+    const oneClick = await unsubscribePost(new Request(`${SITE}/api/descadastro?t=${unsubscribeToken}`, { method: "POST", body: "List-Unsubscribe=One-Click" }));
+    expect(oneClick.status).toBe(200);
+  });
+
+  it("depois de desligar, mais um período de ausência não gera e-mail", async () => {
+    await makeIdle(9); // outra ausência, que seria um convite de 7 dias
+    expect(await run()).toMatchObject({ status: "ok", planned: 0, sent: 0 });
+    expect(fake.sent).toHaveLength(1);
+  });
+
+  it("a rota do agendador recusa quem não tem o segredo, e sem serviço de e-mail avisa o que falta", async () => {
+    process.env.CRON_SECRET = SECRET;
+    delete process.env.RESEND_API_KEY;
+    delete process.env.EMAIL_FROM;
+    const call = (auth?: string) => cronGet(new Request(`${SITE}/api/cron/lembretes`, { headers: auth ? { authorization: auth } : {} }));
+    expect((await call()).status).toBe(401);
+    expect((await call("Bearer errado")).status).toBe(401);
+    expect((await call(SECRET)).status).toBe(401); // sem o "Bearer"
+    const noMail = await call(`Bearer ${SECRET}`);
+    expect(noMail.status).toBe(503);
+    expect(await noMail.text()).toContain("RESEND_API_KEY");
+    delete process.env.CRON_SECRET;
+    expect((await call(`Bearer ${SECRET}`)).status).toBe(503); // sem CRON_SECRET configurado a rota fica fechada
+  });
+
+  it("o botão de teste avisa que falta configurar o serviço de e-mail", async () => {
+    await world.login(CLAUDIAO);
+    const r = await outcome(() => sendTestEmail("welcome"));
+    expect(decodeURIComponent(r.redirect!.replace(/\+/g, " "))).toContain("ainda não está configurado");
+  });
+
+  it("desliga o recurso e devolve o estado anterior", async () => {
+    await world.login(CLAUDIAO);
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "" })));
+    world.visitor();
+    expect(await runReminders({ supabase: client(), secret: SECRET, provider: fake, siteUrl: SITE, now: noon() })).toEqual({ status: "disabled" });
+    await world.sql("delete from public.notifications");
   });
 });
 

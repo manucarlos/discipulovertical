@@ -2,10 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv } from "@/lib/supabase/config";
 
-const PUBLIC_PATHS = ["/login", "/termos", "/privacidade", "/offline"];
+const PUBLIC_PATHS = ["/login", "/termos", "/privacidade", "/offline", "/desinscrever", "/api/descadastro"];
 
 function isPublic(pathname: string) {
   if (PUBLIC_PATHS.includes(pathname) || pathname.startsWith("/auth/")) return true;
+  // O agendador de lembretes não tem sessão: a própria rota confere o CRON_SECRET.
+  if (pathname.startsWith("/api/cron/")) return true;
   // Pré-visualizações com dados fictícios: existem só em desenvolvimento (as páginas dão 404 em produção).
   return process.env.NODE_ENV !== "production" && pathname.startsWith("/dev/");
 }

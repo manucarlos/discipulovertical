@@ -64,8 +64,9 @@ describe("tabelas", () => {
        where n.nspname = 'public' and c.relkind = 'r' and c.relrowsecurity
          and not exists (select 1 from pg_policy p where p.polrelid = c.oid) order by 1`,
     );
-    // app_config não tem política de propósito: só o SQL Editor (dono do banco) a acessa.
-    expect(rows.map((r) => r.relname)).toEqual(["app_config"]);
+    // Sem política de propósito: só o SQL Editor (dono do banco) e as funções do banco as acessam.
+    // app_config guarda o e-mail do primeiro admin e o hash do segredo do agendador; o resto é o código de descadastro.
+    expect(rows.map((r) => r.relname)).toEqual(["app_config", "email_unsubscribe_tokens"]);
   });
 
   it("nenhuma política de escrita libera tudo (using/with check = true) para usuários logados", async () => {
@@ -89,11 +90,21 @@ describe("funções", () => {
     expect(rows.map((r) => r.proname)).toEqual([]);
   });
 
-  it("nenhuma função do schema public pode ser executada pelo papel anônimo", async () => {
+  it("só estas funções (e mais nenhuma) podem ser executadas pelo papel anônimo", async () => {
     const rows = await q<{ proname: string }>(
       `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute') order by 1`,
     );
-    expect(rows.map((r) => r.proname)).toEqual([]);
+    // Cada uma exige algo que só o e-mail ou o agendador têm: o código do descadastro ou o CRON_SECRET.
+    expect(rows.map((r) => r.proname)).toEqual(["cron_enqueue", "cron_report", "cron_snapshot", "unsubscribe_email"]);
+  });
+
+  it("as funções do agendador conferem o segredo antes de qualquer coisa", async () => {
+    const rows = await q<{ proname: string; src: string }>(
+      `select p.proname, p.prosrc as src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname like 'cron\_%' order by 1`,
+    );
+    expect(rows.map((r) => r.proname)).toEqual(["cron_enqueue", "cron_report", "cron_snapshot"]);
+    for (const r of rows) expect(r.src, r.proname).toMatch(/perform public\.check_cron_secret\(p_secret\)/);
   });
 });

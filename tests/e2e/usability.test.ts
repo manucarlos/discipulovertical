@@ -39,6 +39,8 @@ import PersonPage from "@/app/admin/pessoas/[id]/page";
 import DashboardPage from "@/app/admin/painel/page";
 import EditChurchPage from "@/app/admin/igreja/page";
 import SettingsPage from "@/app/admin/configuracoes/page";
+import RemindersPage from "@/app/admin/lembretes/page";
+import UnsubscribePage from "@/app/desinscrever/page";
 import CarePage from "@/app/(member)/cuidado/page";
 import CareMemberPage from "@/app/(member)/cuidado/[id]/page";
 import CareAdminPage from "@/app/admin/cuidado/page";
@@ -132,6 +134,9 @@ describe("Claudinho, membro novo: cada tela que ele vê", () => {
     await audit("login (erro)", LoginPage, { search: { erro: "1" } });
     await audit("termos", TermosPage);
     await audit("privacidade", PrivacidadePage);
+    await audit("desinscrever (link válido)", UnsubscribePage, { search: { t: "00000000-0000-4000-8000-000000000000" } });
+    await audit("desinscrever (concluído)", UnsubscribePage, { search: { feito: "1" } });
+    await audit("desinscrever (link inválido)", UnsubscribePage);
 
     await world.login(CLAUDINHO);
     await audit("primeiro acesso", OnboardingPage);
@@ -209,6 +214,8 @@ describe("Claudião, administrador, e um editor: painel de conteúdo", () => {
     await audit("ficha (a própria)", PersonPage, { params: { id: CLAUDIAO.id! } });
     await audit("editor de Nossa Igreja", EditChurchPage);
     await audit("configurações", SettingsPage);
+    await audit("lembretes por e-mail", RemindersPage);
+    await audit("lembretes (com aviso)", RemindersPage, { search: { ok: "Texto salvo." } });
   });
 
   it("um editor vê o painel e a trilha sem dados de pessoas", async () => {
