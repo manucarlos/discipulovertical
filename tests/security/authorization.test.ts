@@ -25,7 +25,7 @@ function exportedFunctions(source: string): { name: string; body: string }[] {
   return parts.map((part) => ({ name: part.slice(0, part.indexOf("(")), body: part }));
 }
 
-const GUARD = /requireMember\(|requireStaff\(|requireAdmin\(|requireCaregiver\(|accessibleLesson\(/;
+const GUARD = /requireMember\(|requireStaff\(|requireAdmin\(|requireCaregiver\(|requireGroups\(|requireDiscipler\(|accessibleLesson\(|releasedLesson\(/;
 
 describe("ações do servidor ('use server')", () => {
   const actionFiles = files.filter((f) => /\.(ts|tsx)$/.test(f) && /^\s*["']use server["']/.test(read(f)));
@@ -53,7 +53,7 @@ describe("ações do servidor ('use server')", () => {
   }
 
   it("as ações do painel exigem equipe, e as de dados de outras pessoas exigem administrador", () => {
-    const admin = ["src/app/admin/pessoas/actions.ts", "src/app/admin/igreja/actions.ts", "src/app/admin/configuracoes/actions.ts", "src/app/admin/cuidado/actions.ts", "src/app/admin/lembretes/actions.ts", "src/app/admin/encerramentos/actions.ts"];
+    const admin = ["src/app/admin/pessoas/actions.ts", "src/app/admin/igreja/actions.ts", "src/app/admin/configuracoes/actions.ts", "src/app/admin/cuidado/actions.ts", "src/app/admin/lembretes/actions.ts", "src/app/admin/encerramentos/actions.ts", "src/app/admin/grupos/actions.ts", "src/app/admin/pedidos-de-ajuda/actions.ts"];
     for (const f of admin) {
       const source = read(path.resolve(__dirname, "../..", f));
       for (const { name, body } of exportedFunctions(source)) {
@@ -78,7 +78,7 @@ describe("telas do painel (/admin)", () => {
     });
   }
   it("as telas com dados pessoais de outras pessoas exigem administrador", () => {
-    for (const p of pages.filter((f) => /admin\/(pessoas|igreja|configuracoes|cuidado|lembretes|encerramentos)\//.test(rel(f)))) {
+    for (const p of pages.filter((f) => /admin\/(pessoas|igreja|configuracoes|cuidado|lembretes|encerramentos|grupos|pedidos-de-ajuda)\//.test(rel(f)))) {
       expect(read(p), rel(p)).toMatch(/requireAdmin\(/);
     }
     expect(read(files.find((f) => rel(f).endsWith("admin/painel/page.tsx"))!)).toMatch(/role === "admin"/); // o editor recebe só métricas de conteúdo
@@ -92,13 +92,22 @@ describe("telas do membro e rotas de dados", () => {
   it("toda tela da área do membro exige login", () => {
     const pages = files.filter((f) => rel(f).startsWith("src/app/(member)/") && /page\.tsx$/.test(f));
     expect(pages.length).toBeGreaterThanOrEqual(5);
-    for (const p of pages) expect(read(p), rel(p)).toMatch(/requireMember\(|requireCaregiver\(/);
+    for (const p of pages) expect(read(p), rel(p)).toMatch(/requireMember\(|requireCaregiver\(|requireGroups\(|requireDiscipler\(/);
   });
 
   it("as telas e ações do cuidador exigem o perfil de cuidador (e não só estar logado)", () => {
     const care = files.filter((f) => rel(f).startsWith("src/app/(member)/cuidado/"));
     expect(care.length).toBeGreaterThanOrEqual(3);
     for (const f of care) expect(read(f), rel(f)).toMatch(/requireCaregiver\(/);
+  });
+
+  it("as telas e ações do discipulador exigem o perfil de discipulador; as do discípulo, o recurso ligado", () => {
+    const disciplerFiles = files.filter((f) => rel(f).startsWith("src/app/(member)/discipulador/"));
+    expect(disciplerFiles.length).toBeGreaterThanOrEqual(6);
+    for (const f of disciplerFiles) expect(read(f), rel(f)).toMatch(/requireDiscipler\(/);
+    const groupFiles = files.filter((f) => rel(f).startsWith("src/app/(member)/grupo/"));
+    expect(groupFiles.length).toBeGreaterThanOrEqual(5);
+    for (const f of groupFiles) expect(read(f), rel(f)).toMatch(/requireGroups\(|releasedLesson\(/);
   });
 
   it("as rotas de dados (route.ts) exigem login, exceto o retorno do Google, que valida o destino", () => {

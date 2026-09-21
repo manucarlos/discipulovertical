@@ -31,6 +31,8 @@ export interface LessonContent {
   reflection: string | null;
   /** Ausente nas lições antigas. */
   video?: LessonVideo | null;
+  /** Perguntas do guia do encontro (Grupo de Discipulado): só o discipulador as vê. */
+  guide?: string[];
 }
 
 export interface QuizQuestion {

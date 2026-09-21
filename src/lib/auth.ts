@@ -10,6 +10,7 @@ export interface MemberProfile {
   role: "member" | "caregiver" | "editor" | "admin";
   bible_version: string;
   onboarded_at: string | null;
+  is_discipler: boolean;
 }
 
 /**
@@ -29,7 +30,7 @@ export const requireMember = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, role, bible_version, onboarded_at")
+    .select("id, display_name, role, bible_version, onboarded_at, is_discipler")
     .eq("id", user.id)
     .single<MemberProfile>();
   if (!profile?.onboarded_at) redirect("/onboarding");
@@ -56,6 +57,20 @@ export const requireCaregiver = cache(async () => {
   const ctx = await requireMember();
   if (ctx.profile.role !== "caregiver") redirect("/");
   if (!(await loadSettings(ctx.supabase)).flags.caregivers) redirect("/");
+  return ctx;
+});
+
+/** Área do Grupo de Discipulado (discípulo): exige o recurso ligado. */
+export const requireGroups = cache(async () => {
+  const ctx = await requireMember();
+  if (!(await loadSettings(ctx.supabase)).flags.groups) redirect("/");
+  return ctx;
+});
+
+/** Área do discipulador: quem o Admin marcou como discipulador (e o próprio Admin), com o recurso ligado. */
+export const requireDiscipler = cache(async () => {
+  const ctx = await requireGroups();
+  if (!ctx.profile.is_discipler && ctx.profile.role !== "admin") redirect("/grupo");
   return ctx;
 });
 

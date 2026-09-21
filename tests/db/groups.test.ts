@@ -318,3 +318,38 @@ describe("administração", () => {
     await expect(as(disc2, "select public.create_group('G', $1, current_date, null, null, null)", [trackId])).rejects.toThrow(/Só um discipulador/);
   });
 });
+
+describe("nomes de quem está no grupo (sem o resto do perfil)", () => {
+  it("o discipulador e o Admin leem a lista; discípulos e outros discipuladores, não", async () => {
+    await setFlag(true);
+    expect((await as<{ display_name: string }>(disc2, "select display_name from public.group_roster($1)", [groupId])).map((r) => r.display_name).sort()).toEqual(["Ana"]);
+    expect((await as(admin, "select 1 from public.group_roster($1)", [groupId])).length).toBe(1);
+    await expect(as(ana, "select * from public.group_roster($1)", [groupId])).rejects.toThrow(/não autorizado/);
+    await expect(as(disc, "select * from public.group_roster($1)", [groupId])).rejects.toThrow(/não autorizado/); // a conta dele foi excluída acima: não conduz mais o grupo
+    const [row] = await as<Record<string, unknown>>(disc2, "select * from public.group_roster($1)", [groupId]);
+    expect(Object.keys(row).sort()).toEqual(["display_name", "joined_at", "status", "user_id"]);
+  });
+
+  it("os nomes dos pedidos de ajuda só saem para quem pode ler o pedido", async () => {
+    const [{ id: req }] = await as<{ id: string }>(ana, "select public.request_help($1, null, 'x', 'Preciso de ajuda.', 'discipler') as id", [groupId]);
+    expect((await as<{ display_name: string }>(disc2, "select display_name from public.help_request_names($1)", [[req]]))[0].display_name).toBe("Ana");
+    expect(await as(admin, "select 1 from public.help_request_names($1)", [[req]])).toEqual([]); // ainda não foi escalado
+    expect(await as(beto, "select 1 from public.help_request_names($1)", [[req]])).toEqual([]);
+  });
+});
+
+describe("prévia do convite", () => {
+  it("mostra grupo, discipulador e trilha para um código válido; nada para outro", async () => {
+    await setFlag(true);
+    const [g] = await q<{ invite_code: string }>("select invite_code from public.discipleship_groups");
+    const rows = await as<{ group_name: string; discipler_name: string; track_title: string }>(cida, "select * from public.group_invite_preview($1)", [g.invite_code.toLowerCase()]);
+    expect(rows).toEqual([{ group_name: "Grupo da Manhã", discipler_name: "Outro Discipulador", track_title: "Trilha de teste" }]);
+    expect(await as(cida, "select * from public.group_invite_preview('G-00000000')")).toEqual([]);
+    await db.exec("set role anon");
+    try {
+      await expect(q("select * from public.group_invite_preview($1)", [g.invite_code])).rejects.toThrow(/permission denied/);
+    } finally {
+      await db.exec("reset role");
+    }
+  });
+});

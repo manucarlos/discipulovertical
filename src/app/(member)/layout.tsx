@@ -13,7 +13,7 @@ export default async function MemberLayout({ children }: LayoutProps<"/">) {
 
   return (
     <>
-      <MemberHeader isStaff={profile.role === "editor" || profile.role === "admin"} isCaregiver={isCaregiver} showCertificates={flags.certificates} />
+      <MemberHeader isStaff={profile.role === "editor" || profile.role === "admin"} isCaregiver={isCaregiver} showCertificates={flags.certificates} showGroups={flags.groups} isDiscipler={profile.is_discipler || profile.role === "admin"} />
       <div className="flex flex-1 flex-col">{children}</div>
     </>
   );

@@ -35,6 +35,9 @@ export function describeEditorError(error: DbErrorLike): FriendlyError {
   if (error.code === "P0002" && text.includes("perfil não encontrado")) {
     return { conflict: false, message: "Essa pessoa não foi encontrada." };
   }
+  if (text.includes("não autorizado")) {
+    return { conflict: false, message: "Você não tem permissão para fazer isso." };
+  }
   if (error.code === "42501" || text.includes("row-level security") || text.includes("sem permissão")) {
     return {
       conflict: false,
@@ -44,7 +47,7 @@ export function describeEditorError(error: DbErrorLike): FriendlyError {
     };
   }
   // Mensagens que as nossas próprias funções do banco escrevem para a pessoa (já em português).
-  if (error.code === "P0001" && text && !text.includes("[")) return { conflict: false, message: text };
+  if ((error.code === "P0001" || error.code === "P0002") && text && !text.includes("[")) return { conflict: false, message: text };
   if (error.code === "22023" && text) return { conflict: false, message: `${text.charAt(0).toUpperCase()}${text.slice(1)}.` };
 
   return { conflict: false, message: "Não foi possível concluir a ação. Tente de novo em instantes." };

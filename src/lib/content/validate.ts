@@ -47,5 +47,6 @@ export function asLessonContent(value: unknown): LessonContent | null {
   const content: LessonContent = { blocks, practice, reflection: isString(v.reflection) ? v.reflection : null };
   const video = asLessonVideo(v.video);
   if (video) content.video = video;
+  if (isStringArray(v.guide) && v.guide.length > 0) content.guide = v.guide;
   return content;
 }

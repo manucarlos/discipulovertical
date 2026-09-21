@@ -54,6 +54,23 @@ import { GET as exportMyData } from "@/app/(member)/perfil/exportar/route";
 import { changeLessonStatus, restoreLessonVersion, saveLesson } from "@/app/admin/licao/[slug]/actions";
 import { createLesson, moveLesson, saveCycleSettings } from "@/app/admin/actions";
 import { changeRole } from "@/app/admin/pessoas/actions";
+import MyGroupsPage from "@/app/(member)/grupo/page";
+import JoinGroupPage from "@/app/(member)/grupo/entrar/page";
+import GroupHomePage from "@/app/(member)/grupo/[id]/page";
+import GroupLessonPage from "@/app/(member)/grupo/[id]/licao/[dia]/page";
+import HelpPage from "@/app/(member)/grupo/[id]/ajuda/page";
+import { joinGroup, leaveGroup, completeGroupLesson, saveGroupReflection, toggleGroupChallenge, requestGroupHelp } from "@/app/(member)/grupo/actions";
+import DisciplerHomePage from "@/app/(member)/discipulador/page";
+import NewGroupPage from "@/app/(member)/discipulador/novo/page";
+import GroupPanelPage from "@/app/(member)/discipulador/[id]/page";
+import MeetingGuidePage from "@/app/(member)/discipulador/[id]/encontro/page";
+import DiscipleFichaPage from "@/app/(member)/discipulador/[id]/discipulo/[userId]/page";
+import GroupHelpPage from "@/app/(member)/discipulador/pedidos/page";
+import { createGroup, addGroupPause, removeGroupPause, saveMeeting, handleGroupHelp, escalateGroupHelp } from "@/app/(member)/discipulador/actions";
+import AdminGroupsPage from "@/app/admin/grupos/page";
+import { addDiscipler, createTrack, setTrackStatus } from "@/app/admin/grupos/actions";
+import PastoralHelpPage from "@/app/admin/pedidos-de-ajuda/page";
+import { handlePastoralHelp } from "@/app/admin/pedidos-de-ajuda/actions";
 import { GET as exportCsv } from "@/app/admin/pessoas/exportar/route";
 import ClosuresPage from "@/app/admin/encerramentos/page";
 import { createClosureEvent, deleteClosureEvent, issueCertificates, saveAttendance } from "@/app/admin/encerramentos/actions";
@@ -1642,9 +1659,294 @@ describe("Claudião coloca um vídeo numa lição, e o Claudinho o vê quando o 
     await world.login(CLAUDIAO);
     await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "" })));
     const lesson = await loadLessonForEditing(client(), slug);
-    const { video: _removed, ...withoutVideo } = lesson!.content;
+    const withoutVideo = { ...lesson!.content, video: undefined };
     expect(await saveLesson(slug, lesson!.currentVersionId, payloadOf(lesson!, { content: withoutVideo }))).toMatchObject({ ok: true });
     expect((await loadLessonForEditing(client(), slug))!.content.video).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// HISTÓRIA 4j · Grupo de Discipulado (seções 17 a 20)
+// O Claudio conduz um grupo com o Claudinho, pela trilha "Caminhada" (3 lições da biblioteca).
+// ---------------------------------------------------------------------------------------------
+
+describe("Grupo de Discipulado: o Claudio conduz, o Claudinho participa", () => {
+  const decode = (r: string | null) => decodeURIComponent((r ?? "").replace(/\+/g, " "));
+  const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+  let groupId = "";
+  let inviteCode = "";
+  let trackId = "";
+  const lessonIds: string[] = [];
+  /** O formulário de criar grupo, com os dias da semana como o navegador os manda (um campo por dia marcado). */
+  const groupForm = (fields: Record<string, string>, weekdays: number[]) => {
+    const f = form(fields);
+    for (const w of weekdays) f.append("weekday", String(w));
+    return f;
+  };
+
+  const libraryLesson = async (slug: string, title: string, position: number, sensitive: boolean, guide: string[]) => {
+    const [l] = await world.sql<{ id: string }>(
+      `insert into public.lessons (kind, cycle_id, slug, title, objective, position, status, sensitive, themes, estimated_minutes)
+       values ('library', null, $1, $2, 'Objetivo da lição', $3, 'draft', $4, '{Caminhada cristã}', 8) returning id`,
+      [slug, title, position, sensitive],
+    );
+    const content = {
+      blocks: [{ type: "paragraph", text: `Texto da lição ${title}.` }],
+      practice: { title: "Desafio do dia", items: ["Ore por uma pessoa hoje."] },
+      reflection: `O que ${title} diz para você?`,
+      guide,
+    };
+    const [v] = await world.sql<{ id: string }>("insert into public.lesson_versions (lesson_id, content) values ($1, $2::jsonb) returning id", [l.id, JSON.stringify(content)]);
+    await world.sql("update public.lessons set current_version_id = $2, status = 'published' where id = $1", [l.id, v.id]);
+    lessonIds.push(l.id);
+  };
+
+  it("com o recurso desligado ninguém tem tela de grupo; o Admin vê o aviso", async () => {
+    await world.login(CLAUDINHO);
+    expect((await visit(MyGroupsPage)).redirect).toBe("/");
+    await world.login(CLAUDIAO);
+    expect((await visit(AdminGroupsPage)).text).toContain("está desligado");
+  });
+
+  it("o Claudião liga o recurso, prepara a trilha com as lições da biblioteca e marca o Claudio como discipulador", async () => {
+    await world.login(CLAUDIAO);
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "", feature_groups: true })));
+    await libraryLesson("lib-01-andar-com-deus", "Andar com Deus", 1, true, ["Como foi a semana com Deus?", "O que você aprendeu?"]);
+    await libraryLesson("lib-02-biblia-e-oracao", "Bíblia e oração", 2, false, []);
+    await libraryLesson("lib-03-carater", "Caráter em transformação", 3, false, ["Que fruto você vê crescer?"]);
+
+    const bad = await outcome(() => createTrack(form({ title: "Caminhada", lessons: "lib-01-andar-com-deus\nnao-existe" })));
+    expect(decode(bad.redirect)).toContain("não encontrada: nao-existe");
+    const repeated = await outcome(() => createTrack(form({ title: "Caminhada", lessons: "lib-01-andar-com-deus\nlib-01-andar-com-deus" })));
+    expect(decode(repeated.redirect)).toContain("aparece mais de uma vez");
+    const created = await outcome(() =>
+      createTrack(form({ title: "Caminhada", description: "Três dias com Deus", lessons: "lib-01-andar-com-deus\nlib-02-biblia-e-oracao\nlib-03-carater" })),
+    );
+    expect(decode(created.redirect)).toContain("Trilha criada como rascunho");
+    [{ id: trackId }] = await world.sql<{ id: string }>("select id from public.tracks");
+    expect(await world.sql("select 1 from public.track_days where track_id = $1", [trackId])).toHaveLength(3);
+    expect(decode((await outcome(() => setTrackStatus(trackId, "published"))).redirect)).toContain("Trilha publicada");
+
+    const noBody = await outcome(() => addDiscipler(form({ email: "ninguem@example.com" })));
+    expect(decode(noBody.redirect)).toContain("Ninguém com esse e-mail");
+    expect(decode((await outcome(() => addDiscipler(form({ email: CLAUDIO.email })))).redirect)).toContain("Discipulador adicionado");
+
+    const page = await visit(AdminGroupsPage);
+    expect(page.text).toContain("Caminhada");
+    expect(page.text).toContain("Publicada");
+    expect(page.text).toContain("lib-02-biblia-e-oracao");
+    expect(page.text).toContain("sensível");
+  });
+
+  it("um membro comum não entra na área do discipulador nem cria grupo, pela tela, pela ação ou pelo banco", async () => {
+    await world.login(CLAUDINHO);
+    expect((await visit(DisciplerHomePage)).redirect).toBe("/grupo");
+    expect((await visit(NewGroupPage)).redirect).toBe("/grupo");
+    expect((await outcome(() => createGroup(groupForm({ name: "Hack", track: trackId, start_date: today() }, [1])))).redirect).toBe("/grupo");
+    expect((await client().rpc("create_group", { p_name: "Hack", p_track: trackId, p_start: today(), p_weekdays: [1], p_hour: 6, p_meeting_weekday: null })).error?.message).toMatch(/Só um discipulador/);
+    expect((await outcome(() => addDiscipler(form({ email: CLAUDINHO.email })))).redirect).toBe("/"); // um membro nem chega à área de gestão
+  });
+
+  it("o Claudio cria o grupo (com dados errados a tela avisa) e recebe o código do convite", async () => {
+    await world.login(CLAUDIO);
+    const newPage = await visit(NewGroupPage);
+    expect(newPage.text).toContain("Caminhada");
+
+    const bad = await outcome(() => createGroup(groupForm({ name: "  ", track: trackId, start_date: today() }, [1])));
+    expect(decode(bad.redirect)).toContain("nome ao grupo");
+    const created = await outcome(() =>
+      createGroup(groupForm({ name: "Grupo de terça", track: trackId, start_date: today(), hour: "0", meeting_weekday: "6" }, [1, 2, 3, 4, 5, 6, 7])),
+    );
+    expect(decode(created.redirect)).toContain("Grupo criado");
+    [{ id: groupId, invite_code: inviteCode }] = await world.sql<{ id: string; invite_code: string }>("select id, invite_code from public.discipleship_groups");
+    expect(inviteCode).toMatch(/^G-[0-9A-F]{8}$/);
+
+    const panel = await visit(GroupPanelPage, { params: { id: groupId } });
+    expect(panel.text).toContain(inviteCode);
+    expect(panel.text).toContain("Ainda não há discípulos");
+    expect((await visit(DisciplerHomePage)).text).toContain("Grupo de terça");
+  });
+
+  it("o Claudinho recebe o convite: vê o que o discipulador enxerga e só entra se aceitar", async () => {
+    await world.login(CLAUDINHO);
+    expect((await visit(MyGroupsPage)).text).toContain("ainda não está em nenhum grupo");
+
+    const entry = await visit(JoinGroupPage, { search: { codigo: inviteCode.toLowerCase() } });
+    expect(entry.text).toContain("Grupo de terça");
+    expect(entry.text).toContain("Discipulador: Claudio");
+    expect(entry.text).toContain("O que o seu discipulador vai ver");
+    expect(entry.text).toContain("Você pode sair do grupo quando quiser");
+    expect((await visit(JoinGroupPage, { search: { codigo: "G-00000000" } })).text).toContain("Não encontramos um grupo ativo");
+
+    const noConsent = await outcome(() => joinGroup(form({ codigo: inviteCode })));
+    expect(decode(noConsent.redirect)).toContain("aceite o que o discipulador vai ver");
+    const wrong = await outcome(() => joinGroup(form({ codigo: "G-00000000", consent: true })));
+    expect(decode(wrong.redirect)).toContain("Convite não encontrado");
+
+    const joined = await outcome(() => joinGroup(form({ codigo: inviteCode, consent: true })));
+    expect(joined.redirect).toContain(`/grupo/${groupId}`);
+    const [member] = await world.sql<{ consent_version: string }>("select consent_version from public.group_members where user_id = $1", [CLAUDINHO.id]);
+    expect(member.consent_version).toBe("grupo-2026-09-rascunho");
+  });
+
+  it("Meu grupo mostra a lição de hoje; o calendário libera só o dia 1, e o dia 2 ainda não abre", async () => {
+    const home = await visit(MyGroupsPage);
+    expect(home.text).toContain("Grupo de terça");
+    expect(home.text).toContain("Lição de hoje · dia 1");
+    expect(home.text).toContain("Andar com Deus");
+
+    const group = await visit(GroupHomePage, { params: { id: groupId } });
+    expect(group.text).toContain("Dia 1");
+    expect(group.text).toContain("Hoje");
+    expect(group.text).toContain("Ainda não liberada");
+    expect(group.text).toContain("Próximo encontro");
+
+    expect((await visit(GroupLessonPage, { params: { id: groupId, dia: "2" } })).redirect).toBe(`/grupo/${groupId}`); // RG-01
+    expect((await visit(GroupLessonPage, { params: { id: groupId, dia: "9" } })).notFound).toBe(true);
+    expect((await outcome(() => completeGroupLesson(groupId, 2))).redirect).toBe("/grupo"); // nem pela ação
+  });
+
+  it("a lição sensível traz o aviso fixo e o botão de ajuda; a reflexão começa privada, e o discipulador nada vê", async () => {
+    const lesson = await visit(GroupLessonPage, { params: { id: groupId, dia: "1" } });
+    expect(lesson.text).toContain("Texto da lição Andar com Deus");
+    expect(lesson.text).toContain("não substitui o aconselhamento de um profissional");
+    expect(lesson.text).toContain("188");
+    expect(lesson.text).toContain("Pedir ajuda pastoral");
+    expect(lesson.text).toContain("Seu desafio de hoje");
+    expect(lesson.text).toContain("Nesta lição ela começa privada");
+    expect(lesson.html).not.toMatch(/name="shared"[^>]*checked/); // sensível: privada por padrão (RG-07)
+    expect(lesson.html).not.toContain("Como foi a semana com Deus"); // o guia do encontro é só do discipulador
+
+    const saved = await outcome(() => saveGroupReflection(groupId, 1, form({ body: "Tenho andado ansioso ultimamente." })));
+    expect(saved.redirect).toContain("salvo=reflexao");
+    const [r] = await world.sql<{ shared: boolean }>("select shared from public.group_reflections");
+    expect(r.shared).toBe(false);
+
+    await world.login(CLAUDIO);
+    const ficha = await visit(DiscipleFichaPage, { params: { id: groupId, userId: CLAUDINHO.id! } });
+    expect(ficha.text).not.toContain("ansioso");
+    expect((await client().from("group_reflections").select("body")).data).toEqual([]);
+  });
+
+  it("o desafio e a conclusão da lição aparecem para o discipulador; compartilhar a reflexão a torna visível a ele", async () => {
+    await world.login(CLAUDINHO);
+    await outcome(() => toggleGroupChallenge(groupId, 1, form({ done: "1" })));
+    await outcome(() => saveGroupReflection(groupId, 1, form({ body: "Tenho andado ansioso ultimamente.", shared: true })));
+    const completed = await outcome(() => completeGroupLesson(groupId, 1));
+    expect(decode(completed.redirect)).toContain("Lição do dia 1 concluída");
+    const after = await visit(GroupLessonPage, { params: { id: groupId, dia: "1" } });
+    expect(after.text).toContain("Você já concluiu esta lição");
+    expect(after.html).toMatch(/name="shared"[^>]*checked/);
+
+    const home = await visit(GroupHomePage, { params: { id: groupId } });
+    expect(home.text).toContain("Lida");
+
+    await world.login(CLAUDIO);
+    const panel = await visit(GroupPanelPage, { params: { id: groupId } });
+    expect(panel.text).toContain("Claudinho da Silva");
+    expect(panel.text).toContain("lida");
+    const ficha = await visit(DiscipleFichaPage, { params: { id: groupId, userId: CLAUDINHO.id! } });
+    expect(ficha.text).toContain("Tenho andado ansioso ultimamente.");
+    expect(ficha.text).toContain("desafio feito");
+    expect(ficha.text).toContain("Reflexão compartilhada");
+  });
+
+  it("o Claudinho pede ajuda: ao discipulador, que atende e escala; e direto à equipe pastoral, que o discipulador não vê", async () => {
+    await world.login(CLAUDINHO);
+    const form1 = await visit(HelpPage, { params: { id: groupId } });
+    expect(form1.text).toContain("Direto à equipe pastoral");
+    expect(decode((await outcome(() => requestGroupHelp(groupId, form({ message: "   " })))).redirect)).toContain("Escreva o que você precisa");
+    const toDisc = await outcome(() => requestGroupHelp(groupId, form({ topic: "Ansiedade", message: "Estou sobrecarregado.", destination: "discipler", lesson: lessonIds[0] })));
+    expect(decode(toDisc.redirect)).toContain("enviado ao seu discipulador");
+    const direct = await outcome(() => requestGroupHelp(groupId, form({ topic: "Assunto delicado", message: "Preciso falar com o pastor.", destination: "pastoral" })));
+    expect(decode(direct.redirect)).toContain("direto à equipe pastoral");
+
+    await world.login(CLAUDIO);
+    const queue = await visit(GroupHelpPage);
+    expect(queue.text).toContain("Estou sobrecarregado.");
+    expect(queue.text).toContain("Claudinho da Silva");
+    expect(queue.text).not.toContain("Preciso falar com o pastor"); // direto: o discipulador não vê
+    const [req] = await world.sql<{ id: string }>("select id from public.help_requests where destination = 'discipler'");
+    const handled = await outcome(() => handleGroupHelp(req.id, form({ status: "in_progress", note: "Vou ligar para ele amanhã." })));
+    expect(decode(handled.redirect)).toContain("Atendimento registrado");
+    expect((await visit(GroupHelpPage)).text).toContain("Vou ligar para ele amanhã.");
+    expect(decode((await outcome(() => escalateGroupHelp(req.id))).redirect)).toContain("enviado à equipe pastoral");
+    const after = await visit(GroupHelpPage);
+    expect(after.text).toContain("Escalado à equipe pastoral");
+    expect(decode((await outcome(() => handleGroupHelp(req.id, form({ status: "closed" })))).redirect)).toContain("Você não tem permissão para fazer isso");
+
+    await world.login(CLAUDIAO);
+    const pastoral = await visit(PastoralHelpPage);
+    expect(pastoral.text).toContain("Prioridade: direto à equipe");
+    expect(pastoral.text).toContain("Preciso falar com o pastor.");
+    expect(pastoral.text).toContain("Escalado pelo discipulador");
+    expect(pastoral.text.indexOf("Preciso falar com o pastor")).toBeLessThan(pastoral.text.indexOf("Estou sobrecarregado")); // prioridade primeiro
+    const answered = await outcome(() => handlePastoralHelp(req.id, form({ status: "answered", note: "Conversei com ele." })));
+    expect(decode(answered.redirect)).toContain("Atendimento registrado");
+  });
+
+  it("o guia do encontro traz as perguntas das lições; a presença e as notas ficam com o discipulador", async () => {
+    await world.login(CLAUDIO);
+    const guide = await visit(MeetingGuidePage, { params: { id: groupId } });
+    expect(guide.text).toContain("Como foi a semana com Deus?");
+    expect(guide.text).toContain("O que você aprendeu?");
+    expect(guide.text).toContain("Claudinho da Silva");
+
+    const saved = await outcome(() => saveMeeting(groupId, form({ date: today(), notes: "Conversamos sobre ansiedade.", present: CLAUDINHO.id! })));
+    expect(decode(saved.redirect)).toContain("Encontro registrado");
+    expect((await visit(MeetingGuidePage, { params: { id: groupId } })).text).toContain("Conversamos sobre ansiedade.");
+    const ficha = await visit(DiscipleFichaPage, { params: { id: groupId, userId: CLAUDINHO.id! } });
+    expect(ficha.text).toContain("presente");
+
+    await world.login(CLAUDINHO);
+    expect((await visit(MeetingGuidePage, { params: { id: groupId } })).redirect).toBe("/grupo"); // o discípulo não abre o guia
+    expect((await client().from("group_meetings").select("notes")).data).toEqual([]);
+  });
+
+  it("pausar o grupo aparece para todos; o discipulador remove; um discipulador de fora não mexe", async () => {
+    await world.login(CLAUDIO);
+    const pause = await outcome(() => addGroupPause(groupId, form({ from: today(), until: today() })));
+    expect(decode(pause.redirect)).toContain("Pausa registrada");
+    expect(decode((await outcome(() => addGroupPause(groupId, form({ from: "2026-10-05", until: "2026-10-01" })))).redirect)).toContain("não pode ser antes");
+    expect((await visit(GroupPanelPage, { params: { id: groupId } })).text).toContain("Remover pausa");
+
+    await world.login(CLAUDINHO);
+    expect((await visit(GroupHomePage, { params: { id: groupId } })).text).toContain("Nesses dias não sai lição");
+
+    await world.login(CLAUDIO);
+    const [p] = await world.sql<{ id: string }>("select id from public.group_pauses");
+    expect(decode((await outcome(() => removeGroupPause(groupId, p.id))).redirect)).toContain("Pausa removida");
+    expect((await visit(GroupPanelPage, { params: { id: "00000000-0000-4000-8000-000000000000" } })).notFound).toBe(true);
+  });
+
+  it("o Claudinho sai do grupo: o discipulador deixa de ver a leitura e as reflexões dele", async () => {
+    await world.login(CLAUDINHO);
+    expect(decode((await outcome(() => leaveGroup(groupId))).redirect)).toContain("Você saiu do grupo");
+    expect((await visit(MyGroupsPage)).text).toContain("ainda não está em nenhum grupo");
+    expect((await visit(GroupHomePage, { params: { id: groupId } })).notFound).toBe(true);
+    expect((await visit(GroupLessonPage, { params: { id: groupId, dia: "1" } })).notFound).toBe(true);
+    expect((await world.sql("select 1 from public.group_reflections where user_id = $1", [CLAUDINHO.id])).length).toBe(1); // o que ele escreveu continua dele
+
+    await world.login(CLAUDIO);
+    expect((await visit(DiscipleFichaPage, { params: { id: groupId, userId: CLAUDINHO.id! } })).notFound).toBe(true);
+    expect((await client().from("group_reflections").select("body")).data).toEqual([]);
+    expect((await visit(GroupPanelPage, { params: { id: groupId } })).text).toContain("Ainda não há discípulos");
+  });
+
+  it("o Admin passa o grupo para si mesmo... e desliga o recurso, devolvendo o estado anterior", async () => {
+    await world.login(CLAUDIAO);
+    const page = await visit(AdminGroupsPage);
+    expect(page.text).toContain("Grupo de terça");
+    expect(page.text).toContain("Discipulador: Claudio");
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "" })));
+    await world.login(CLAUDIO);
+    expect((await visit(DisciplerHomePage)).redirect).toBe("/");
+    expect((await visit(GroupPanelPage, { params: { id: groupId } })).redirect).toBe("/");
+    await world.sql("delete from public.help_requests");
+    await world.sql("delete from public.group_reflections");
+    await world.sql("delete from public.group_progress");
+    await world.sql("delete from public.discipleship_groups");
+    await world.sql("update public.profiles set is_discipler = false");
   });
 });
 

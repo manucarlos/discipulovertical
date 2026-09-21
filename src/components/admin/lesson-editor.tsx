@@ -48,6 +48,7 @@ interface FormState {
   reflection: string;
   videoUrl: string;
   videoTranscript: string;
+  guideText: string;
   quiz: QuizForm[];
   pastoralReviewNote: string;
   videoSuggestion: string;
@@ -71,6 +72,7 @@ function initialForm(lesson: LessonForEditing): FormState {
     reflection: lesson.content.reflection ?? "",
     videoUrl: lesson.content.video ? watchUrl(lesson.content.video) : "",
     videoTranscript: lesson.content.video?.transcript ?? "",
+    guideText: (lesson.content.guide ?? []).join(String.fromCharCode(10)),
     quiz: lesson.quiz.map((q) => ({
       prompt: q.prompt,
       options: { A: q.options.A ?? "", B: q.options.B ?? "", C: q.options.C ?? "", D: q.options.D ?? "" },
@@ -100,6 +102,7 @@ function toPayload(f: FormState) {
       practice: buildPractice(f.practiceTitle, f.practiceItems),
       reflection: buildReflection(f.reflection),
       video: buildVideo(f.videoUrl, f.videoTranscript),
+      guide: f.guideText.split(/\r?\n/).map((q) => q.trim()).filter(Boolean),
     },
     notes: {
       pastoralReviewNote: f.pastoralReviewNote,
@@ -431,6 +434,16 @@ export function LessonEditor({
             <label className="block text-sm font-medium">
               Transcrição em texto <span className="font-normal text-muted">(uma linha em branco separa parágrafos)</span>
               <textarea className={inputClass} rows={5} value={form.videoTranscript} onChange={(e) => patch({ videoTranscript: e.target.value })} />
+            </label>
+          </Section>
+
+          <Section
+            title="Guia do encontro (Grupo de Discipulado)"
+            hint="Perguntas prontas para o discipulador usar no encontro do grupo, uma por linha. Só o discipulador vê; o discípulo não."
+          >
+            <label className="block text-sm font-medium">
+              Perguntas <span className="font-normal text-muted">(uma por linha)</span>
+              <textarea className={inputClass} rows={4} value={form.guideText} onChange={(e) => patch({ guideText: e.target.value })} />
             </label>
           </Section>
 

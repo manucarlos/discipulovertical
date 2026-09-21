@@ -48,6 +48,19 @@ import UnsubscribePage from "@/app/desinscrever/page";
 import ClosuresPage from "@/app/admin/encerramentos/page";
 import CertificatesPage from "@/app/(member)/certificados/page";
 import VerifyPage from "@/app/verificar/page";
+import MyGroupsPage from "@/app/(member)/grupo/page";
+import JoinGroupPage from "@/app/(member)/grupo/entrar/page";
+import GroupHomePage from "@/app/(member)/grupo/[id]/page";
+import GroupLessonPage from "@/app/(member)/grupo/[id]/licao/[dia]/page";
+import GroupHelpFormPage from "@/app/(member)/grupo/[id]/ajuda/page";
+import DisciplerHomePage from "@/app/(member)/discipulador/page";
+import NewGroupPage from "@/app/(member)/discipulador/novo/page";
+import GroupPanelPage from "@/app/(member)/discipulador/[id]/page";
+import MeetingGuidePage from "@/app/(member)/discipulador/[id]/encontro/page";
+import DiscipleFichaPage from "@/app/(member)/discipulador/[id]/discipulo/[userId]/page";
+import DisciplerHelpPage from "@/app/(member)/discipulador/pedidos/page";
+import AdminGroupsPage from "@/app/admin/grupos/page";
+import PastoralHelpPage from "@/app/admin/pedidos-de-ajuda/page";
 import CarePage from "@/app/(member)/cuidado/page";
 import CareMemberPage from "@/app/(member)/cuidado/[id]/page";
 import CareAdminPage from "@/app/admin/cuidado/page";
@@ -322,6 +335,72 @@ describe("Encerramento e certificado: telas do membro, do administrador e a veri
     await audit("verificação de certificado (não encontrado)", VerifyPage, { search: { codigo: "VC-0000-0000-0000" } });
 
     await world.sql("update public.app_settings set value = 'false'::jsonb where key in ('feature.closures', 'feature.certificates')");
+  });
+});
+
+describe("Grupo de Discipulado: todas as telas passam na auditoria de acessibilidade", () => {
+  it("discípulo, discipulador e Admin", async () => {
+    await world.sql("update public.app_settings set value = 'true'::jsonb where key = 'feature.groups'");
+    await world.sql("update public.profiles set is_discipler = true where id = $1", [CLAUDIO.id]);
+    const mk = async (slug: string, title: string, position: number, sensitive: boolean) => {
+      const [l] = await world.sql<{ id: string }>(
+        "insert into public.lessons (kind, cycle_id, slug, title, objective, position, status, sensitive, themes) values ('library', null, $1, $2, 'Objetivo', $3, 'draft', $4, '{Tema}') returning id",
+        [slug, title, position, sensitive],
+      );
+      const content = { blocks: [{ type: "paragraph", text: `Texto de ${title}.` }], practice: { title: "Desafio", items: ["Ore hoje."] }, reflection: "O que Deus falou?", guide: ["Pergunta do encontro?"] };
+      const [v] = await world.sql<{ id: string }>("insert into public.lesson_versions (lesson_id, content) values ($1, $2::jsonb) returning id", [l.id, JSON.stringify(content)]);
+      await world.sql("update public.lessons set current_version_id = $2, status = 'published' where id = $1", [l.id, v.id]);
+      return l.id;
+    };
+    const l1 = await mk("lib-a", "Lição A", 1, true);
+    const l2 = await mk("lib-b", "Lição B", 2, false);
+    const [track] = await world.sql<{ id: string }>("insert into public.tracks (title) values ('Trilha A') returning id");
+    await world.sql("insert into public.track_days (track_id, day_number, lesson_id) values ($1, 1, $2), ($1, 2, $3)", [track.id, l1, l2]);
+    await world.sql("update public.tracks set status = 'published' where id = $1", [track.id]);
+    const [group] = await world.sql<{ id: string; invite_code: string }>(
+      "insert into public.discipleship_groups (name, discipler_id, track_id, start_date, active_weekdays, release_hour, meeting_weekday, invite_code) values ('Grupo A', $1, $2, current_date - 3, '{1,2,3,4,5,6,7}', 0, 6, 'G-AAAAAAAA') returning id, invite_code",
+      [CLAUDIO.id, track.id],
+    );
+    await world.sql("insert into public.group_members (group_id, user_id, consent_version, joined_at) values ($1, $2, 'v1', now() - interval '3 days')", [group.id, CLAUDINHO.id]);
+    await world.sql("insert into public.group_progress (user_id, group_id, lesson_id, completed_at) values ($1, $2, $3, now())", [CLAUDINHO.id, group.id, l1]);
+    await world.sql("insert into public.group_reflections (user_id, group_id, lesson_id, body, shared) values ($1, $2, $3, 'Uma reflexão.', true)", [CLAUDINHO.id, group.id, l1]);
+    await world.sql("insert into public.group_meetings (group_id, meeting_date, notes, attendees) values ($1, current_date, 'Notas.', $2)", [group.id, [CLAUDINHO.id]]);
+    await world.sql("insert into public.group_pauses (group_id, from_date, until_date) values ($1, current_date + 5, current_date + 6)", [group.id]);
+    await world.sql(
+      "insert into public.help_requests (user_id, group_id, topic, message, destination) values ($1, $2, 'Tema', 'Preciso de ajuda.', 'discipler'), ($1, $2, 'Direto', 'Assunto delicado.', 'pastoral')",
+      [CLAUDINHO.id, group.id],
+    );
+    await world.sql("update public.help_requests set escalated_at = now() where destination = 'discipler'");
+
+    await world.login(CLAUDINHO);
+    const mine = await audit("meu grupo", MyGroupsPage);
+    expect(mine.text).toContain("Grupo A");
+    await audit("meu grupo (com aviso)", MyGroupsPage, { search: { ok: "Você saiu do grupo." } });
+    await audit("entrar em um grupo (convite)", JoinGroupPage, { search: { codigo: "G-AAAAAAAA" } });
+    await audit("entrar em um grupo (código inválido)", JoinGroupPage, { search: { codigo: "G-00000000", erro: "Algo deu errado." } });
+    const home = await audit("grupo do discípulo", GroupHomePage, { params: { id: group.id } });
+    expect(home.text).toContain("Pausas do grupo");
+    const sensitive = await audit("lição do dia (sensível)", GroupLessonPage, { params: { id: group.id, dia: "1" } });
+    expect(sensitive.text).toContain("Pedir ajuda pastoral");
+    await audit("lição do dia (comum)", GroupLessonPage, { params: { id: group.id, dia: "2" }, search: { salvo: "reflexao" } });
+    await audit("pedir ajuda pastoral", GroupHelpFormPage, { params: { id: group.id }, search: { erro: "Escreva o que você precisa." } });
+
+    await world.login(CLAUDIO);
+    await audit("meus grupos (discipulador)", DisciplerHomePage);
+    await audit("criar grupo", NewGroupPage, { search: { erro: "Dê um nome ao grupo." } });
+    const panel = await audit("painel do grupo", GroupPanelPage, { params: { id: group.id } });
+    expect(panel.text).toContain("Claudinho");
+    await audit("guia do encontro", MeetingGuidePage, { params: { id: group.id } });
+    await audit("ficha do discípulo", DiscipleFichaPage, { params: { id: group.id, userId: CLAUDINHO.id! } });
+    await audit("pedidos de ajuda do grupo", DisciplerHelpPage);
+
+    await world.login(CLAUDIAO);
+    const admin = await audit("grupos (administrador)", AdminGroupsPage);
+    expect(admin.text).toContain("Grupo A");
+    const queue = await audit("pedidos de ajuda pastoral", PastoralHelpPage);
+    expect(queue.text).toContain("Prioridade: direto à equipe");
+
+    await world.sql("update public.app_settings set value = 'false'::jsonb where key = 'feature.groups'");
   });
 });
 

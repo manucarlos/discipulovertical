@@ -5,10 +5,14 @@ export function MemberHeader({
   isStaff = false,
   isCaregiver = false,
   showCertificates = false,
+  showGroups = false,
+  isDiscipler = false,
 }: {
   isStaff?: boolean;
   isCaregiver?: boolean;
   showCertificates?: boolean;
+  showGroups?: boolean;
+  isDiscipler?: boolean;
 }) {
   return (
     <header className="border-b border-line bg-card">
@@ -23,6 +27,16 @@ export function MemberHeader({
           <Link href="/igreja" className="inline-flex min-h-11 items-center px-1.5 hover:underline">
             Nossa Igreja
           </Link>
+          {showGroups && (
+            <Link href="/grupo" className="inline-flex min-h-11 items-center px-1.5 hover:underline">
+              Meu grupo
+            </Link>
+          )}
+          {showGroups && isDiscipler && (
+            <Link href="/discipulador" className="inline-flex min-h-11 items-center px-1.5 font-medium text-brand hover:underline">
+              Discipulado
+            </Link>
+          )}
           {showCertificates && (
             <Link href="/certificados" className="inline-flex min-h-11 items-center px-1.5 hover:underline">
               Certificados
