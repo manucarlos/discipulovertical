@@ -25,7 +25,7 @@ function ident(name: string): string {
 }
 
 /** Colunas com relação "para um" que o app pede embutidas: nome -> coluna de ligação. */
-const EMBEDS: Record<string, string> = { cycles: "cycle_id", lessons: "lesson_id" };
+const EMBEDS: Record<string, string> = { cycles: "cycle_id", lessons: "lesson_id", closure_events: "event_id" };
 
 // OIDs do Postgres que o PostgREST devolve de forma diferente do driver.
 const OID = { int8: 20, numeric: 1700, timestamptz: 1184, timestamp: 1114, date: 1082 };
@@ -98,7 +98,17 @@ export class PgSupabase {
       const assignments = Object.entries(args).map(([name, value]) => {
         const at = (names ?? []).indexOf(name);
         if (at < 0) throw new Error(`função ${fn} não tem o parâmetro ${name}`);
-        params.push(value !== null && typeof value === "object" && !Array.isArray(value) ? JSON.stringify(value) : Array.isArray(value) ? JSON.stringify(value) : value);
+        const isPgArray = typeList[at]?.endsWith("[]");
+        // O cliente real manda JSON e o PostgREST converte: para colunas de lista (uuid[]), vira o literal {a,b}.
+        params.push(
+          isPgArray && Array.isArray(value)
+            ? `{${value.map((v) => `"${String(v).replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`).join(",")}}`
+            : value !== null && typeof value === "object" && !Array.isArray(value)
+              ? JSON.stringify(value)
+              : Array.isArray(value)
+                ? JSON.stringify(value)
+                : value,
+        );
         return `${ident(name)} := $${params.length}::${typeList[at]}`;
       });
 

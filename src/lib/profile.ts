@@ -99,6 +99,8 @@ export interface ExportSource {
     completed_at: string | null;
     cycles: { slug: string; title: string } | null;
   }[];
+  certificates?: { code: string; issued_at: string; cycles: { slug: string; title: string } | null }[];
+  attendance?: { present: boolean; confirmed_at: string; closure_events: { title: string; starts_at: string } | null }[];
   reflections?: { body: string; created_at: string; updated_at: string; lessons: { slug: string; title: string } | null }[];
   quizAttempts?: { correct_count: number; total: number; passed: boolean; created_at: string; lessons: { slug: string; title: string } | null }[];
 }
@@ -153,6 +155,17 @@ export function buildExport(source: ExportSource, now: Date) {
       situacao: CYCLE_NAME[c.status] ?? c.status,
       iniciado_em: c.started_at,
       concluido_em: c.completed_at,
+    })),
+    certificados: (source.certificates ?? []).map((c) => ({
+      ciclo: c.cycles?.title ?? null,
+      codigo_de_verificacao: c.code,
+      emitido_em: c.issued_at,
+    })),
+    presenca_em_encerramentos: (source.attendance ?? []).map((a) => ({
+      encerramento: a.closure_events?.title ?? null,
+      data_do_encontro: a.closure_events?.starts_at ?? null,
+      presente: a.present,
+      confirmado_em: a.confirmed_at,
     })),
     reflexoes: (source.reflections ?? []).map((r) => ({
       licao: r.lessons?.slug ?? null,

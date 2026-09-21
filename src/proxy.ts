@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv } from "@/lib/supabase/config";
 
-const PUBLIC_PATHS = ["/login", "/termos", "/privacidade", "/offline", "/desinscrever", "/api/descadastro"];
+const PUBLIC_PATHS = ["/login", "/termos", "/privacidade", "/offline", "/desinscrever", "/api/descadastro", "/verificar"];
 
 function isPublic(pathname: string) {
   if (PUBLIC_PATHS.includes(pathname) || pathname.startsWith("/auth/")) return true;

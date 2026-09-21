@@ -8,11 +8,12 @@ export default async function MemberLayout({ children }: LayoutProps<"/">) {
   // Sem Supabase configurado (início do projeto), as páginas mostram o aviso "em preparação".
   if (!getSupabaseEnv()) return <>{children}</>;
   const { supabase, profile } = await requireMember();
-  const isCaregiver = profile.role === "caregiver" && (await loadSettings(supabase)).flags.caregivers;
+  const { flags } = await loadSettings(supabase);
+  const isCaregiver = profile.role === "caregiver" && flags.caregivers;
 
   return (
     <>
-      <MemberHeader isStaff={profile.role === "editor" || profile.role === "admin"} isCaregiver={isCaregiver} />
+      <MemberHeader isStaff={profile.role === "editor" || profile.role === "admin"} isCaregiver={isCaregiver} showCertificates={flags.certificates} />
       <div className="flex flex-1 flex-col">{children}</div>
     </>
   );

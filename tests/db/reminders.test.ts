@@ -111,7 +111,7 @@ describe("recurso ligado", () => {
     expect(emails).toEqual(["ana@example.com", "cida@example.com"]);
     const progress = s.progress as { user_id: string }[];
     expect(progress.every((p) => p.user_id === ana)).toBe(true);
-    expect((s.templates as unknown[]).length).toBe(7);
+    expect((s.templates as unknown[]).length).toBe(8);
     const text = JSON.stringify(s);
     expect(text).not.toMatch(/whatsapp|correct_option|internal|cron_secret|unsubscribe/i);
   });
@@ -194,7 +194,7 @@ describe("recurso ligado", () => {
 
 describe("textos dos e-mails", () => {
   it("só o Admin lê e edita; a mudança fica no registro", async () => {
-    expect((await as(admin, "select 1 from public.email_templates")).length).toBe(7);
+    expect((await as(admin, "select 1 from public.email_templates")).length).toBe(8);
     expect(await as(ana, "select 1 from public.email_templates")).toEqual([]);
     expect(await as(editor, "select 1 from public.email_templates")).toEqual([]);
 

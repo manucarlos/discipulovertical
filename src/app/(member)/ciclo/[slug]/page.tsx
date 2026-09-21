@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { CycleDetail } from "@/components/trail-views";
 import { requireMember } from "@/lib/auth";
+import { loadMemberClosures } from "@/lib/closures";
+import { loadSettings } from "@/lib/features";
 import { loadArchivedHistory, loadTrail } from "@/lib/trail/queries";
 
 export const metadata = { title: "Ciclo" };
@@ -18,6 +20,9 @@ export default async function CyclePage(props: PageProps<"/ciclo/[slug]">) {
   if (!cycle) notFound();
 
   const archived = (await loadArchivedHistory(supabase, user.id)).filter((a) => a.cycleSlug === slug);
+  const closures = (await loadSettings(supabase)).flags.closures
+    ? (await loadMemberClosures(supabase, user.id)).filter((c) => c.cycleId === cycle.id)
+    : [];
   const justCompleted = cycle.lessons.find((l) => l.slug === first(search.concluida));
 
   return (
@@ -26,6 +31,7 @@ export default async function CyclePage(props: PageProps<"/ciclo/[slug]">) {
         cycle={cycle}
         now={now}
         archived={archived}
+        closures={closures}
         banners={{
           completedLesson: justCompleted?.title,
           cycleCompleted: first(search.ciclo) === "1" && cycle.complete,

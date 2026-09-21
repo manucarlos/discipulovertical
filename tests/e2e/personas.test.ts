@@ -54,6 +54,11 @@ import { GET as exportMyData } from "@/app/(member)/perfil/exportar/route";
 import { changeLessonStatus, restoreLessonVersion, saveLesson } from "@/app/admin/licao/[slug]/actions";
 import { createLesson, moveLesson, saveCycleSettings } from "@/app/admin/actions";
 import { changeRole } from "@/app/admin/pessoas/actions";
+import ClosuresPage from "@/app/admin/encerramentos/page";
+import { createClosureEvent, deleteClosureEvent, issueCertificates, saveAttendance } from "@/app/admin/encerramentos/actions";
+import CertificatesPage from "@/app/(member)/certificados/page";
+import { GET as certificatePdf } from "@/app/(member)/certificados/[code]/pdf/route";
+import VerifyPage from "@/app/verificar/page";
 import RemindersPage from "@/app/admin/lembretes/page";
 import { saveEmailTemplate, sendTestEmail } from "@/app/admin/lembretes/actions";
 import UnsubscribePage from "@/app/desinscrever/page";
@@ -1340,6 +1345,198 @@ describe("Lembretes por e-mail: o Claudinho sumiu por alguns dias", () => {
     world.visitor();
     expect(await runReminders({ supabase: client(), secret: SECRET, provider: fake, siteUrl: SITE, now: noon() })).toEqual({ status: "disabled" });
     await world.sql("delete from public.notifications");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// HISTÓRIA 4g · encerramento presencial e certificado (RF-18, RF-19, RN-05, RN-06)
+// O Claudio concluiu o Ciclo 1; o Claudinho ainda não. Só o Claudio tem direito ao certificado.
+// ---------------------------------------------------------------------------------------------
+
+describe("Encerramento e certificado: o Claudio recebe o do Ciclo 1", () => {
+  const SITE = "https://discipulado.example.org";
+  let code = "";
+  let eventId = "";
+  const nextWeek = () => {
+    const d = new Date(Date.now() + 7 * 86_400_000);
+    return `${d.toISOString().slice(0, 10)}T19:30`;
+  };
+  const decodeRedirect = (r: string | null) => decodeURIComponent((r ?? "").replace(/\+/g, " "));
+
+  it("com o recurso desligado, o membro não vê o encontro nem tem a tela de certificados", async () => {
+    await world.login(CLAUDIO);
+    const cycle = await visit(CyclePage, { params: { slug: "c1" } });
+    expect(cycle.text).not.toContain("Encerramento presencial");
+    expect((await visit(CertificatesPage)).redirect).toBe("/");
+  });
+
+  it("o Claudião liga os recursos e cria o encerramento do Ciclo 1; dados errados são recusados", async () => {
+    await world.login(CLAUDIAO);
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "", feature_closures: true, feature_certificates: true })));
+    const [c1] = await world.sql<{ id: string }>("select id from public.cycles where slug = 'c1'");
+
+    const page = await visit(ClosuresPage);
+    expect(page.text).toContain("Novo encerramento");
+    expect(page.text).toContain("Nenhum encerramento ainda");
+    expect(page.text).not.toContain("está desligado");
+
+    for (const [fields, expected] of [
+      [{ cycle: "", title: "Culto", starts_at: nextWeek() }, "Escolha o ciclo"],
+      [{ cycle: c1.id, title: "  ", starts_at: nextWeek() }, "título"],
+      [{ cycle: c1.id, title: "Culto", starts_at: "amanhã" }, "data e a hora"],
+      [{ cycle: c1.id, title: "x".repeat(121), starts_at: nextWeek() }, "no máximo 120"],
+    ] as const) {
+      const bad = await outcome(() => createClosureEvent(form({ ...fields })));
+      expect(decodeRedirect(bad.redirect)).toContain(expected);
+    }
+
+    const created = await outcome(() =>
+      createClosureEvent(form({ cycle: c1.id, title: "Culto de boas-vindas", kind: "Culto", starts_at: nextWeek(), location: "Templo principal" })),
+    );
+    expect(decodeRedirect(created.redirect)).toContain("Encerramento criado");
+    const [row] = await world.sql<{ id: string; created_by: string; starts_at: Date }>("select id, created_by, starts_at from public.closure_events");
+    eventId = row.id;
+    expect(row.created_by).toBe(CLAUDIAO.id);
+    expect(new Date(row.starts_at).getUTCHours()).toBe(22); // 19h30 em Brasília = 22h30 UTC
+  });
+
+  it("um membro não cria encontro, nem pela tela, nem pela ação, nem pelo banco", async () => {
+    await world.login(CLAUDINHO);
+    expect((await visit(ClosuresPage)).redirect).toBe("/");
+    expect((await outcome(() => createClosureEvent(form({ cycle: "x", title: "Hack", starts_at: nextWeek() })))).redirect).toBe("/");
+    expect((await outcome(() => saveAttendance(eventId, form({})))).redirect).toBe("/");
+    expect((await outcome(() => issueCertificates(eventId))).redirect).toBe("/");
+    expect((await client().rpc("issue_certificates", { p_event: eventId })).error?.message).toMatch(/não autorizado/);
+    const direct = await client().from("closure_events").delete().eq("id", eventId).select("id");
+    expect(direct.data).toEqual([]);
+  });
+
+  it("o Claudio, que concluiu o ciclo, vê o encontro como marco pendente; o Claudinho vê que pode seguir em frente", async () => {
+    await world.login(CLAUDIO);
+    const done = await visit(CyclePage, { params: { slug: "c1" } });
+    expect(done.text).toContain("Culto de boas-vindas");
+    expect(done.text).toContain("Templo principal");
+    expect(done.text).toContain("Marco pendente");
+
+    await world.login(CLAUDINHO);
+    const ongoing = await visit(CyclePage, { params: { slug: "c1" } });
+    expect(ongoing.text).toContain("Culto de boas-vindas");
+    expect(ongoing.text).toContain("sem esperar o encontro"); // RN-05: o encontro não trava o ciclo seguinte
+  });
+
+  it("a lista de presença só traz quem concluiu o ciclo; o Claudião confirma o Claudio", async () => {
+    await world.login(CLAUDIAO);
+    const page = await visit(ClosuresPage);
+    expect(page.text).toContain("Culto de boas-vindas");
+    expect(page.text).toContain("Claudio");
+    expect(page.text).toContain("(pendente)");
+    expect(page.text).not.toContain("Claudinho da Silva");
+    expect(page.text).toMatch(/1 pessoa concluiu o ciclo · 0 com presença confirmada/);
+
+    const saved = await outcome(() => saveAttendance(eventId, form({ eligible: CLAUDIO.id!, [`present_${CLAUDIO.id}`]: true })));
+    expect(decodeRedirect(saved.redirect)).toContain("Presença salva");
+    expect((await visit(ClosuresPage)).text).toMatch(/1 com presença confirmada/);
+    expect(await world.sql("select 1 from public.audit_log where action = 'closure_attendance_saved'")).toHaveLength(1);
+  });
+
+  it("emite o certificado do Claudio (uma vez só)", async () => {
+    const issued = await outcome(() => issueCertificates(eventId));
+    expect(decodeRedirect(issued.redirect)).toContain("1 certificado emitido");
+    const [cert] = await world.sql<{ code: string; holder_name: string }>("select code, holder_name from public.certificates");
+    code = cert.code;
+    expect(cert.holder_name).toBe("Claudio");
+    expect(code).toMatch(/^VC-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/);
+
+    const again = await outcome(() => issueCertificates(eventId));
+    expect(decodeRedirect(again.redirect)).toContain("Nenhum certificado novo");
+    expect(await world.sql("select 1 from public.certificates")).toHaveLength(1);
+    expect((await visit(ClosuresPage)).text).toContain("certificado emitido");
+  });
+
+  it("o Claudio baixa o PDF; ninguém mais baixa o dele, e quem não entrou vai ao login", async () => {
+    await world.login(CLAUDIO);
+    const list = await visit(CertificatesPage);
+    expect(list.text).toContain("Fundamentos");
+    expect(list.text).toContain(code);
+    expect(list.html).toContain(`/certificados/${code}/pdf`);
+    const cyclePage = await visit(CyclePage, { params: { slug: "c1" } });
+    expect(cyclePage.text).toContain("Sua presença foi confirmada");
+    expect(cyclePage.text).toContain("Ver meu certificado");
+
+    const response = await certificatePdf(new Request(`${SITE}/certificados/${code}/pdf`), { params: Promise.resolve({ code }) });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("application/pdf");
+    expect(response.headers.get("content-disposition")).toContain(`certificado-${code}.pdf`);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const bytes = Buffer.from(await response.arrayBuffer()).toString("latin1");
+    expect(bytes.startsWith("%PDF-1.4")).toBe(true);
+    expect(bytes).toContain("(Claudio)");
+    expect(bytes).toContain("(Fundamentos)");
+    expect(bytes).toContain(code);
+    expect(bytes).toContain("encerramento presencial em"); // a data do encontro consta
+
+    // O arquivo de dados pessoais traz o certificado e a presença.
+    const data = JSON.parse(await (await exportMyData()).text());
+    expect(data.certificados).toEqual([expect.objectContaining({ ciclo: "Fundamentos", codigo_de_verificacao: code })]);
+    expect(data.presenca_em_encerramentos).toEqual([expect.objectContaining({ encerramento: "Culto de boas-vindas", presente: true })]);
+
+    // Formato inválido, minúsculas (aceita) e código que não é dele.
+    expect((await certificatePdf(new Request(SITE), { params: Promise.resolve({ code: "lixo" }) })).status).toBe(404);
+    expect((await certificatePdf(new Request(SITE), { params: Promise.resolve({ code: code.toLowerCase() }) })).status).toBe(200);
+
+    await world.login(CLAUDINHO);
+    expect((await certificatePdf(new Request(SITE), { params: Promise.resolve({ code }) })).status).toBe(404);
+    expect((await visit(CertificatesPage)).text).toContain("Você ainda não tem certificados");
+
+    world.visitor();
+    expect((await outcome(() => certificatePdf(new Request(SITE), { params: Promise.resolve({ code }) }))).redirect).toBe("/login");
+  });
+
+  it("a página pública confere o código: válido, com minúsculas, e inexistente", async () => {
+    world.visitor();
+    const ok = await visit(VerifyPage, { search: { codigo: code } });
+    expect(ok.text).toContain("Certificado válido");
+    expect(ok.text).toContain("Claudio");
+    expect(ok.text).toContain("Fundamentos");
+    expect(ok.text).not.toMatch(/claudio@|example\.com/); // nada de e-mail
+    expect((await visit(VerifyPage, { search: { codigo: `  ${code.toLowerCase()} ` } })).text).toContain("Certificado válido");
+    expect((await visit(VerifyPage, { search: { codigo: "VC-0000-0000-0000" } })).text).toContain("Nenhum certificado foi encontrado");
+    expect((await visit(VerifyPage, { search: { codigo: "qualquer coisa" } })).text).toContain("Nenhum certificado foi encontrado");
+    const empty = await visit(VerifyPage);
+    expect(empty.text).toContain("Digite o código");
+    expect(empty.text).not.toContain("Certificado válido");
+  });
+
+  it("o Claudio recebe o e-mail de certificado pronto, com o link da lista de certificados", async () => {
+    await world.sql("insert into public.consents (user_id, purpose, term_version) values ($1, 'email_reminders', 'v9')", [CLAUDIO.id]);
+    await world.login(CLAUDIAO);
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "", feature_closures: true, feature_certificates: true, feature_reminders: true })));
+    const fake = new FakeEmailProvider();
+    const noon = new Date();
+    noon.setUTCHours(15, 0, 0, 0);
+    world.visitor();
+    const result = await runReminders({ supabase: client(), secret: "segredo-do-teste-e2e-com-mais-de-32-caracteres", provider: fake, siteUrl: SITE, now: noon });
+    expect(result).toMatchObject({ status: "ok", sent: 1 });
+    expect(fake.sent[0].to).toBe(CLAUDIO.email);
+    expect(fake.sent[0].subject).toBe("Seu certificado está pronto, Claudio");
+    expect(fake.sent[0].text).toContain(`${SITE}/certificados`);
+    // Só uma vez.
+    expect(await runReminders({ supabase: client(), secret: "segredo-do-teste-e2e-com-mais-de-32-caracteres", provider: fake, siteUrl: SITE, now: noon })).toMatchObject({ sent: 0 });
+  });
+
+  it("apagar o encontro não apaga o certificado; excluir a conta do dono apaga tudo dele; devolve o estado anterior", async () => {
+    await world.login(CLAUDIAO);
+    await outcome(() => deleteClosureEvent(eventId));
+    expect(await world.sql("select 1 from public.closure_events")).toHaveLength(0);
+    expect(await world.sql("select 1 from public.certificates")).toHaveLength(1);
+    world.visitor();
+    expect((await visit(VerifyPage, { search: { codigo: code } })).text).toContain("Certificado válido"); // continua conferindo
+
+    await world.sql("delete from public.certificates");
+    await world.sql("delete from public.notifications");
+    await world.sql("update public.consents set revoked_at = now() where user_id = $1 and purpose = 'email_reminders'", [CLAUDIO.id]);
+    await world.login(CLAUDIAO);
+    await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "" })));
   });
 });
 

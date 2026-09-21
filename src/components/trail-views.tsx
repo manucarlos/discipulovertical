@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatEventWhen, type MemberClosure } from "@/lib/closures";
 import type { CycleView, LessonItem, TrailView } from "@/lib/trail/view";
 import { formatWhen, lockedMessage } from "@/lib/trail/format";
 
@@ -148,10 +149,13 @@ export function CycleDetail({
   now,
   banners = {},
   archived = [],
+  closures = [],
 }: {
   cycle: CycleView;
   now: Date;
   banners?: CycleBanners;
+  /** Encerramentos presenciais deste ciclo (recurso ligado pelo Admin). */
+  closures?: MemberClosure[];
   /** RN-11: lições que saíram da trilha, mas que a pessoa já concluiu. */
   archived?: { slug: string; title: string; completedAt: string }[];
 }) {
@@ -183,6 +187,31 @@ export function CycleDetail({
           Essa lição ainda não foi liberada. Veja abaixo quando ela abre.
         </p>
       )}
+
+      {closures.map((c) => (
+        <section key={c.id} aria-label={`Encerramento: ${c.title}`} className="mt-5 rounded-2xl border border-line bg-card p-5">
+          <p className="text-sm font-medium uppercase tracking-wide text-brand">Encerramento presencial</p>
+          <h2 className="mt-1 font-serif text-xl">{c.title}</h2>
+          <p className="text-sm text-muted">
+            {formatEventWhen(c.startsAt)}
+            {c.location ? ` · ${c.location}` : ""}
+          </p>
+          <p className="mt-2 text-sm">
+            {c.attended === true
+              ? "Sua presença foi confirmada."
+              : c.attended === false
+                ? "Você não esteve neste encontro. Fale com a liderança sobre o próximo."
+                : cycle.complete
+                  ? "Marco pendente: a liderança vai confirmar a sua presença no encontro."
+                  : "Você pode seguir para o próximo ciclo sem esperar o encontro."}
+          </p>
+          {c.certificateCode && (
+            <Link href="/certificados" className="mt-2 inline-block text-sm underline">
+              Ver meu certificado
+            </Link>
+          )}
+        </section>
+      ))}
 
       <div className="mt-6">
         <div

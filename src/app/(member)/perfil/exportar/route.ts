@@ -5,7 +5,7 @@ import { buildExport, type ExportSource } from "@/lib/profile";
 export async function GET() {
   const { supabase, user } = await requireMember();
 
-  const [profile, consents, lessonProgress, cycleProgress, reflections, quizAttempts] = await Promise.all([
+  const [profile, consents, lessonProgress, cycleProgress, reflections, quizAttempts, certificates, attendance] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, display_name, email, photo_url, whatsapp, bible_version, role, created_at, onboarded_at")
@@ -32,9 +32,17 @@ export async function GET() {
       .select("correct_count, total, passed, created_at, lessons(slug, title)")
       .eq("user_id", user.id)
       .order("created_at"),
+    supabase.from("certificates").select("code, issued_at, cycles(slug, title)").eq("user_id", user.id).order("issued_at"),
+    supabase
+      .from("closure_attendance")
+      .select("present, confirmed_at, closure_events(title, starts_at)")
+      .eq("user_id", user.id)
+      .order("confirmed_at"),
   ]);
 
-  if (profile.error || !profile.data) {
+  // Um arquivo incompleto passaria por completo: se qualquer parte falhar, melhor não entregar nada.
+  const failed = [consents, lessonProgress, cycleProgress, reflections, quizAttempts, certificates, attendance].some((r) => r.error);
+  if (profile.error || !profile.data || failed) {
     return new Response("Não foi possível reunir os seus dados agora. Tente de novo.", { status: 500 });
   }
 
@@ -46,6 +54,8 @@ export async function GET() {
       cycleProgress: (cycleProgress.data ?? []) as unknown as ExportSource["cycleProgress"],
       reflections: (reflections.data ?? []) as unknown as ExportSource["reflections"],
       quizAttempts: (quizAttempts.data ?? []) as unknown as ExportSource["quizAttempts"],
+      certificates: (certificates.data ?? []) as unknown as ExportSource["certificates"],
+      attendance: (attendance.data ?? []) as unknown as ExportSource["attendance"],
     },
     new Date(),
   );

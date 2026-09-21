@@ -23,6 +23,7 @@ export interface Snapshot {
   assignments?: { member_id: string; caregiver_id: string }[];
   alerts?: { id: string; member_id: string; member_name: string; opened_at: string }[];
   summaries?: { caregiver_id: string; members: number; active: number; stalled: number; completed_lessons: number }[];
+  certificates?: { user_id: string; cycle_title: string; code: string; issued_at: string }[];
   templates?: { kind: EmailKind; subject: string; body: string }[];
   admins?: { id: string; name: string; email: string }[];
 }
@@ -199,10 +200,19 @@ export function planReminders(snapshot: Snapshot, now: Date, siteUrl: string): P
     }
   }
 
+  // Certificado emitido nos últimos 7 dias: aviso com o link para baixar (uma vez por certificado).
+  const byId = new Map(members.map((m) => [m.id, m]));
+  for (const c of snapshot.certificates ?? []) {
+    const holder = byId.get(c.user_id);
+    if (!holder || now.getTime() - new Date(c.issued_at).getTime() > 7 * DAY_MS) continue;
+    if (isNew(holder.id, "certificate", c.code)) {
+      push({ userId: holder.id, email: holder.email, kind: "certificate", dedupeKey: c.code, vars: { nome: firstName(holder.name), ciclo: c.cycle_title, link: `${site}/certificados` } });
+    }
+  }
+
   // 4. Alerta de quem parou: ao cuidador do membro, ou, sem cuidador, aos administradores.
   if (snapshot.caregivers_enabled) {
     const caregiverOf = new Map((snapshot.assignments ?? []).map((a) => [a.member_id, a.caregiver_id]));
-    const byId = new Map(members.map((m) => [m.id, m]));
     for (const alert of snapshot.alerts ?? []) {
       const caregiverId = caregiverOf.get(alert.member_id);
       const caregiver = caregiverId ? byId.get(caregiverId) : undefined;

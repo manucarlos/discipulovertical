@@ -50,6 +50,7 @@ describe("tabelas", () => {
     expect(rows.map((r) => r.table_name)).toEqual([
       "care_notes",
       "church_pages",
+      "closure_events",
       "cycles",
       "lesson_internal_notes",
       "lessons",
@@ -95,8 +96,9 @@ describe("funções", () => {
       `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute') order by 1`,
     );
-    // Cada uma exige algo que só o e-mail ou o agendador têm: o código do descadastro ou o CRON_SECRET.
-    expect(rows.map((r) => r.proname)).toEqual(["cron_enqueue", "cron_report", "cron_snapshot", "unsubscribe_email"]);
+    // Cada uma exige algo que só o e-mail, o certificado ou o agendador têm: o código do descadastro, o código do
+    // certificado (verificação pública) ou o CRON_SECRET.
+    expect(rows.map((r) => r.proname)).toEqual(["cron_certificates", "cron_enqueue", "cron_report", "cron_snapshot", "unsubscribe_email", "verify_certificate"]);
   });
 
   it("as funções do agendador conferem o segredo antes de qualquer coisa", async () => {
@@ -104,7 +106,7 @@ describe("funções", () => {
       `select p.proname, p.prosrc as src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname like 'cron\_%' order by 1`,
     );
-    expect(rows.map((r) => r.proname)).toEqual(["cron_enqueue", "cron_report", "cron_snapshot"]);
+    expect(rows.map((r) => r.proname)).toEqual(["cron_certificates", "cron_enqueue", "cron_report", "cron_snapshot"]);
     for (const r of rows) expect(r.src, r.proname).toMatch(/perform public\.check_cron_secret\(p_secret\)/);
   });
 });

@@ -7,6 +7,7 @@ export const EMAIL_KINDS = [
   { kind: "stalled_alert", label: "Aviso de membro parado (ao cuidador ou administrador)", when: "Quando um membro passa de 14 dias sem ler.", variables: ["nome", "igreja", "membro", "link"] },
   { kind: "cycle_completed", label: "Ciclo concluído", when: "Quando o membro conclui um ciclo, uma vez.", variables: ["nome", "igreja", "ciclo", "link"] },
   { kind: "weekly_summary", label: "Resumo semanal (ao cuidador)", when: "Toda segunda-feira.", variables: ["nome", "igreja", "resumo", "link"] },
+  { kind: "certificate", label: "Certificado emitido", when: "Quando o certificado é emitido, uma vez.", variables: ["nome", "igreja", "ciclo", "link"] },
 ] as const;
 
 export type EmailKind = (typeof EMAIL_KINDS)[number]["kind"];

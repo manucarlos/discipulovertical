@@ -39,6 +39,11 @@ export async function runReminders(options: {
   const snapshot = snapshotRes.data as Snapshot;
   if (!snapshot.enabled) return { status: "disabled" };
 
+  // Certificados emitidos há pouco (para o aviso "seu certificado está pronto").
+  const certificatesRes = await supabase.rpc("cron_certificates", { p_secret: secret });
+  if (certificatesRes.error) throw new Error(`Falha ao ler os certificados: ${certificatesRes.error.message}`);
+  snapshot.certificates = (certificatesRes.data ?? []) as NonNullable<Snapshot["certificates"]>;
+
   const planned = planReminders(snapshot, now, site);
   if (planned.length === 0) return { status: "ok", planned: 0, queued: 0, sent: 0, failed: 0 };
 

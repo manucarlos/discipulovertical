@@ -15,6 +15,10 @@ vi.mock("next/server", async (importOriginal) => ({
   connection: async () => {},
 }));
 vi.mock("next/cache", () => ({ revalidatePath() {} }));
+vi.mock("@/lib/supabase/anon", async () => {
+  const { session } = await import("./session");
+  return { createAnonClient: () => session.client };
+});
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useRouter: () => ({ refresh() {}, push() {}, replace() {}, back() {}, prefetch() {} }),
@@ -41,6 +45,9 @@ import EditChurchPage from "@/app/admin/igreja/page";
 import SettingsPage from "@/app/admin/configuracoes/page";
 import RemindersPage from "@/app/admin/lembretes/page";
 import UnsubscribePage from "@/app/desinscrever/page";
+import ClosuresPage from "@/app/admin/encerramentos/page";
+import CertificatesPage from "@/app/(member)/certificados/page";
+import VerifyPage from "@/app/verificar/page";
 import CarePage from "@/app/(member)/cuidado/page";
 import CareMemberPage from "@/app/(member)/cuidado/[id]/page";
 import CareAdminPage from "@/app/admin/cuidado/page";
@@ -263,6 +270,43 @@ describe("Cuidado: telas do cuidador e do administrador", () => {
     expect(person.text).toContain("Uma reflexão.");
 
     await world.sql("update public.app_settings set value = 'false'::jsonb where key in ('feature.caregivers', 'feature.reflections')");
+  });
+});
+
+describe("Encerramento e certificado: telas do membro, do administrador e a verificação pública", () => {
+  it("todas passam na auditoria de acessibilidade", async () => {
+    await world.sql("update public.app_settings set value = 'true'::jsonb where key in ('feature.closures', 'feature.certificates')");
+    const [cycle] = await world.sql<{ id: string }>("select id from public.cycles where slug = 'c1'");
+    const [event] = await world.sql<{ id: string }>(
+      "insert into public.closure_events (cycle_id, title, kind, starts_at, location) values ($1, 'Culto de boas-vindas', 'Culto', now() + interval '7 days', 'Templo') returning id",
+      [cycle.id],
+    );
+    await world.sql("insert into public.closure_attendance (event_id, user_id, present) values ($1, $2, true)", [event.id, CLAUDIO.id]);
+    await world.sql(
+      "insert into public.certificates (user_id, cycle_id, event_id, holder_name, code) values ($1, $2, $3, 'Claudio', 'VC-1A2B-3C4D-5E6F')",
+      [CLAUDIO.id, cycle.id, event.id],
+    );
+
+    await world.login(CLAUDIO);
+    const cyclePage = await audit("ciclo com o encerramento e o certificado", CyclePage, { params: { slug: "c1" } });
+    expect(cyclePage.text).toContain("Encerramento presencial");
+    const list = await audit("meus certificados", CertificatesPage);
+    expect(list.text).toContain("VC-1A2B-3C4D-5E6F");
+    await world.login(CLAUDINHO);
+    await audit("meus certificados (vazio)", CertificatesPage);
+
+    await world.login(CLAUDIAO);
+    const admin = await audit("encerramentos (administrador)", ClosuresPage);
+    expect(admin.text).toContain("Culto de boas-vindas");
+    await audit("encerramentos (com erro)", ClosuresPage, { search: { erro: "Algo deu errado." } });
+
+    world.visitor();
+    await audit("verificação de certificado (formulário)", VerifyPage);
+    const valid = await audit("verificação de certificado (válido)", VerifyPage, { search: { codigo: "VC-1A2B-3C4D-5E6F" } });
+    expect(valid.text).toContain("Certificado válido");
+    await audit("verificação de certificado (não encontrado)", VerifyPage, { search: { codigo: "VC-0000-0000-0000" } });
+
+    await world.sql("update public.app_settings set value = 'false'::jsonb where key in ('feature.closures', 'feature.certificates')");
   });
 });
 
