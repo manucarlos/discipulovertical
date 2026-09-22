@@ -14,15 +14,23 @@ describe("minutas dos termos e da política", () => {
     }
   });
 
-  it("nada da igreja é inventado: razão social, CNPJ, encarregado, contato e foro ficam como [A PREENCHER PELA IGREJA: ...]", () => {
+  it("nada da igreja é inventado: razão social, CNPJ, contato e foro ficam como [A PREENCHER PELA IGREJA: ...]", () => {
+    // O encarregado (DPO) é a única informação real preenchida até aqui — confirmada pelo pastor
+    // (Manoel Carlos Gomes, e-mail pessoal por enquanto), não inventada. O resto (razão social, CNPJ,
+    // endereço, canal de contato dos Termos, transferência internacional, prazos legais, foro) continua
+    // como placeholder até o advogado revisar.
+    const KNOWN_EMAIL = "manoelcarlosgomes@gmail.com";
     for (const doc of [TERMS, PRIVACY]) {
       const text = flat(doc);
       expect(text.split(PLACEHOLDER_PREFIX).length - 1, doc.title).toBeGreaterThanOrEqual(3);
-      expect(text, doc.title).not.toMatch(/@|https?:\/\/|www\./); // nenhum e-mail ou endereço inventado
+      // Nenhum e-mail ou endereço inventado: o único que pode aparecer é o do encarregado, já confirmado.
+      const found = text.match(/[\w.+-]+@[\w-]+\.[\w.-]+|https?:\/\/[^\s]*|www\.[^\s]*/g) ?? [];
+      const invented = found.filter((f) => !f.includes(KNOWN_EMAIL));
+      expect(invented, doc.title).toEqual([]);
       const numbers = [...text.matchAll(/\b\d{3,}\b/g)].map((m) => m[0]).filter((n) => !["188", "192", "190", "180", "13", "709", "2018"].includes(n));
       expect(numbers, `${doc.title}: números que parecem telefone ou CNPJ`).toEqual([]);
     }
-    expect(flat(PRIVACY)).toMatch(/encarregado[^.]*\[A PREENCHER PELA IGREJA/);
+    expect(flat(PRIVACY)).toMatch(/encarregado[^.]*Manoel Carlos Gomes \(manoelcarlosgomes@gmail\.com\)/);
     expect(flat(PRIVACY)).toMatch(/transferência internacional/);
     expect(flat(TERMS)).toMatch(/foro/);
     // Todo marcador que abre também fecha.

@@ -113,7 +113,7 @@ export const PRIVACY: LegalDocument = {
       title: "1. Quem é o responsável",
       paragraphs: [
         "O responsável (\"controlador\") pelos seus dados é a {{igreja}} ([A PREENCHER PELA IGREJA: razão social, CNPJ e endereço]).",
-        "O encarregado pelo tratamento de dados pessoais (DPO) é [A PREENCHER PELA IGREJA: nome e e-mail do encarregado]. É a ele que você pode dirigir dúvidas e pedidos sobre os seus dados.",
+        "O encarregado pelo tratamento de dados pessoais (DPO) é Manoel Carlos Gomes (manoelcarlosgomes@gmail.com). É a ele que você pode dirigir dúvidas e pedidos sobre os seus dados.",
       ],
     },
     {
@@ -207,7 +207,7 @@ export const PRIVACY: LegalDocument = {
     },
     {
       title: "13. Fale com a gente",
-      paragraphs: ["Para exercer os seus direitos ou tirar dúvidas: [A PREENCHER PELA IGREJA: e-mail e/ou formulário de contato do encarregado de dados]."],
+      paragraphs: ["Para exercer os seus direitos ou tirar dúvidas: fale com o encarregado de dados, Manoel Carlos Gomes, em manoelcarlosgomes@gmail.com."],
     },
   ],
 };
