@@ -6,7 +6,8 @@ import { createDb } from "./harness";
  * Fase 2 (docs/EXPANSAO.md, migração 0026): cada função `security definer` do banco roda como DONA das
  * tabelas e ignora toda RLS — inclusive a política restritiva de isolamento por igreja. Cada uma precisa de
  * uma checagem explícita de `church_id` no corpo, do mesmo jeito que hoje cada uma já confere `is_admin()`.
- * Feito função por função, em grupos, cada grupo testado antes do próximo.
+ * Feito função por função, em grupos, cada grupo testado antes do próximo. O roteiro (os grupos, a ordem,
+ * o padrão de correção) está em docs/FASE2.md.
  *
  * Este teste não é uma barreira que barra o deploy: é um LEMBRETE que não deixa esquecer. `JA_COBERTAS` lista
  * as que já têm o cuidado (ou não precisam: leem/escrevem em tabelas sem `church_id`, ou já são church-scoped

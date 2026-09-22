@@ -13,6 +13,7 @@ Aplicativo web (PWA) de discipulado da Vertical Church: leva o novo convertido, 
 | [docs/RELATORIO_USABILIDADE.md](docs/RELATORIO_USABILIDADE.md) | Testes de usabilidade com Claudião, Claudinho e Claudio: o que foi testado e achado |
 | [docs/MARCA.md](docs/MARCA.md) | Como trocar as cores e o logotipo (pelo painel, em Administração > Marca; o padrão fica em `src/lib/brand.ts`) |
 | [docs/EXPANSAO.md](docs/EXPANSAO.md) | Servir outras igrejas no mesmo banco (multi-tenant): o banco único com `church_id`, o isolamento por RLS (Fase 1, pronta) e o que falta (Fase 2, as funções de escrita) |
+| [docs/FASE2.md](docs/FASE2.md) | O roteiro da Fase 2: os grupos de funções, a ordem e o padrão para isolar cada uma por igreja |
 | [docs/PENDENCIAS.md](docs/PENDENCIAS.md) | O mapa do que está pronto, do que só o pastor e a igreja podem fazer e do que não foi construído |
 | [docs/CHECKLIST_PILOTO.md](docs/CHECKLIST_PILOTO.md) | Roteiro para conferir no Supabase de verdade e o que falta antes do piloto |
 

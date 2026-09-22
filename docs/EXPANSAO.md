@@ -33,7 +33,7 @@ Por que este caminho, e não uma instalação por igreja (a ideia anterior, desc
 
 ## 3. Fase 2 (sessões futuras): as funções `security definer`
 
-Cada uma das ~80 funções precisa de uma checagem explícita de `church_id` no corpo — do mesmo jeito que hoje cada uma já confere `is_admin()`. Feito função por função, em grupos, cada grupo testado antes de passar para o próximo (não é uma migração só: risco demais para revisar de uma vez). Um teste `tests/db/multi-tenant-checklist.test.ts` lista quais já foram cobertas.
+Cada uma das ~50 funções pendentes precisa de uma checagem explícita de `church_id` no corpo — do mesmo jeito que hoje cada uma já confere `is_admin()`. Feito função por função, em grupos, cada grupo testado antes de passar para o próximo (não é uma migração só: risco demais para revisar de uma vez). O roteiro completo (os grupos, a ordem, o padrão de correção) está em [FASE2.md](FASE2.md); `tests/db/multi-tenant-checklist.test.ts` lista quais já foram cobertas e trava se uma função nova aparecer sem decisão.
 
 ## 4. Decisões registradas para evolução posterior
 
