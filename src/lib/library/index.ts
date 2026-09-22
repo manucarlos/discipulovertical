@@ -1,10 +1,15 @@
 import { CAMINHADA_E_MORDOMIA } from "./lessons-caminhada";
+import { FAMILIA } from "./lessons-familia";
 import { MATURIDADE_E_FORMACAO } from "./lessons-maturidade";
 import { FINANCAS_EMOCIONAL_CONJUGAL } from "./lessons-sensiveis";
 import type { LibraryLesson, LibraryTrack } from "./types";
 
-/** As 24 lições da biblioteca de lançamento (seção 19) e as 4 da formação do discipulador, na ordem. */
-export const LIBRARY_LESSONS: LibraryLesson[] = [...CAMINHADA_E_MORDOMIA, ...FINANCAS_EMOCIONAL_CONJUGAL, ...MATURIDADE_E_FORMACAO].sort((a, b) => a.n - b.n);
+/**
+ * As 24 lições da biblioteca de lançamento (seção 19), as 4 da formação do discipulador, e as 4 de "Família"
+ * (29 a 32, escritas em 22/09/2026 a pedido do pastor: hombridade, papel da esposa, unidade e lealdade, e
+ * criação dos filhos), na ordem.
+ */
+export const LIBRARY_LESSONS: LibraryLesson[] = [...CAMINHADA_E_MORDOMIA, ...FINANCAS_EMOCIONAL_CONJUGAL, ...MATURIDADE_E_FORMACAO, ...FAMILIA].sort((a, b) => a.n - b.n);
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
@@ -45,6 +50,12 @@ export const LIBRARY_TRACKS: LibraryTrack[] = [
     description: "Quatro dias opcionais para quem vai conduzir um grupo: o que é discipular, ouvir com cuidado, conduzir o encontro e proteger o grupo.",
     themes: ["Formação do discipulador"],
     lessons: range(25, 28),
+  },
+  {
+    title: "Vida em Família",
+    description: "Quatro dias sobre caráter e relações em casa: hombridade, o papel da esposa cristã, unidade e lealdade na família, e a criação dos filhos.",
+    themes: ["Família"],
+    lessons: range(29, 32),
   },
 ];
 

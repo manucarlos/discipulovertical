@@ -41,10 +41,15 @@ describe("a biblioteca segue a tabela do handoff (seção 19)", () => {
   });
 
   it("há 4 lições de formação do discipulador (25 a 28), e a de proteção é sensível", () => {
-    const formation = LIBRARY_LESSONS.filter((l) => l.n > 24);
+    const formation = LIBRARY_LESSONS.filter((l) => l.theme === "Formação do discipulador");
     expect(formation.map((l) => l.n)).toEqual([25, 26, 27, 28]);
-    expect(formation.every((l) => l.theme === "Formação do discipulador")).toBe(true);
     expect(formation.find((l) => l.n === 28)!.sensitive).toBe(true);
+  });
+
+  it("há 4 lições de Família (29 a 32, acrescentadas em 22/09/2026), 3 delas sensíveis", () => {
+    const familia = LIBRARY_LESSONS.filter((l) => l.theme === "Família");
+    expect(familia.map((l) => l.n)).toEqual([29, 30, 31, 32]);
+    expect(familia.map((l) => l.sensitive)).toEqual([true, true, false, true]);
   });
 
   it("as trilhas prontas têm as lições e os dias da tabela", () => {
@@ -55,14 +60,15 @@ describe("a biblioteca segue a tabela do handoff (seção 19)", () => {
     expect(byTitle("Casamento Firme").lessons).toEqual([15, 16, 14, 17]); // a 14 está em duas trilhas
     expect(byTitle("Jornada Completa").lessons).toEqual(Array.from({ length: 24 }, (_, i) => i + 1));
     expect(byTitle("Formação do discipulador").lessons).toEqual([25, 26, 27, 28]);
+    expect(byTitle("Vida em Família").lessons).toEqual([29, 30, 31, 32]);
     for (const track of LIBRARY_TRACKS) for (const n of track.lessons) expect(LIBRARY_LESSONS.some((l) => l.n === n), `${track.title}: lição ${n}`).toBe(true);
   });
 });
 
 describe("cada lição segue o molde do handoff", () => {
   it("números e identificadores únicos, na ordem", () => {
-    expect(LIBRARY_LESSONS.map((l) => l.n)).toEqual(Array.from({ length: 28 }, (_, i) => i + 1));
-    expect(new Set(LIBRARY_LESSONS.map((l) => l.slug)).size).toBe(28);
+    expect(LIBRARY_LESSONS.map((l) => l.n)).toEqual(Array.from({ length: 32 }, (_, i) => i + 1));
+    expect(new Set(LIBRARY_LESSONS.map((l) => l.slug)).size).toBe(32);
     for (const l of LIBRARY_LESSONS) expect(l.slug, l.slug).toMatch(new RegExp(`^lib-${String(l.n).padStart(2, "0")}-[a-z0-9-]+$`));
   });
 
@@ -123,7 +129,7 @@ describe("avisos de segurança nas lições sensíveis (seção 19)", () => {
   const sensitive = LIBRARY_LESSONS.filter((l) => l.sensitive);
 
   it("as sensíveis dizem que não substituem acompanhamento profissional e têm nota de cuidado no guia", () => {
-    expect(sensitive.map((l) => l.n)).toEqual([9, 10, 12, 13, 14, 16, 17, 28]);
+    expect(sensitive.map((l) => l.n)).toEqual([9, 10, 12, 13, 14, 16, 17, 28, 29, 30, 32]);
     for (const l of sensitive) {
       expect(plain(l), `${l.slug}: aviso de que não substitui`).toMatch(/não substitui/);
       expect(l.guide.some((q) => q.startsWith("Nota de cuidado:")), `${l.slug}: nota de cuidado`).toBe(true);
@@ -142,6 +148,13 @@ describe("avisos de segurança nas lições sensíveis (seção 19)", () => {
     expect(plain(LIBRARY_LESSONS[27])).toMatch(/188/);
   });
 
+  it("criação dos filhos (32) traz o Disque 100 e o 190, segurança primeiro", () => {
+    const text = plain(LIBRARY_LESSONS[31]);
+    expect(text).toMatch(/Disque 100/);
+    expect(text).toMatch(/190/);
+    expect(text).toMatch(/pastor|profissional/);
+  });
+
   it("dinheiro e emocional trazem encaminhamento a profissionais e ao pastor", () => {
     for (const n of [9, 12, 13, 16, 17]) expect(plain(LIBRARY_LESSONS[n - 1]), `lição ${n}`).toMatch(/pastor|profissional/);
   });
@@ -150,13 +163,13 @@ describe("avisos de segurança nas lições sensíveis (seção 19)", () => {
 describe("informações da igreja não são inventadas: ficam como [PREENCHER], que bloqueia a publicação", () => {
   it("as lições que dependem de contato ou política da igreja têm marcador; as demais, não", () => {
     const withPlaceholder = LIBRARY_LESSONS.filter((l) => findPlaceholders(libraryContent(l)).length > 0).map((l) => l.n);
-    expect(withPlaceholder).toEqual([7, 9, 10, 12, 13, 14, 16, 17, 28]);
+    expect(withPlaceholder).toEqual([7, 9, 10, 12, 13, 14, 16, 17, 28, 32]);
   });
 
   it("nenhuma lição inventa telefone, endereço ou e-mail da igreja", () => {
     for (const l of LIBRARY_LESSONS) {
       const text = plain(l);
-      const numbers = [...text.matchAll(/\b\d{3,}\b/g)].map((m) => m[0]).filter((n) => !["188", "180", "190", "192"].includes(n));
+      const numbers = [...text.matchAll(/\b\d{3,}\b/g)].map((m) => m[0]).filter((n) => !["100", "188", "180", "190", "192"].includes(n));
       expect(numbers, `${l.slug}: números que parecem telefone`).toEqual([]);
       expect(text, l.slug).not.toMatch(/@|https?:\/\/|www\./);
     }
