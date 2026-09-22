@@ -34,11 +34,11 @@ Nenhum destes itens pode ser feito por mim: envolvem contas em seu nome, pagamen
 | --- | --- | --- | --- |
 | 1 | Criar as contas: GitHub, Supabase, Google Cloud, Vercel (e Resend, se for usar e-mail) | Pastor | São contas suas, com a sua identidade e, às vezes, cartão. Guia em [CONTAS.md](CONTAS.md). **Nunca cole senhas ou chaves no chat** |
 | 2 | Aplicar as 29 migrações e importar o conteúdo (Ciclos e biblioteca) | Pastor, com o guia | Um arquivo só (`banco-completo.sql`) cola no SQL Editor do seu Supabase; o guia tem o passo a passo |
-| 3 | **Autorização por escrito** para a NVI e a NTLH | Igreja | Sem ela, a plataforma só mostra referências e links (é o que faz hoje) |
+| 3 | **Autorização por escrito** para a NVI e a NTLH — ✅ aprovadas (22/09/2026); falta registrar quem detém os direitos de cada uma (`bible_versions.rights_holder`, hoje em branco) | Igreja | Sem o registro, a plataforma continua só mostrando referências e links (é o que faz hoje de qualquer forma) |
 | 4 | **Revisão jurídica** dos Termos e da Política (as minutas estão em `/termos` e `/privacidade`) | Advogado da igreja | Convicção religiosa é dado sensível na LGPD. Trechos `[A PREENCHER PELA IGREJA]` não foram inventados |
-| 5 | Designar o **encarregado de dados (DPO)** e um segundo administrador de emergência | Igreja | Exigência da LGPD e do handoff |
+| 5 | Designar o **encarregado de dados (DPO)** — ✅ feito (22/09/2026): Manoel Carlos Gomes — e um **segundo administrador** de emergência (e-mail já escolhido: fabrincandorisos@gmail.com; falta promover em Administração > Pessoas) | Igreja | Exigência da LGPD e do handoff |
 | 6 | Confirmar as **cores oficiais** | Igreja/comunicação | Já feito com base no logotipo: o site usa o laranja (`#c14602`) e o preto do logotipo. Se a comunicação tiver outras cores oficiais, a troca é pelo painel (**Administração > Marca**): [MARCA.md](MARCA.md) |
-| 7 | Os **textos da igreja** (história, valores, declaração de fé, liderança, ministérios, membresia) | Pastor | Aparecem como `[PREENCHER]` no Ciclo 3 e em Nossa Igreja |
+| 7 | Os **textos da igreja** (história, valores, declaração de fé, liderança, ministérios, membresia) | Pastor | Aparecem como `[PREENCHER]` no Ciclo 4 (Pertencimento) e em Nossa Igreja |
 | 8 | **Revisão pastoral** de todas as lições da biblioteca (28 rascunhos) e, nas sensíveis (9, 10, 12, 13, 14, 16, 17 e 28), revisão de um profissional | Pastor + profissional | Regra 0.4.3 do handoff. O aviso de segurança e os telefones (CVV 188, SAMU 192, Ligue 180, 190) **precisam ser conferidos** antes de publicar |
 | 9 | Preencher os `[PREENCHER]` da biblioteca: contato do aconselhamento, apoio da igreja a quem está endividado ou sem emprego, formas de contribuir, política de proteção | Pastor | Enquanto houver `[PREENCHER]`, o banco **impede** a publicação (é proposital) |
 | 10 | Decidir as **perguntas em aberto** de [DECISIONS.md](DECISIONS.md) | Pastor | Já há um padrão escolhido para cada uma |

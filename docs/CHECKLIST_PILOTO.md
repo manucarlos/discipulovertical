@@ -64,8 +64,8 @@ Depois de o MVP passar nos passos acima. Cada recurso nasce desligado (**Adminis
 
 - [ ] **Licenças NVI e NTLH** pedidas por escrito aos titulares. Enquanto isso o app mostra só a referência com link.
 - [ ] **Advogado** revisa as **minutas** dos Termos e da Política (`/termos`, `/privacidade`; a plataforma trata convicção religiosa, dado sensível na LGPD) e preenche o que está em destaque. Depois, tirar o `-rascunho` da constante `TERMS_VERSION` em `src/lib/legal.ts`.
-- [ ] **Encarregado de dados (DPO)** designado, com contato na política de privacidade.
-- [ ] **Segundo administrador** de confiança com acesso de emergência a todas as contas.
+- [x] **Encarregado de dados (DPO)** designado, com contato na política de privacidade (Manoel Carlos Gomes; e-mail pessoal por enquanto).
+- [ ] **Segundo administrador** de confiança com acesso de emergência a todas as contas (fabrincandorisos@gmail.com — falta promover em Administração > Pessoas).
 - [ ] Mapa completo do que falta e de quem faz: [PENDENCIAS.md](PENDENCIAS.md).
 - [x] **Logotipo** no site, nos ícones do app e no certificado.
 - [x] **Cores** do site iguais às do logotipo (laranja e preto). Para trocar: **Administração > Marca** ([MARCA.md](MARCA.md)).
