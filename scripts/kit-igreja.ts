@@ -6,22 +6,21 @@
  *   npm run kit -- caminho/da/igreja.json  -> lê o arquivo indicado
  *
  * Gera, em content/generated/kit-<slug>/:
- *   1-banco.sql         as migrações (o banco completo)
- *   2-identidade.sql    nome, contato, primeiro administrador e cores da igreja
- *   3-conteudo.sql      as lições dos Ciclos escolhidos, com o nome da igreja nos textos
- *   4-biblioteca.sql    a biblioteca do Grupo de Discipulado (se pedida)
- *   variaveis.env       as variáveis do site (Vercel)
+ *   1-identidade.sql    a igreja, o primeiro administrador (pendente) e as cores da igreja
+ *   2-conteudo.sql      as lições dos Ciclos escolhidos, com o nome da igreja nos textos
+ *   3-biblioteca.sql    a biblioteca do Grupo de Discipulado (se pedida)
  *   roteiro.md          o passo a passo personalizado
  *
- * Não usa nenhuma chave nem conta: só gera arquivos. Quem cola os SQLs e cria os projetos é a pessoa.
+ * Banco único (docs/EXPANSAO.md): uma igreja nova é só uma linha em `churches` no MESMO banco e no MESMO
+ * site de todas as igrejas — não cria projeto Supabase, app Google Cloud nem site Vercel novos.
+ * Não usa nenhuma chave nem conta: só gera arquivos. Quem cola os SQLs no SQL Editor é a pessoa.
  * Os arquivos churches/*.json (dados de igrejas de verdade) não vão para o GitHub; só o exemplo.json.
  */
 import fs from "node:fs";
 import path from "node:path";
-import { buildDbBundle } from "../src/lib/db-bundle";
 import { HandoffParseError, parseHandoff } from "../src/lib/content/parse-handoff";
 import { buildImportSql } from "../src/lib/content/to-sql";
-import { buildEnvExample, buildRoteiro, buildSeedSql, validateChurchConfig, type KitFiles } from "../src/lib/kit/church-config";
+import { buildRoteiro, buildSeedSql, validateChurchConfig, type KitFiles } from "../src/lib/kit/church-config";
 import { LIBRARY_LESSONS, LIBRARY_TRACKS } from "../src/lib/library";
 import { buildLibrarySql } from "../src/lib/library/to-sql";
 
@@ -53,9 +52,6 @@ function main() {
   }
   const { config, palette } = result;
 
-  const migrationsDir = path.join(root, "supabase", "migrations");
-  const migrations = fs.readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
-
   let cycles;
   try {
     const all = parseHandoff(fs.readFileSync(path.join(root, "docs", "HANDOFF.md"), "utf8"));
@@ -69,22 +65,18 @@ function main() {
   }
 
   const names: KitFiles = {
-    banco: "1-banco.sql",
-    identidade: "2-identidade.sql",
-    conteudo: "3-conteudo.sql",
-    biblioteca: config.content.library ? "4-biblioteca.sql" : null,
-    variaveis: "variaveis.env",
+    identidade: "1-identidade.sql",
+    conteudo: "2-conteudo.sql",
+    biblioteca: config.content.library ? "3-biblioteca.sql" : null,
   };
 
   const outDir = path.join(root, "content", "generated", `kit-${config.slug}`);
   fs.mkdirSync(outDir, { recursive: true });
   const write = (name: string, text: string) => fs.writeFileSync(path.join(outDir, name), text, "utf8");
 
-  write(names.banco, buildDbBundle(migrations.map((name) => ({ name, sql: fs.readFileSync(path.join(migrationsDir, name), "utf8") }))));
   write(names.identidade, buildSeedSql(config, palette));
-  write(names.conteudo, buildImportSql(cycles, { churchName: config.name }));
-  if (names.biblioteca) write(names.biblioteca, buildLibrarySql(LIBRARY_LESSONS, LIBRARY_TRACKS, { churchName: config.name }));
-  write(names.variaveis, buildEnvExample(config));
+  write(names.conteudo, buildImportSql(cycles, { churchName: config.name, churchSlug: config.slug }));
+  if (names.biblioteca) write(names.biblioteca, buildLibrarySql(LIBRARY_LESSONS, LIBRARY_TRACKS, { churchName: config.name, churchSlug: config.slug }));
   write("roteiro.md", buildRoteiro(config, names));
 
   console.log(`\nKit de ${config.name} (${config.slug}) gerado em ${path.relative(root, outDir)}:`);

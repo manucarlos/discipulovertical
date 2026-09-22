@@ -12,7 +12,7 @@ Aplicativo web (PWA) de discipulado da Vertical Church: leva o novo convertido, 
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Decisões técnicas e o que ainda falta |
 | [docs/RELATORIO_USABILIDADE.md](docs/RELATORIO_USABILIDADE.md) | Testes de usabilidade com Claudião, Claudinho e Claudio: o que foi testado e achado |
 | [docs/MARCA.md](docs/MARCA.md) | Como trocar as cores e o logotipo (pelo painel, em Administração > Marca; o padrão fica em `src/lib/brand.ts`) |
-| [docs/EXPANSAO.md](docs/EXPANSAO.md) | Servir outras igrejas, cada uma com a sua identidade: o modelo escolhido, o que já foi feito (nome, marca, kit de instalação) e as decisões que ficam para depois |
+| [docs/EXPANSAO.md](docs/EXPANSAO.md) | Servir outras igrejas no mesmo banco (multi-tenant): o banco único com `church_id`, o isolamento por RLS (Fase 1, pronta) e o que falta (Fase 2, as funções de escrita) |
 | [docs/PENDENCIAS.md](docs/PENDENCIAS.md) | O mapa do que está pronto, do que só o pastor e a igreja podem fazer e do que não foi construído |
 | [docs/CHECKLIST_PILOTO.md](docs/CHECKLIST_PILOTO.md) | Roteiro para conferir no Supabase de verdade e o que falta antes do piloto |
 
@@ -37,10 +37,10 @@ Sem `.env.local` o app abre e mostra avisos de "em preparação"; o login só fu
 | `npm run typecheck` | Confere os tipos |
 | `npm run lint` | Confere o estilo do código |
 | `npm run build` | Versão de produção |
-| `npm run import:sql -- --igreja "Nome"` | Gera o SQL de importação das lições (`--cycle 1` para um ciclo só). O nome da igreja entra nos textos |
-| `npm run db:bundle` | Junta as 25 migrações num arquivo só para colar no Supabase (`content/generated/banco-completo.sql`) |
-| `npm run import:library -- --igreja "Nome"` | Gera o SQL da biblioteca do Grupo de Discipulado (28 lições e 6 trilhas, em rascunho) |
-| `npm run kit -- exemplo` | **Kit de instalação** de uma igreja nova: gera o banco, a identidade, o conteúdo, as variáveis do site e um roteiro personalizado a partir de `churches/exemplo.json` |
+| `npm run import:sql -- --igreja "Nome" --slug igreja-exemplo` | Gera o SQL de importação das lições (`--cycle 1` para um ciclo só) para a igreja daquele slug (já precisa existir em `churches`). O nome da igreja entra nos textos |
+| `npm run db:bundle` | Junta as 26 migrações num arquivo só para colar no Supabase (`content/generated/banco-completo.sql`) |
+| `npm run import:library -- --igreja "Nome" --slug igreja-exemplo` | Gera o SQL da biblioteca do Grupo de Discipulado (28 lições e 6 trilhas, em rascunho) para a igreja daquele slug |
+| `npm run kit -- exemplo` | **Kit de cadastro** de uma igreja nova no banco único: gera a identidade, o conteúdo e um roteiro personalizado a partir de `churches/exemplo.json` |
 | `npm run icons` | Gera as imagens da marca (logo do site, ícones do app e da aba, logo do certificado) a partir de `assets/brand/vertical-church-logo.jpg` |
 
 ## Estrutura

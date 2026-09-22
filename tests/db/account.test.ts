@@ -9,6 +9,7 @@ import { asUser, createDb, createUser } from "./harness";
 const cycles = parseHandoff(fs.readFileSync(path.resolve(__dirname, "../../docs/HANDOFF.md"), "utf8"));
 
 let db: PGlite;
+let church: string;
 let admin: string;
 let admin2: string;
 let maria: string;
@@ -21,17 +22,18 @@ const count = async (sql: string, params: unknown[] = []) => (await q(sql, param
 
 beforeAll(async () => {
   db = await createDb();
-  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true }));
+  church = (await q<{ id: string }>("select id from public.churches where slug = 'vertical-church'"))[0].id;
+  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true, churchSlug: "vertical-church" }));
   lessonId = (await q<{ id: string }>("select id from public.lessons where slug = 'c1-l01'"))[0].id;
 
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'pastor@example.com')");
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', (select id from public.churches where slug = 'vertical-church'))");
   admin = await createUser(db, "pastor@example.com", { name: "Pastor" });
   maria = await createUser(db, "maria@example.com", { name: "Maria" });
   joao = await createUser(db, "joao@example.com", { name: "João" });
 
   for (const id of [maria, joao]) {
-    await q("insert into public.consents (user_id, purpose, term_version) values ($1, 'data_processing', 'v1')", [id]);
-    await q("insert into public.lesson_progress (user_id, lesson_id, status, started_at) values ($1, $2, 'in_progress', now())", [id, lessonId]);
+    await q("insert into public.consents (church_id, user_id, purpose, term_version) values ($1, $2, 'data_processing', 'v1')", [church, id]);
+    await q("insert into public.lesson_progress (church_id, user_id, lesson_id, status, started_at) values ($1, $2, $3, 'in_progress', now())", [church, id, lessonId]);
   }
   admin2 = await createUser(db, "outro-admin@example.com", { name: "Outro Admin" });
   await asUser(db, admin, () => q("select public.admin_set_role($1, 'admin')", [admin2]));

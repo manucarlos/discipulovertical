@@ -18,7 +18,7 @@ Registro das escolhas feitas na construção, com o motivo. As decisões de prod
 
 - **RLS em tudo, com privilégios explícitos.** Cada tabela ativa RLS, revoga tudo de `anon` e `authenticated` e concede só o necessário. O Supabase concede tudo por padrão, então esquecer um `revoke` abriria a tabela.
 - **Papel só muda por função.** `profiles.role` não é editável pelo membro (privilégio por coluna). A promoção passa por `admin_set_role()`, que só o Admin executa, impede remover o último Admin e grava no log.
-- **Primeiro Admin por e-mail** em `app_config` (`initial_admin_email`), lido pelo gatilho de criação de perfil. Só vale com e-mail confirmado. `app_config` não tem policy: só o SQL Editor acessa.
+- **Primeiro Admin por e-mail** em `church_admins_pending` (email + `church_id`), lido pelo gatilho de criação/confirmação de perfil. Só vale com e-mail confirmado. Sem policy: só o SQL Editor acessa. (Até 21/09/2026 era um e-mail global só, em `app_config.initial_admin_email`; passou a ser por igreja na migração 0026, banco único multi-igreja — ver [EXPANSAO.md](EXPANSAO.md).)
 - **Auditoria só de inserção.** Um gatilho bloqueia UPDATE e DELETE, exceto anular `actor_id` quando a conta do autor é excluída. Assim a exclusão de conta (LGPD) não quebra o log. Não gravar dados pessoais em `details`.
 - **Campos internos em tabela separada** (`lesson_internal_notes`: nota para revisão pastoral, sugestão de vídeo, aviso de rascunho). RLS filtra linhas, não colunas; separar é a forma segura de garantir que o membro nunca os receba (regra 0.4.7).
 - **`quiz_questions` só para a equipe** por enquanto, porque a tabela guarda a resposta certa. Na V2 o membro recebe as perguntas por uma função que omite o gabarito.

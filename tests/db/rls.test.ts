@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
-import { asUser, createDb, createUser } from "./harness";
+import { asUser, createChurch, createDb, createUser } from "./harness";
 
 let db: PGlite;
+let church: string;
 let admin: string;
 let editor: string;
 let member1: string;
@@ -15,14 +16,14 @@ const q = <T = Record<string, unknown>>(sql: string, params: unknown[] = []) =>
 /** Cria uma lição com uma versão de conteúdo, como dono do banco (fixture; não passa pela RLS). */
 async function createLesson(slug: string, position: number, hasPlaceholders = false) {
   const rows = await q<{ id: string }>(
-    `insert into public.lessons (cycle_id, slug, title, position, has_placeholders)
-     values ($1, $2, $3, $4, $5) returning id`,
-    [cycleId, slug, `Lição ${slug}`, position, hasPlaceholders],
+    `insert into public.lessons (church_id, cycle_id, slug, title, position, has_placeholders)
+     values ($1, $2, $3, $4, $5, $6) returning id`,
+    [church, cycleId, slug, `Lição ${slug}`, position, hasPlaceholders],
   );
   const id = rows[0].id;
   const [version] = await q<{ id: string }>(
-    `insert into public.lesson_versions (lesson_id, content) values ($1, '{"blocks": []}') returning id`,
-    [id],
+    `insert into public.lesson_versions (church_id, lesson_id, content) values ($1, $2, '{"blocks": []}') returning id`,
+    [church, id],
   );
   await q("update public.lessons set current_version_id = $1 where id = $2", [version.id, id]);
   return id;
@@ -30,17 +31,24 @@ async function createLesson(slug: string, position: number, hasPlaceholders = fa
 
 beforeAll(async () => {
   db = await createDb();
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'Pastor@Example.com')");
+  church = await createChurch(db);
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', $1)", [church]);
   admin = await createUser(db, "pastor@example.com", { name: "Pastor" });
-  editor = await createUser(db, "editor@example.com");
-  member1 = await createUser(db, "membro1@example.com");
-  member2 = await createUser(db, "membro2@example.com");
+  editor = await createUser(db, "editor@example.com", { churchId: church });
+  member1 = await createUser(db, "membro1@example.com", { churchId: church });
+  member2 = await createUser(db, "membro2@example.com", { churchId: church });
   await asUser(db, admin, () => q("select public.admin_set_role($1, 'editor')", [editor]));
   cycleId = (
     await q<{ id: string }>(
-      "insert into public.cycles (slug, title, position) values ('c1', 'Fundamentos', 1) returning id",
+      "insert into public.cycles (church_id, slug, title, position) values ($1, 'c1', 'Fundamentos', 1) returning id",
+      [church],
     )
   )[0].id;
+  await q(
+    `insert into public.church_pages (church_id, slug, title, position) values
+       ($1, 'vision', 'Nossa visão', 1), ($1, 'mission', 'Nossa missão', 2), ($1, 'values', 'Nossos valores', 3)`,
+    [church],
+  );
 });
 
 afterAll(async () => {
@@ -48,27 +56,30 @@ afterAll(async () => {
 });
 
 describe("perfis e papéis", () => {
-  it("cria o perfil no primeiro login; o e-mail inicial vira Admin, sem diferenciar maiúsculas", async () => {
+  it("cria o perfil no primeiro login; o e-mail pendente vira Admin, sem diferenciar maiúsculas", async () => {
     const rows = await q<{ id: string; role: string }>("select id, role from public.profiles");
     const byId = Object.fromEntries(rows.map((r) => [r.id, r.role]));
     expect(byId[admin]).toBe("admin");
     expect(byId[member1]).toBe("member");
   });
 
-  it("e-mail não confirmado nunca vira Admin", async () => {
-    const id = await createUser(db, "PASTOR@example.com", { confirmed: false });
-    const [row] = await q<{ role: string }>("select role from public.profiles where id = $1", [id]);
-    expect(row.role).toBe("member");
-  });
-
-  // Estes testes criam contas com o e-mail do primeiro Admin; cada um apaga o que criou
-  // para não sobrar Admin extra nos testes seguintes.
+  // Estes testes criam contas com um e-mail próprio em church_admins_pending (cada um o seu, já que a
+  // promoção CONSOME a linha); cada um apaga o que criou para não sobrar Admin extra nos testes seguintes.
+  const pending = (email: string) => q("insert into public.church_admins_pending (email, church_id) values ($1, $2)", [email, church]);
   const roleOf = async (id: string) =>
     (await q<{ role: string }>("select role from public.profiles where id = $1", [id]))[0].role;
   const cleanup = (id: string) => q("delete from auth.users where id = $1", [id]);
 
-  it("como no Supabase de verdade (criado sem confirmar, confirmado depois), o e-mail inicial vira Admin, com registro", async () => {
-    const id = await createUser(db, "Pastor@example.com", { confirmed: false });
+  it("e-mail não confirmado nunca vira Admin", async () => {
+    await pending("candidato1@example.com");
+    const id = await createUser(db, "CANDIDATO1@example.com", { confirmed: false });
+    const [row] = await q<{ role: string }>("select role from public.profiles where id = $1", [id]);
+    expect(row.role).toBe("member");
+  });
+
+  it("como no Supabase de verdade (criado sem confirmar, confirmado depois), o e-mail pendente vira Admin, com registro", async () => {
+    await pending("candidato2@example.com");
+    const id = await createUser(db, "Candidato2@example.com", { confirmed: false });
     try {
       expect(await roleOf(id)).toBe("member");
 
@@ -93,7 +104,8 @@ describe("perfis e papéis", () => {
   });
 
   it("e-mail já confirmado no INSERT também vira Admin (SQL Editor, outros provedores)", async () => {
-    const id = await createUser(db, "PASTOR@example.com", { confirmedOnInsert: true });
+    await pending("candidato3@example.com");
+    const id = await createUser(db, "CANDIDATO3@example.com", { confirmedOnInsert: true });
     try {
       expect(await roleOf(id)).toBe("admin");
     } finally {
@@ -102,7 +114,8 @@ describe("perfis e papéis", () => {
   });
 
   it("uma segunda atualização da confirmação não promove de novo quem foi rebaixado", async () => {
-    const id = await createUser(db, "pastor@example.com");
+    await pending("candidato4@example.com");
+    const id = await createUser(db, "candidato4@example.com");
     try {
       expect(await roleOf(id)).toBe("admin");
       await q("update public.profiles set role = 'member' where id = $1", [id]);
@@ -409,7 +422,7 @@ describe("Nossa Igreja", () => {
 
 describe("exclusão de conta (RF-27)", () => {
   it("remove dados pessoais em cascata e mantém a auditoria anonimizada", async () => {
-    const admin2 = await createUser(db, "outro-admin@example.com");
+    const admin2 = await createUser(db, "outro-admin@example.com", { churchId: church });
     await asUser(db, admin, () => q("select public.admin_set_role($1, 'admin')", [admin2]));
     const id = await createLesson("c1-l50", 50);
     await asUser(db, admin2, () => q("update public.lessons set status = 'published' where id = $1", [id]));

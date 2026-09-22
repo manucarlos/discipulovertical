@@ -12,7 +12,7 @@ const q = <T = Record<string, unknown>>(sql: string, params: unknown[] = []) =>
 
 beforeAll(async () => {
   db = await createDb();
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'pastor@example.com')");
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', (select id from public.churches where slug = 'vertical-church'))");
   admin = await createUser(db, "pastor@example.com");
   editor = await createUser(db, "editora@example.com");
   member = await createUser(db, "membro@example.com");

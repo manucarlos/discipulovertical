@@ -11,6 +11,8 @@ export interface MemberProfile {
   bible_version: string;
   onboarded_at: string | null;
   is_discipler: boolean;
+  /** Banco único multi-igreja (migração 0026): nulo até a pessoa entrar por convite ou virar Admin pendente. */
+  church_id: string | null;
 }
 
 /**
@@ -30,7 +32,7 @@ export const requireMember = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, role, bible_version, onboarded_at, is_discipler")
+    .select("id, display_name, role, bible_version, onboarded_at, is_discipler, church_id")
     .eq("id", user.id)
     .single<MemberProfile>();
   if (!profile?.onboarded_at) redirect("/onboarding");

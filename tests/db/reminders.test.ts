@@ -10,6 +10,7 @@ const cycles = parseHandoff(fs.readFileSync(path.resolve(__dirname, "../../docs/
 const SECRET = "segredo-de-teste-com-mais-de-32-caracteres";
 
 let db: PGlite;
+let church: string;
 let admin: string;
 let editor: string;
 let ana: string; // aceitou lembretes
@@ -40,15 +41,16 @@ const enqueue = (items: unknown[], secret = SECRET) =>
 const item = (user: string, kind: string, key: string) => ({ user_id: user, kind, dedupe_key: key, subject: `Assunto ${kind}` });
 const consent = (user: string, on = true) =>
   on
-    ? q("insert into public.consents (user_id, purpose, term_version) values ($1, 'email_reminders', 'v1')", [user])
+    ? q("insert into public.consents (church_id, user_id, purpose, term_version) values ($1, $2, 'email_reminders', 'v1')", [church, user])
     : q("update public.consents set revoked_at = now() where user_id = $1 and purpose = 'email_reminders'", [user]);
 
 beforeAll(async () => {
   db = await createDb();
-  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true }));
+  church = (await q<{ id: string }>("select id from public.churches where slug = 'vertical-church'"))[0].id;
+  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true, churchSlug: "vertical-church" }));
   lessonIds = (await q<{ id: string }>("select id from public.lessons order by position")).map((r) => r.id);
 
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'pastor@example.com')");
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', (select id from public.churches where slug = 'vertical-church'))");
   await q("insert into public.app_config (key, value) values ('cron_secret_hash', encode(sha256(convert_to($1, 'UTF8')), 'hex'))", [SECRET]);
   admin = await createUser(db, "pastor@example.com", { name: "Pastor" });
   editor = await createUser(db, "editora@example.com");
@@ -60,9 +62,9 @@ beforeAll(async () => {
   await consent(ana);
   await consent(cida);
   await q(
-    `insert into public.lesson_progress (user_id, lesson_id, status, released_at, started_at, completed_at)
-     values ($1, $2, 'completed', now() - interval '5 days', now() - interval '5 days', now() - interval '4 days')`,
-    [ana, lessonIds[0]],
+    `insert into public.lesson_progress (church_id, user_id, lesson_id, status, released_at, started_at, completed_at)
+     values ($1, $2, $3, 'completed', now() - interval '5 days', now() - interval '5 days', now() - interval '4 days')`,
+    [church, ana, lessonIds[0]],
   );
 });
 afterAll(async () => {

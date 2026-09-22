@@ -3,6 +3,7 @@ import type { PGlite } from "@electric-sql/pglite";
 import { asUser, createDb, createUser } from "./harness";
 
 let db: PGlite;
+let church: string;
 let admin: string;
 let editor: string;
 let disc: string; // discipulador
@@ -23,13 +24,13 @@ const setFlag = (on: boolean) => as(admin, "update public.app_settings set value
 
 async function libraryLesson(slug: string, position: number, sensitive = false, status = "published") {
   const [l] = await q<{ id: string }>(
-    `insert into public.lessons (kind, cycle_id, slug, title, objective, position, status, sensitive, themes)
-     values ('library', null, $1, $2, 'Objetivo', $3, 'draft', $4, '{Teste}') returning id`,
-    [slug, `Lição ${slug}`, position, sensitive],
+    `insert into public.lessons (church_id, kind, cycle_id, slug, title, objective, position, status, sensitive, themes)
+     values ($1, 'library', null, $2, $3, 'Objetivo', $4, 'draft', $5, '{Teste}') returning id`,
+    [church, slug, `Lição ${slug}`, position, sensitive],
   );
   const [v] = await q<{ id: string }>(
-    "insert into public.lesson_versions (lesson_id, content) values ($1, '{\"blocks\":[],\"practice\":null,\"reflection\":null}') returning id",
-    [l.id],
+    "insert into public.lesson_versions (church_id, lesson_id, content) values ($1, $2, '{\"blocks\":[],\"practice\":null,\"reflection\":null}') returning id",
+    [church, l.id],
   );
   await q("update public.lessons set current_version_id = $2, status = $3 where id = $1", [l.id, v.id, status]);
   return l.id;
@@ -37,7 +38,8 @@ async function libraryLesson(slug: string, position: number, sensitive = false, 
 
 beforeAll(async () => {
   db = await createDb();
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'pastor@example.com')");
+  church = (await q<{ id: string }>("select id from public.churches where slug = 'vertical-church'"))[0].id;
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', (select id from public.churches where slug = 'vertical-church'))");
   admin = await createUser(db, "pastor@example.com", { name: "Pastor" });
   editor = await createUser(db, "editora@example.com");
   disc = await createUser(db, "disc@example.com", { name: "Discipulador" });
@@ -50,9 +52,10 @@ beforeAll(async () => {
 
   lessons = [await libraryLesson("lib-1", 1), await libraryLesson("lib-2", 2), await libraryLesson("lib-3", 3, true)];
   outsideLesson = await libraryLesson("lib-fora", 4);
-  const [t] = await q<{ id: string }>("insert into public.tracks (title, description) values ('Trilha de teste', 'Três dias') returning id");
+  const [t] = await q<{ id: string }>("insert into public.tracks (church_id, title, description) values ($1, 'Trilha de teste', 'Três dias') returning id", [church]);
   trackId = t.id;
-  for (const [i, l] of lessons.entries()) await q("insert into public.track_days (track_id, day_number, lesson_id) values ($1, $2, $3)", [trackId, i + 1, l]);
+  for (const [i, l] of lessons.entries())
+    await q("insert into public.track_days (church_id, track_id, day_number, lesson_id) values ($1, $2, $3, $4)", [church, trackId, i + 1, l]);
   await q("update public.tracks set status = 'published' where id = $1", [trackId]);
 });
 afterAll(async () => {
@@ -104,16 +107,20 @@ describe("discipuladores e trilhas", () => {
     expect(await as(ana, "select 1 from public.lessons where kind = 'library'")).toEqual([]);
     expect((await as(editor, "select 1 from public.lessons where kind = 'library'")).length).toBe(5); // 4 da trilha de teste + o rascunho
     // Uma lição da biblioteca não pertence a ciclo, e uma da trilha precisa de ciclo.
-    await q("insert into public.cycles (slug, title, position) values ('c-teste', 'Ciclo de teste', 1)");
-    await expect(q("insert into public.lessons (kind, cycle_id, slug, title, position) values ('library', (select id from public.cycles limit 1), 'x', 'x', 1)")).rejects.toThrow(/lessons_kind_cycle/);
-    await expect(q("insert into public.lessons (kind, cycle_id, slug, title, position) values ('trail', null, 'y', 'y', 1)")).rejects.toThrow(/lessons_kind_cycle/);
+    await q("insert into public.cycles (church_id, slug, title, position) values ($1, 'c-teste', 'Ciclo de teste', 1)", [church]);
+    await expect(
+      q("insert into public.lessons (church_id, kind, cycle_id, slug, title, position) values ($1, 'library', (select id from public.cycles limit 1), 'x', 'x', 1)", [church]),
+    ).rejects.toThrow(/lessons_kind_cycle/);
+    await expect(
+      q("insert into public.lessons (church_id, kind, cycle_id, slug, title, position) values ($1, 'trail', null, 'y', 'y', 1)", [church]),
+    ).rejects.toThrow(/lessons_kind_cycle/);
   });
 });
 
 describe("criar e entrar no grupo", () => {
   it("só discipulador cria, e só com trilha publicada; o convite tem formato próprio", async () => {
     await expect(as(ana, "select public.create_group('G', $1, current_date, null, null, null)", [trackId])).rejects.toThrow(/Só um discipulador/);
-    const [draft] = await q<{ id: string }>("insert into public.tracks (title) values ('Rascunho 2') returning id");
+    const [draft] = await q<{ id: string }>("insert into public.tracks (church_id, title) values ($1, 'Rascunho 2') returning id", [church]);
     await expect(as(disc, "select public.create_group('G', $1, current_date, null, null, null)", [draft.id])).rejects.toThrow(/trilha publicada/);
 
     const [g] = await as<{ id: string }>(disc, "select public.create_group('  Grupo da Manhã ', $1, current_date, '{1,2,3,4,5}', 7, 6) as id", [trackId]);

@@ -58,13 +58,28 @@ export async function createDb(): Promise<PGlite> {
  * Cria um usuário como o login Google faz no Supabase de verdade: o INSERT vem SEM e-mail
  * confirmado (dispara o gatilho que cria o perfil) e a confirmação chega logo depois, num UPDATE.
  * Com `confirmedOnInsert`, o e-mail já nasce confirmado (outros provedores, ou o SQL Editor).
+ *
+ * `churchId` e `role`: atalho de teste (banco único multi-igreja, migração 0026). Grava direto no perfil, sem
+ * passar pela cerimônia de convite/administrador pendente — quem testa especificamente essa cerimônia usa
+ * `church_admins_pending` ou `claim_church()` de propósito. Sem `churchId` (omitido/undefined), a pessoa
+ * entra na igreja semente (`vertical-church`, criada pela própria migração 0026): reflete o piloto de hoje
+ * (uma igreja só) e evita que cada teste precise passar `churchId` toda vez. Com `churchId: null`
+ * (explícito), fica mesmo sem igreja — para quem testa o "antes de entrar" de propósito (convite,
+ * administrador pendente). Quem testa isolamento entre DUAS igrejas usa `createChurch()` e passa `churchId`
+ * explicitamente (ver tests/db/multi-tenant.test.ts).
  */
 export async function createUser(
   db: PGlite,
   email: string,
-  opts: { confirmed?: boolean; confirmedOnInsert?: boolean; name?: string } = {},
+  opts: {
+    confirmed?: boolean;
+    confirmedOnInsert?: boolean;
+    name?: string;
+    churchId?: string | null;
+    role?: "member" | "editor" | "caregiver" | "admin";
+  } = {},
 ): Promise<string> {
-  const { confirmed = true, confirmedOnInsert = false, name = "" } = opts;
+  const { confirmed = true, confirmedOnInsert = false, name = "", role } = opts;
   const now = new Date().toISOString();
   const res = await db.query<{ id: string }>(
     `insert into auth.users (email, email_confirmed_at, raw_user_meta_data)
@@ -75,7 +90,33 @@ export async function createUser(
   if (confirmed && !confirmedOnInsert) {
     await db.query("update auth.users set email_confirmed_at = $2 where id = $1", [id, now]);
   }
+  if (opts.churchId) {
+    // Explícito: sempre vence, mesmo que um convite pendente já tenha resolvido outra igreja (ver
+    // tests/db/rls.test.ts, que cria um Admin de propósito fora da igreja pendente).
+    await db.query("update public.profiles set church_id = $2, role = coalesce($3, role) where id = $1", [id, opts.churchId, role ?? null]);
+  } else if (role) {
+    await db.query("update public.profiles set role = $2 where id = $1", [id, role]);
+  } else if (opts.churchId === undefined) {
+    // Sem igreja explícita: só preenche se o gatilho de confirmação ainda não resolveu uma (sem e-mail
+    // pendente correspondente) — nunca sobrescreve o que a cerimônia de convite/administrador já decidiu.
+    await db.query(
+      `update public.profiles set church_id = coalesce(church_id, (select id from public.churches where slug = 'vertical-church'))
+       where id = $1`,
+      [id],
+    );
+  }
+  // opts.churchId === null: fica como o gatilho deixou (nula, salvo convite pendente já resolvido).
   return id;
+}
+
+/** Cria uma igreja de teste (banco único multi-igreja, migração 0026) e devolve o id. */
+export async function createChurch(db: PGlite, overrides: { slug?: string; name?: string } = {}): Promise<string> {
+  const n = Math.random().toString(36).slice(2, 8);
+  const res = await db.query<{ id: string }>(
+    "insert into public.churches (slug, name) values ($1, $2) returning id",
+    [overrides.slug ?? `igreja-teste-${n}`, overrides.name ?? "Igreja de Teste"],
+  );
+  return res.rows[0].id;
 }
 
 /** Executa `fn` como um usuário logado (papel `authenticated`), como o PostgREST faz. */

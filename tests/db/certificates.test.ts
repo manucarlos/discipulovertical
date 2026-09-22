@@ -9,6 +9,7 @@ import { asUser, createDb, createUser } from "./harness";
 const cycles = parseHandoff(fs.readFileSync(path.resolve(__dirname, "../../docs/HANDOFF.md"), "utf8"));
 
 let db: PGlite;
+let church: string;
 let admin: string;
 let editor: string;
 let ana: string; // concluiu o ciclo 1, presente
@@ -31,14 +32,15 @@ async function asAnon<T>(sql: string, params: unknown[] = []): Promise<T[]> {
   }
 }
 const finish = (user: string) =>
-  q("insert into public.cycle_progress (user_id, cycle_id, status, completed_at) values ($1, $2, 'completed', now())", [user, cycleId]);
+  q("insert into public.cycle_progress (church_id, user_id, cycle_id, status, completed_at) values ($1, $2, $3, 'completed', now())", [church, user, cycleId]);
 
 beforeAll(async () => {
   db = await createDb();
-  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true }));
+  church = (await q<{ id: string }>("select id from public.churches where slug = 'vertical-church'"))[0].id;
+  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true, churchSlug: "vertical-church" }));
   cycleId = (await q<{ id: string }>("select id from public.cycles limit 1"))[0].id;
 
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'pastor@example.com')");
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', (select id from public.churches where slug = 'vertical-church'))");
   admin = await createUser(db, "pastor@example.com", { name: "Pastor" });
   editor = await createUser(db, "editora@example.com");
   ana = await createUser(db, "ana@example.com", { name: "Ana Paula Souza" });
@@ -189,7 +191,7 @@ describe("aviso por e-mail do certificado", () => {
     await setFlag("feature.reminders", true);
     await expect(asAnon("select public.cron_certificates($1)", ["errado"])).rejects.toThrow(/não autorizado/);
     expect((await asAnon<{ v: unknown[] }>("select public.cron_certificates($1) as v", [secret]))[0].v).toEqual([]); // ninguém aceitou e-mails ainda
-    await q("insert into public.consents (user_id, purpose, term_version) values ($1, 'email_reminders', 'v1')", [ana]);
+    await q("insert into public.consents (church_id, user_id, purpose, term_version) values ($1, $2, 'email_reminders', 'v1')", [church, ana]);
     const [{ v }] = await asAnon<{ v: { user_id: string; cycle_title: string; code: string }[] }>("select public.cron_certificates($1) as v", [secret]);
     expect(v).toHaveLength(1);
     expect(v[0]).toMatchObject({ user_id: ana, cycle_title: "Fundamentos" });

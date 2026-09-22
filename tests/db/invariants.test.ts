@@ -70,8 +70,12 @@ describe("tabelas", () => {
          and not exists (select 1 from pg_policy p where p.polrelid = c.oid) order by 1`,
     );
     // Sem política de propósito: só o SQL Editor (dono do banco) e as funções do banco as acessam.
-    // app_config guarda o e-mail do primeiro admin e o hash do segredo do agendador; o resto é o código de descadastro.
-    expect(rows.map((r) => r.relname)).toEqual(["app_config", "email_unsubscribe_tokens"]);
+    // app_config guarda o hash do segredo do agendador. email_unsubscribe_tokens ganhou política própria na
+    // migração 0026 (entrou no laço das tabelas comuns, isolada por igreja como as demais).
+    // church_admins_pending/platform_admins são do banco único multi-igreja (migração 0026): o operador
+    // (SQL Editor) cadastra administradores pendentes; platform_admins é o Super Admin. `churches` TEM
+    // política própria (churches_own_read/churches_admin_update — cada um lê e edita só a própria igreja).
+    expect(rows.map((r) => r.relname)).toEqual(["app_config", "church_admins_pending", "platform_admins"]);
   });
 
   it("nenhuma política de escrita libera tudo (using/with check = true) para usuários logados", async () => {

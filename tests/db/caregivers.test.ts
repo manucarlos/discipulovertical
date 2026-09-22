@@ -9,6 +9,7 @@ import { asUser, createDb, createUser } from "./harness";
 const cycles = parseHandoff(fs.readFileSync(path.resolve(__dirname, "../../docs/HANDOFF.md"), "utf8"));
 
 let db: PGlite;
+let church: string;
 let admin: string;
 let editor: string;
 let carla: string; // cuidadora
@@ -32,18 +33,19 @@ async function person(email: string, joinedDaysAgo: number) {
 }
 async function activity(userId: string, i: number, agoDays: number) {
   await q(
-    `insert into public.lesson_progress (user_id, lesson_id, status, released_at, started_at, updated_at)
-     values ($1, $2, 'in_progress', $3, $3, $3)`,
-    [userId, lessonIds[i], daysAgo(agoDays)],
+    `insert into public.lesson_progress (church_id, user_id, lesson_id, status, released_at, started_at, updated_at)
+     values ($1, $2, $3, 'in_progress', $4, $4, $4)`,
+    [church, userId, lessonIds[i], daysAgo(agoDays)],
   );
 }
 
 beforeAll(async () => {
   db = await createDb();
-  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true }));
+  church = (await q<{ id: string }>("select id from public.churches where slug = 'vertical-church'"))[0].id;
+  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true, churchSlug: "vertical-church" }));
   lessonIds = (await q<{ id: string }>("select id from public.lessons order by position")).map((r) => r.id);
 
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'pastor@example.com')");
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', (select id from public.churches where slug = 'vertical-church'))");
   admin = await createUser(db, "pastor@example.com");
   editor = await createUser(db, "editora@example.com");
   carla = await createUser(db, "carla@example.com", { name: "Carla" });

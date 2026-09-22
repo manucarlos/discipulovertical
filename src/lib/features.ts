@@ -22,6 +22,8 @@ export type Flags = Record<FeatureKey, boolean>;
 export const ALL_OFF: Flags = Object.fromEntries(FEATURES.map((f) => [f.key, false])) as Flags;
 
 export interface ChurchSettings {
+  /** Nulo para quem não é Admin (ou não tem igreja ainda): a RLS de `churches` só libera a própria, ao Admin. */
+  id: string | null;
   name: string;
   contactEmail: string;
 }
@@ -36,28 +38,35 @@ interface Row {
   value: unknown;
 }
 
-/** Converte as linhas de app_settings em configurações, com padrão seguro (desligado) para o que faltar ou vier estranho. */
-export function resolveSettings(rows: Row[]): Settings {
+/** Converte as linhas de app_settings (só os recursos: nome e contato da igreja vêm de `churches`, à parte). */
+export function resolveFlags(rows: Row[]): Flags {
   const flags: Flags = { ...ALL_OFF };
-  const church: ChurchSettings = { name: DEFAULT_CHURCH_NAME, contactEmail: "" };
   for (const row of rows) {
     if (row.key.startsWith("feature.")) {
       const key = row.key.slice("feature.".length) as FeatureKey;
       if (key in flags) flags[key] = row.value === true; // só um `true` de verdade liga
-    } else if (row.key === "church.name" && typeof row.value === "string" && row.value.trim()) {
-      church.name = row.value.trim();
-    } else if (row.key === "church.contact_email" && typeof row.value === "string") {
-      church.contactEmail = row.value.trim();
     }
   }
-  return { flags, church };
+  return flags;
+}
+
+/** @deprecated Kept for the tests that build straight from rows; prefer {@link loadSettings}. */
+export function resolveSettings(rows: Row[]): Settings {
+  return { flags: resolveFlags(rows), church: { id: null, name: DEFAULT_CHURCH_NAME, contactEmail: "" } };
 }
 
 export async function loadSettings(supabase: SupabaseClient): Promise<Settings> {
-  const { data, error } = await supabase.from("app_settings").select("key, value");
-  // Se a leitura falhar, o padrão é tudo desligado: um recurso novo nunca liga "por engano".
-  if (error) return resolveSettings([]);
-  return resolveSettings((data ?? []) as Row[]);
+  const [{ data: rows, error }, { data: church }] = await Promise.all([
+    supabase.from("app_settings").select("key, value"),
+    // Sem linha (não é Admin, ou ainda sem igreja): fica no padrão do código — a tela pede para preencher.
+    supabase.from("churches").select("id, name, contact_email").maybeSingle(),
+  ]);
+  // Se a leitura de recursos falhar, o padrão é tudo desligado: um recurso novo nunca liga "por engano".
+  const flags = error ? resolveFlags([]) : resolveFlags((rows ?? []) as Row[]);
+  const churchSettings: ChurchSettings = church
+    ? { id: church.id, name: church.name || DEFAULT_CHURCH_NAME, contactEmail: church.contact_email ?? "" }
+    : { id: null, name: DEFAULT_CHURCH_NAME, contactEmail: "" };
+  return { flags, church: churchSettings };
 }
 
 export const isFeatureKey = (value: string): value is FeatureKey => FEATURES.some((f) => f.key === value);

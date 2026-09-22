@@ -9,6 +9,7 @@ import { asUser, createDb, createUser } from "./harness";
 const cycles = parseHandoff(fs.readFileSync(path.resolve(__dirname, "../../docs/HANDOFF.md"), "utf8"));
 
 let db: PGlite;
+let church: string;
 let admin: string;
 let editor: string;
 let ana: string;
@@ -49,11 +50,12 @@ const complete = (user: string, lesson = lessonId) =>
 
 beforeAll(async () => {
   db = await createDb();
-  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true }));
+  church = (await q<{ id: string }>("select id from public.churches where slug = 'vertical-church'"))[0].id;
+  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true, churchSlug: "vertical-church" }));
   const lessons = await q<{ id: string }>("select id from public.lessons order by position");
   [lessonId, noQuizLessonId] = [lessons[0].id, lessons[1].id];
 
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'pastor@example.com')");
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', (select id from public.churches where slug = 'vertical-church'))");
   admin = await createUser(db, "pastor@example.com");
   editor = await createUser(db, "editora@example.com");
   ana = await createUser(db, "ana@example.com");
@@ -63,19 +65,19 @@ beforeAll(async () => {
 
   await q("delete from public.quiz_questions"); // começa sem quiz vindo da importação
   await q(
-    `insert into public.quiz_questions (lesson_id, position, prompt, options, correct_option, explanation) values
-      ($1, 1, 'P1?', '{"A":"um","B":"dois","C":"três"}', 'B', 'Porque dois.'),
-      ($1, 2, 'P2?', '{"A":"um","B":"dois"}', 'A', 'Porque um.'),
-      ($1, 3, 'P3?', '{"A":"um","B":"dois"}', 'B', 'Porque dois de novo.')`,
-    [lessonId],
+    `insert into public.quiz_questions (church_id, lesson_id, position, prompt, options, correct_option, explanation) values
+      ($1, $2, 1, 'P1?', '{"A":"um","B":"dois","C":"três"}', 'B', 'Porque dois.'),
+      ($1, $2, 2, 'P2?', '{"A":"um","B":"dois"}', 'A', 'Porque um.'),
+      ($1, $2, 3, 'P3?', '{"A":"um","B":"dois"}', 'B', 'Porque dois de novo.')`,
+    [church, lessonId],
   );
   // Uma lição rascunho com quiz (o membro não pode ver).
   const [draft] = await q<{ id: string }>(
-    `insert into public.lessons (cycle_id, slug, title, objective, position, status)
-     select cycle_id, 'rascunho-x', 'Rascunho', 'Objetivo', 99, 'draft' from public.lessons limit 1 returning id`,
+    `insert into public.lessons (church_id, cycle_id, slug, title, objective, position, status)
+     select church_id, cycle_id, 'rascunho-x', 'Rascunho', 'Objetivo', 99, 'draft' from public.lessons limit 1 returning id`,
   );
   draftLessonId = draft.id;
-  await q(`insert into public.quiz_questions (lesson_id, position, prompt, options, correct_option) values ($1, 1, 'X?', '{"A":"a","B":"b"}', 'A')`, [draftLessonId]);
+  await q(`insert into public.quiz_questions (church_id, lesson_id, position, prompt, options, correct_option) values ($1, $2, 1, 'X?', '{"A":"a","B":"b"}', 'A')`, [church, draftLessonId]);
 });
 afterAll(async () => {
   await db.close();
@@ -166,10 +168,10 @@ describe("quiz ligado", () => {
 
   it("um quiz de 1 ou 2 perguntas exige acertar todas; o de 3, dois", async () => {
     await q("delete from public.quiz_questions where lesson_id = $1 and position > 1", [noQuizLessonId]);
-    await q(`insert into public.quiz_questions (lesson_id, position, prompt, options, correct_option) values ($1, 1, 'Q?', '{"A":"a","B":"b"}', 'A')`, [noQuizLessonId]);
+    await q(`insert into public.quiz_questions (church_id, lesson_id, position, prompt, options, correct_option) values ($1, $2, 1, 'Q?', '{"A":"a","B":"b"}', 'A')`, [church, noQuizLessonId]);
     expect(await submit(beto, { "1": "B" }, noQuizLessonId)).toMatchObject({ passed: false });
     expect(await submit(beto, { "1": "A" }, noQuizLessonId)).toMatchObject({ passed: true });
-    await q(`insert into public.quiz_questions (lesson_id, position, prompt, options, correct_option) values ($1, 2, 'R?', '{"A":"a","B":"b"}', 'A')`, [noQuizLessonId]);
+    await q(`insert into public.quiz_questions (church_id, lesson_id, position, prompt, options, correct_option) values ($1, $2, 2, 'R?', '{"A":"a","B":"b"}', 'A')`, [church, noQuizLessonId]);
     expect(await submit(beto, { "1": "A", "2": "B" }, noQuizLessonId)).toMatchObject({ correct_count: 1, total: 2, passed: false });
     await q("delete from public.quiz_questions where lesson_id = $1", [noQuizLessonId]);
   });

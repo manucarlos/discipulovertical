@@ -28,7 +28,7 @@ const q = <T = Record<string, unknown>>(sql: string, params: unknown[] = []) =>
 
 beforeAll(async () => {
   db = await createDb();
-  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true }));
+  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true, churchSlug: "vertical-church" }));
   member = await createUser(db, "membro@example.com");
   other = await createUser(db, "outro@example.com");
   lesson1 = (await q<{ id: string }>("select id from public.lessons where slug = 'c1-l01'"))[0].id;

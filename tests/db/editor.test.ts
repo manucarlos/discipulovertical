@@ -9,6 +9,7 @@ import { asUser, createDb, createUser } from "./harness";
 const cycles = parseHandoff(fs.readFileSync(path.resolve(__dirname, "../../docs/HANDOFF.md"), "utf8"));
 
 let db: PGlite;
+let church: string;
 let admin: string;
 let editor: string;
 let member: string;
@@ -64,8 +65,9 @@ async function save(
 
 beforeAll(async () => {
   db = await createDb();
-  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1)));
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'pastor@example.com')");
+  church = (await q<{ id: string }>("select id from public.churches where slug = 'vertical-church'"))[0].id;
+  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { churchSlug: "vertical-church" }));
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', (select id from public.churches where slug = 'vertical-church'))");
   admin = await createUser(db, "pastor@example.com");
   editor = await createUser(db, "editor@example.com");
   member = await createUser(db, "membro@example.com");
@@ -173,8 +175,8 @@ describe("save_lesson", () => {
 describe("publicação: barreira final", () => {
   it("bloqueia [PREENCHER] escondido no conteúdo, mesmo com has_placeholders falso", async () => {
     const v = await q<{ id: string }>(
-      "insert into public.lesson_versions (lesson_id, content) values ($1, $2::jsonb) returning id",
-      [ids["c1-l05"], JSON.stringify(content("**[PREENCHER: escondido]**"))],
+      "insert into public.lesson_versions (church_id, lesson_id, content) values ($1, $2, $3::jsonb) returning id",
+      [church, ids["c1-l05"], JSON.stringify(content("**[PREENCHER: escondido]**"))],
     );
     await q("update public.lessons set current_version_id = $1, has_placeholders = false where slug = 'c1-l05'", [v[0].id]);
     await expect(

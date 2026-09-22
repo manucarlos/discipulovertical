@@ -2,11 +2,13 @@
  * Lê a Parte 2 do handoff e gera o SQL de importação das lições (como rascunho).
  *
  * Uso:
- *   npm run import:sql -- --igreja "Nome da igreja"               -> todos os ciclos
- *   npm run import:sql -- --igreja "Nome da igreja" --cycle 1      -> só o Ciclo 1
- *   npm run import:sql -- --igreja "Nome da igreja" --publish      -> publica as lições sem [PREENCHER] (SÓ para homologação)
+ *   npm run import:sql -- --igreja "Nome da igreja" --slug igreja-exemplo               -> todos os ciclos
+ *   npm run import:sql -- --igreja "Nome da igreja" --slug igreja-exemplo --cycle 1      -> só o Ciclo 1
+ *   npm run import:sql -- --igreja "Nome da igreja" --slug igreja-exemplo --publish      -> publica sem [PREENCHER] (SÓ homologação)
  *
  * --igreja é obrigatório: o nome entra no lugar do marcador {{igreja}} dos textos das lições.
+ * --slug é obrigatório (banco único multi-igreja, migração 0026): a igreja já precisa existir em `churches`
+ * com esse slug (Administração cria a igreja antes de importar o conteúdo dela).
  *
  * O arquivo sai em content/generated/. Cole o conteúdo no SQL Editor do Supabase e clique em Run.
  * Não usa nenhuma chave: o SQL Editor já roda com permissão de administrador do banco.
@@ -42,8 +44,14 @@ try {
     process.exit(1);
   }
 
+  const churchSlug = value("slug")?.trim();
+  if (!churchSlug) {
+    console.error('Informe o slug da igreja (já cadastrada em `churches`). Exemplo: npm run import:sql -- --igreja "Nome" --slug igreja-exemplo');
+    process.exit(1);
+  }
+
   const publish = flag("publish");
-  const sql = buildImportSql(cycles, { publish, churchName });
+  const sql = buildImportSql(cycles, { publish, churchName, churchSlug });
 
   const outDir = path.join(root, "content", "generated");
   fs.mkdirSync(outDir, { recursive: true });

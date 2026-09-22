@@ -23,7 +23,7 @@ afterAll(async () => {
 
 describe("importação como rascunho", () => {
   beforeAll(async () => {
-    await db.exec(buildImportSql(cycles));
+    await db.exec(buildImportSql(cycles, { churchSlug: "vertical-church" }));
   });
 
   it("cria 3 ciclos, 28 lições, 28 versões e 84 perguntas de quiz", async () => {
@@ -86,7 +86,7 @@ describe("importação como rascunho", () => {
 
   it("repetir a importação não duplica nada e não sobrescreve edição do pastor", async () => {
     await q("update public.lessons set title = 'Título editado pelo pastor' where slug = 'c1-l01'");
-    await db.exec(buildImportSql(cycles));
+    await db.exec(buildImportSql(cycles, { churchSlug: "vertical-church" }));
     expect(await count("lessons")).toBe(28);
     expect(await count("lesson_versions")).toBe(28);
     expect(await count("quiz_questions")).toBe(84);
@@ -104,7 +104,7 @@ describe("importação com --publish (só homologação)", () => {
   let db2: PGlite;
   beforeAll(async () => {
     db2 = await createDb();
-    await db2.exec(buildImportSql(cycles, { publish: true }));
+    await db2.exec(buildImportSql(cycles, { publish: true, churchSlug: "vertical-church" }));
   });
   afterAll(async () => {
     await db2.close();
@@ -125,6 +125,8 @@ describe("importação com --publish (só homologação)", () => {
       "insert into auth.users (email, email_confirmed_at) values ('m@example.com', now()) returning id",
     );
     const member = ids[0].id;
+    // Não passou por createUser() (harness.ts): entra sem igreja. Como o resto do teste é da vertical-church, entra nela.
+    await db2.query("update public.profiles set church_id = (select id from public.churches where slug = 'vertical-church') where id = $1", [member]);
     await db2.query("select set_config('request.jwt.claim.sub', $1, false)", [member]);
     await db2.exec("set role authenticated");
     try {

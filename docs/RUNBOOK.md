@@ -57,7 +57,7 @@ Os testes incluem as **regras de acesso do banco** (quem pode ler e escrever o q
 
 ## 6. Primeiro administrador e promoções
 
-- O primeiro Admin é definido pelo e-mail em `app_config` antes do primeiro login (CONTAS.md, Fase 3).
+- O primeiro Admin é definido pelo e-mail em `church_admins_pending` antes do primeiro login (CONTAS.md, Fase 3) — a linha aponta para a igreja (`church_id`), já que o banco é único para todas (docs/EXPANSAO.md).
 - Depois disso, só um Admin promove outro (tela de usuários, a construir). Toda promoção fica no log de auditoria.
 - Se ninguém for Admin (por exemplo, entrou antes de configurar), rode no SQL Editor:
 

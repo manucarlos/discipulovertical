@@ -870,7 +870,7 @@ describe("Claudião, administrador: liga e desliga recursos", () => {
     const asMember = await loadSettings(client());
     expect(asMember.flags.quiz).toBe(true);
     expect(asMember.flags.groups).toBe(false);
-    expect(asMember.church).toEqual({ name: "Igreja Vertical", contactEmail: "contato@igreja.org" });
+    expect(asMember.church).toMatchObject({ name: "Igreja Vertical", contactEmail: "contato@igreja.org" });
 
     await world.login(CLAUDIAO);
     expect((await visit(SettingsPage)).html).toMatch(/name="feature_quiz"[^>]*checked/);
@@ -1106,7 +1106,7 @@ describe("Cuidado: o Claudio cuida do Claudinho, e o alerta aparece quando ele p
 
   it("a reflexão do Claudinho aparece para o cuidador dele, e a consulta fica registrada", async () => {
     await world.sql(
-      "insert into public.reflections (user_id, lesson_id, body) select $1, id, 'Estou cansado, mas firme.' from public.lessons where slug = 'c1-l02'",
+      "insert into public.reflections (church_id, user_id, lesson_id, body) select (select id from public.churches where slug = 'vertical-church'), $1, id, 'Estou cansado, mas firme.' from public.lessons where slug = 'c1-l02'",
       [CLAUDINHO.id],
     );
     await world.login(CLAUDIO);
@@ -1224,7 +1224,10 @@ describe("Lembretes por e-mail: o Claudinho sumiu por alguns dias", () => {
 
   it("o Claudião prepara o envio: segredo no banco, recurso ligado e um texto ajustado", async () => {
     await world.sql("insert into public.app_config (key, value) values ('cron_secret_hash', encode(sha256(convert_to($1, 'UTF8')), 'hex'))", [SECRET]);
-    await world.sql("insert into public.consents (user_id, purpose, term_version) values ($1, 'email_reminders', 'v1') on conflict do nothing", [CLAUDINHO.id]);
+    await world.sql(
+      "insert into public.consents (church_id, user_id, purpose, term_version) values ((select id from public.churches where slug = 'vertical-church'), $1, 'email_reminders', 'v1') on conflict do nothing",
+      [CLAUDINHO.id],
+    );
     await world.sql("update public.consents set revoked_at = null where user_id = $1 and purpose = 'email_reminders'", [CLAUDINHO.id]);
 
     await world.login(CLAUDIAO);
@@ -1526,7 +1529,10 @@ describe("Encerramento e certificado: o Claudio recebe o do Ciclo 1", () => {
   });
 
   it("o Claudio recebe o e-mail de certificado pronto, com o link da lista de certificados", async () => {
-    await world.sql("insert into public.consents (user_id, purpose, term_version) values ($1, 'email_reminders', 'v9')", [CLAUDIO.id]);
+    await world.sql(
+      "insert into public.consents (church_id, user_id, purpose, term_version) values ((select id from public.churches where slug = 'vertical-church'), $1, 'email_reminders', 'v9')",
+      [CLAUDIO.id],
+    );
     await world.login(CLAUDIAO);
     await outcome(() => saveSettings(form({ church_name: "Vertical Church", contact_email: "", feature_closures: true, feature_certificates: true, feature_reminders: true })));
     const fake = new FakeEmailProvider();
@@ -1686,8 +1692,8 @@ describe("Grupo de Discipulado: o Claudio conduz, o Claudinho participa", () => 
 
   const libraryLesson = async (slug: string, title: string, position: number, sensitive: boolean, guide: string[]) => {
     const [l] = await world.sql<{ id: string }>(
-      `insert into public.lessons (kind, cycle_id, slug, title, objective, position, status, sensitive, themes, estimated_minutes)
-       values ('library', null, $1, $2, 'Objetivo da lição', $3, 'draft', $4, '{Caminhada cristã}', 8) returning id`,
+      `insert into public.lessons (church_id, kind, cycle_id, slug, title, objective, position, status, sensitive, themes, estimated_minutes)
+       values ((select id from public.churches where slug = 'vertical-church'), 'library', null, $1, $2, 'Objetivo da lição', $3, 'draft', $4, '{Caminhada cristã}', 8) returning id`,
       [slug, title, position, sensitive],
     );
     const content = {
@@ -1696,7 +1702,10 @@ describe("Grupo de Discipulado: o Claudio conduz, o Claudinho participa", () => 
       reflection: `O que ${title} diz para você?`,
       guide,
     };
-    const [v] = await world.sql<{ id: string }>("insert into public.lesson_versions (lesson_id, content) values ($1, $2::jsonb) returning id", [l.id, JSON.stringify(content)]);
+    const [v] = await world.sql<{ id: string }>(
+      "insert into public.lesson_versions (church_id, lesson_id, content) values ((select id from public.churches where slug = 'vertical-church'), $1, $2::jsonb) returning id",
+      [l.id, JSON.stringify(content)],
+    );
     await world.sql("update public.lessons set current_version_id = $2, status = 'published' where id = $1", [l.id, v.id]);
     lessonIds.push(l.id);
   };

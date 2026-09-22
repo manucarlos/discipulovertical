@@ -7,11 +7,11 @@ O código do MVP está pronto e testado, mas **nunca rodou contra um Supabase re
 ## Fase A: contas e banco (guia em [CONTAS.md](CONTAS.md))
 
 - [ ] Contas criadas: GitHub, Supabase (produção e homologação), Google Cloud, Vercel. Verificação em duas etapas ligada em todas.
-- [ ] As **25 migrações** aplicadas, em ordem, em cada projeto Supabase (CONTAS.md, Fase 3, com o arquivo `banco-completo.sql`). Nenhuma deu erro.
-- [ ] Primeiro administrador definido **antes** do primeiro login (`app_config`).
+- [ ] As **26 migrações** aplicadas, em ordem, em cada projeto Supabase (CONTAS.md, Fase 3, com o arquivo `banco-completo.sql`). Nenhuma deu erro.
+- [ ] Primeiro administrador definido **antes** do primeiro login (`church_admins_pending`).
 - [ ] Login com Google ligado ao Supabase e o app do Google **publicado** ("Em produção").
 - [ ] `.env.local` preenchido; `npm run dev` abre em <http://localhost:3000>.
-- [ ] Conteúdo importado (`npm run import:sql -- --igreja "Nome da igreja"`) e colado no SQL Editor.
+- [ ] Conteúdo importado (`npm run import:sql -- --igreja "Nome da igreja" --slug vertical-church`) e colado no SQL Editor.
 
 ## Fase B: conferir no ambiente de verdade
 

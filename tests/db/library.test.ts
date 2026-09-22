@@ -17,7 +17,7 @@ afterAll(async () => {
 
 describe("importação da biblioteca (rascunho)", () => {
   it("cria as 28 lições da biblioteca e as 6 trilhas, tudo como rascunho, sem ciclo", async () => {
-    await db.exec(buildLibrarySql(LIBRARY_LESSONS, LIBRARY_TRACKS));
+    await db.exec(buildLibrarySql(LIBRARY_LESSONS, LIBRARY_TRACKS, { churchSlug: "vertical-church" }));
     const lessons = await q<{ slug: string; kind: string; status: string; cycle_id: string | null; sensitive: boolean; has_placeholders: boolean; position: number }>(
       "select slug, kind, status, cycle_id, sensitive, has_placeholders, position from public.lessons order by position",
     );
@@ -62,7 +62,7 @@ describe("importação da biblioteca (rascunho)", () => {
 
   it("é seguro repetir: nada é duplicado nem sobrescrito", async () => {
     await q("update public.lessons set title = 'Título editado pelo pastor' where slug = 'lib-01-andar-com-deus'");
-    await db.exec(buildLibrarySql(LIBRARY_LESSONS, LIBRARY_TRACKS));
+    await db.exec(buildLibrarySql(LIBRARY_LESSONS, LIBRARY_TRACKS, { churchSlug: "vertical-church" }));
     expect((await q("select 1 from public.lessons")).length).toBe(28);
     expect((await q("select 1 from public.tracks")).length).toBe(6);
     expect((await q<{ title: string }>("select title from public.lessons where slug = 'lib-01-andar-com-deus'"))[0].title).toBe("Título editado pelo pastor");
@@ -82,7 +82,7 @@ describe("importação com --publish (homologação)", () => {
   it("publica só o que não tem [PREENCHER]; trilhas com lição bloqueada continuam rascunho", async () => {
     const other = await createDb();
     try {
-      await other.exec(buildLibrarySql(LIBRARY_LESSONS, LIBRARY_TRACKS, { publish: true }));
+      await other.exec(buildLibrarySql(LIBRARY_LESSONS, LIBRARY_TRACKS, { publish: true, churchSlug: "vertical-church" }));
       const published = await other.query<{ position: number }>("select position from public.lessons where status = 'published' order by position");
       expect(published.rows).toHaveLength(28 - 9);
       const tracks = await other.query<{ title: string; status: string }>("select title, status from public.tracks order by created_at");

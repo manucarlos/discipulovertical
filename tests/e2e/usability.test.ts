@@ -273,14 +273,17 @@ describe("Cuidado: telas do cuidador e do administrador", () => {
     // Claudio (que virou editor acima) passa a cuidador do Claudinho; o Claudinho está parado há 30 dias.
     await world.sql("update public.app_settings set value = 'true'::jsonb where key in ('feature.caregivers', 'feature.reflections')");
     await world.sql("update public.profiles set role = 'caregiver' where id = $1", [CLAUDIO.id]);
-    await world.sql("insert into public.care_assignments (member_id, caregiver_id) values ($1, $2)", [CLAUDINHO.id, CLAUDIO.id]);
+    await world.sql(
+      "insert into public.care_assignments (church_id, member_id, caregiver_id) values ((select id from public.churches where slug = 'vertical-church'), $1, $2)",
+      [CLAUDINHO.id, CLAUDIO.id],
+    );
     await world.sql("update public.lesson_progress set updated_at = updated_at - interval '30 days', started_at = started_at - interval '30 days' where user_id = $1", [CLAUDINHO.id]);
     await world.sql(
-      "insert into public.care_notes (member_id, author_id, body) values ($1, $2, 'Liguei na terça; pediu para ligar de novo.')",
+      "insert into public.care_notes (church_id, member_id, author_id, body) values ((select id from public.churches where slug = 'vertical-church'), $1, $2, 'Liguei na terça; pediu para ligar de novo.')",
       [CLAUDINHO.id, CLAUDIO.id],
     );
     await world.sql(
-      "insert into public.reflections (user_id, lesson_id, body) select $1, id, 'Uma reflexão.' from public.lessons where slug = 'c1-l01'",
+      "insert into public.reflections (church_id, user_id, lesson_id, body) select (select id from public.churches where slug = 'vertical-church'), $1, id, 'Uma reflexão.' from public.lessons where slug = 'c1-l01'",
       [CLAUDINHO.id],
     );
 
@@ -311,12 +314,15 @@ describe("Encerramento e certificado: telas do membro, do administrador e a veri
     await world.sql("update public.app_settings set value = 'true'::jsonb where key in ('feature.closures', 'feature.certificates')");
     const [cycle] = await world.sql<{ id: string }>("select id from public.cycles where slug = 'c1'");
     const [event] = await world.sql<{ id: string }>(
-      "insert into public.closure_events (cycle_id, title, kind, starts_at, location) values ($1, 'Culto de boas-vindas', 'Culto', now() + interval '7 days', 'Templo') returning id",
+      "insert into public.closure_events (church_id, cycle_id, title, kind, starts_at, location) values ((select id from public.churches where slug = 'vertical-church'), $1, 'Culto de boas-vindas', 'Culto', now() + interval '7 days', 'Templo') returning id",
       [cycle.id],
     );
-    await world.sql("insert into public.closure_attendance (event_id, user_id, present) values ($1, $2, true)", [event.id, CLAUDIO.id]);
     await world.sql(
-      "insert into public.certificates (user_id, cycle_id, event_id, holder_name, code) values ($1, $2, $3, 'Claudio', 'VC-1A2B-3C4D-5E6F')",
+      "insert into public.closure_attendance (church_id, event_id, user_id, present) values ((select id from public.churches where slug = 'vertical-church'), $1, $2, true)",
+      [event.id, CLAUDIO.id],
+    );
+    await world.sql(
+      "insert into public.certificates (church_id, user_id, cycle_id, event_id, holder_name, code) values ((select id from public.churches where slug = 'vertical-church'), $1, $2, $3, 'Claudio', 'VC-1A2B-3C4D-5E6F')",
       [CLAUDIO.id, cycle.id, event.id],
     );
 
@@ -355,32 +361,54 @@ describe("Grupo de Discipulado: todas as telas passam na auditoria de acessibili
   it("discípulo, discipulador e Admin", async () => {
     await world.sql("update public.app_settings set value = 'true'::jsonb where key = 'feature.groups'");
     await world.sql("update public.profiles set is_discipler = true where id = $1", [CLAUDIO.id]);
+    const CHURCH = "(select id from public.churches where slug = 'vertical-church')";
     const mk = async (slug: string, title: string, position: number, sensitive: boolean) => {
       const [l] = await world.sql<{ id: string }>(
-        "insert into public.lessons (kind, cycle_id, slug, title, objective, position, status, sensitive, themes) values ('library', null, $1, $2, 'Objetivo', $3, 'draft', $4, '{Tema}') returning id",
+        `insert into public.lessons (church_id, kind, cycle_id, slug, title, objective, position, status, sensitive, themes) values (${CHURCH}, 'library', null, $1, $2, 'Objetivo', $3, 'draft', $4, '{Tema}') returning id`,
         [slug, title, position, sensitive],
       );
       const content = { blocks: [{ type: "paragraph", text: `Texto de ${title}.` }], practice: { title: "Desafio", items: ["Ore hoje."] }, reflection: "O que Deus falou?", guide: ["Pergunta do encontro?"] };
-      const [v] = await world.sql<{ id: string }>("insert into public.lesson_versions (lesson_id, content) values ($1, $2::jsonb) returning id", [l.id, JSON.stringify(content)]);
+      const [v] = await world.sql<{ id: string }>(
+        `insert into public.lesson_versions (church_id, lesson_id, content) values (${CHURCH}, $1, $2::jsonb) returning id`,
+        [l.id, JSON.stringify(content)],
+      );
       await world.sql("update public.lessons set current_version_id = $2, status = 'published' where id = $1", [l.id, v.id]);
       return l.id;
     };
     const l1 = await mk("lib-a", "Lição A", 1, true);
     const l2 = await mk("lib-b", "Lição B", 2, false);
-    const [track] = await world.sql<{ id: string }>("insert into public.tracks (title) values ('Trilha A') returning id");
-    await world.sql("insert into public.track_days (track_id, day_number, lesson_id) values ($1, 1, $2), ($1, 2, $3)", [track.id, l1, l2]);
+    const [track] = await world.sql<{ id: string }>(`insert into public.tracks (church_id, title) values (${CHURCH}, 'Trilha A') returning id`);
+    await world.sql(
+      `insert into public.track_days (church_id, track_id, day_number, lesson_id) values (${CHURCH}, $1, 1, $2), (${CHURCH}, $1, 2, $3)`,
+      [track.id, l1, l2],
+    );
     await world.sql("update public.tracks set status = 'published' where id = $1", [track.id]);
     const [group] = await world.sql<{ id: string; invite_code: string }>(
-      "insert into public.discipleship_groups (name, discipler_id, track_id, start_date, active_weekdays, release_hour, meeting_weekday, invite_code) values ('Grupo A', $1, $2, current_date - 3, '{1,2,3,4,5,6,7}', 0, 6, 'G-AAAAAAAA') returning id, invite_code",
+      `insert into public.discipleship_groups (church_id, name, discipler_id, track_id, start_date, active_weekdays, release_hour, meeting_weekday, invite_code) values (${CHURCH}, 'Grupo A', $1, $2, current_date - 3, '{1,2,3,4,5,6,7}', 0, 6, 'G-AAAAAAAA') returning id, invite_code`,
       [CLAUDIO.id, track.id],
     );
-    await world.sql("insert into public.group_members (group_id, user_id, consent_version, joined_at) values ($1, $2, 'v1', now() - interval '3 days')", [group.id, CLAUDINHO.id]);
-    await world.sql("insert into public.group_progress (user_id, group_id, lesson_id, completed_at) values ($1, $2, $3, now())", [CLAUDINHO.id, group.id, l1]);
-    await world.sql("insert into public.group_reflections (user_id, group_id, lesson_id, body, shared) values ($1, $2, $3, 'Uma reflexão.', true)", [CLAUDINHO.id, group.id, l1]);
-    await world.sql("insert into public.group_meetings (group_id, meeting_date, notes, attendees) values ($1, current_date, 'Notas.', $2)", [group.id, [CLAUDINHO.id]]);
-    await world.sql("insert into public.group_pauses (group_id, from_date, until_date) values ($1, current_date + 5, current_date + 6)", [group.id]);
     await world.sql(
-      "insert into public.help_requests (user_id, group_id, topic, message, destination) values ($1, $2, 'Tema', 'Preciso de ajuda.', 'discipler'), ($1, $2, 'Direto', 'Assunto delicado.', 'pastoral')",
+      `insert into public.group_members (church_id, group_id, user_id, consent_version, joined_at) values (${CHURCH}, $1, $2, 'v1', now() - interval '3 days')`,
+      [group.id, CLAUDINHO.id],
+    );
+    await world.sql(
+      `insert into public.group_progress (church_id, user_id, group_id, lesson_id, completed_at) values (${CHURCH}, $1, $2, $3, now())`,
+      [CLAUDINHO.id, group.id, l1],
+    );
+    await world.sql(
+      `insert into public.group_reflections (church_id, user_id, group_id, lesson_id, body, shared) values (${CHURCH}, $1, $2, $3, 'Uma reflexão.', true)`,
+      [CLAUDINHO.id, group.id, l1],
+    );
+    await world.sql(
+      `insert into public.group_meetings (church_id, group_id, meeting_date, notes, attendees) values (${CHURCH}, $1, current_date, 'Notas.', $2)`,
+      [group.id, [CLAUDINHO.id]],
+    );
+    await world.sql(
+      `insert into public.group_pauses (church_id, group_id, from_date, until_date) values (${CHURCH}, $1, current_date + 5, current_date + 6)`,
+      [group.id],
+    );
+    await world.sql(
+      `insert into public.help_requests (church_id, user_id, group_id, topic, message, destination) values (${CHURCH}, $1, $2, 'Tema', 'Preciso de ajuda.', 'discipler'), (${CHURCH}, $1, $2, 'Direto', 'Assunto delicado.', 'pastoral')`,
       [CLAUDINHO.id, group.id],
     );
     await world.sql("update public.help_requests set escalated_at = now() where destination = 'discipler'");

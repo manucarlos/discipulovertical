@@ -21,7 +21,8 @@ Este é o mapa único do que sobra. Em uma frase: **todo o código do plano (MVP
 | Entrar com e-mail | Login | Entrar com e-mail | Ativar o provedor de e-mail no Supabase |
 | **Formulário de feedback do piloto** (público, sem login; roteiro em PDF para o testador) | `/feedback`, Administração > Feedback | Formulário de feedback do piloto | Ligar quando o piloto começar e enviar o link e o roteiro (`docs/ROTEIRO_TESTADOR.pdf`) aos testadores; desligar ao fim |
 | **Marca da igreja** (cores e logotipo pelo painel; o site calcula o resto e só aceita o que for legível) | Administração > Marca | sempre ligado (só Admin) | Nada. Guia em [MARCA.md](MARCA.md) |
-| **Kit de instalação** para uma igreja nova (banco, identidade, conteúdo, variáveis e roteiro personalizado) | `npm run kit -- exemplo` | não se aplica | Preencher `churches/<igreja>.json` (só o exemplo vai para o GitHub). Ver [EXPANSAO.md](EXPANSAO.md) |
+| **Banco único multi-igreja**: cada igreja isolada por `church_id` no mesmo banco (Fase 1); Super Admin acima de todas | tudo (RLS) | não se aplica | Ver [EXPANSAO.md](EXPANSAO.md) — a Fase 2 (as funções de escrita, uma a uma) ainda não começou |
+| **Kit de cadastro** de uma igreja nova no banco único (identidade e conteúdo, com roteiro personalizado) | `npm run kit -- exemplo` | não se aplica | Preencher `churches/<igreja>.json` (só o exemplo vai para o GitHub). Ver [EXPANSAO.md](EXPANSAO.md) |
 | **Grupo de Discipulado** (grupos, calendário, painel, guia, presença, pedidos de ajuda) | Meu grupo, Discipulado, Admin > Grupos | Grupo de Discipulado | Importar a biblioteca ([CONTAS.md](CONTAS.md), Fase 7b), revisar as lições, marcar os discipuladores |
 | Segurança do navegador (CSP) | todas as páginas | sempre ligado | Nada (já conferido num build de produção) |
 
@@ -32,7 +33,7 @@ Nenhum destes itens pode ser feito por mim: envolvem contas em seu nome, pagamen
 | # | Item | Quem | Por quê |
 | --- | --- | --- | --- |
 | 1 | Criar as contas: GitHub, Supabase, Google Cloud, Vercel (e Resend, se for usar e-mail) | Pastor | São contas suas, com a sua identidade e, às vezes, cartão. Guia em [CONTAS.md](CONTAS.md). **Nunca cole senhas ou chaves no chat** |
-| 2 | Aplicar as 25 migrações e importar o conteúdo (Ciclos e biblioteca) | Pastor, com o guia | Um arquivo só (`banco-completo.sql`) cola no SQL Editor do seu Supabase; o guia tem o passo a passo |
+| 2 | Aplicar as 26 migrações e importar o conteúdo (Ciclos e biblioteca) | Pastor, com o guia | Um arquivo só (`banco-completo.sql`) cola no SQL Editor do seu Supabase; o guia tem o passo a passo |
 | 3 | **Autorização por escrito** para a NVI e a NTLH | Igreja | Sem ela, a plataforma só mostra referências e links (é o que faz hoje) |
 | 4 | **Revisão jurídica** dos Termos e da Política (as minutas estão em `/termos` e `/privacidade`) | Advogado da igreja | Convicção religiosa é dado sensível na LGPD. Trechos `[A PREENCHER PELA IGREJA]` não foram inventados |
 | 5 | Designar o **encarregado de dados (DPO)** e um segundo administrador de emergência | Igreja | Exigência da LGPD e do handoff |
@@ -51,7 +52,7 @@ Nenhum destes itens pode ser feito por mim: envolvem contas em seu nome, pagamen
 | --- | --- |
 | Lembretes por **WhatsApp** (RF-17) | Exige contrato com um provedor oficial (conta comercial e modelos de mensagem aprovados), decisão de custo e novo consentimento. O consentimento por WhatsApp já é gravado, e o desenho de envio é o mesmo do e-mail (`src/lib/email`, `src/lib/reminders`): a interface de envio é trocável |
 | **Vários campi** (RF-29) | Decisão de produto do handoff (V3): cada campus teria dados, cuidadores e conteúdo próprios. Mexe em todas as regras de acesso; só faz sentido com um segundo campus de verdade. Ver também a expansão para outras igrejas em [EXPANSAO.md](EXPANSAO.md) |
-| **Oferecer a outras igrejas**: decisões de negócio e jurídicas (contrato e LGPD, plano pago da hospedagem, licença do conteúdo e do texto bíblico, login do Google por igreja, preço e suporte), automação da criação dos projetos e plataforma única (multi-tenant) | O preparo técnico está pronto (nome, marca e kit de instalação). As decisões ficam registradas para depois em [EXPANSAO.md](EXPANSAO.md), seção 4 |
+| **Oferecer a outras igrejas de verdade**: decisões de negócio e jurídicas (contrato e LGPD, plano pago da hospedagem, licença do conteúdo e do texto bíblico, login do Google por igreja, preço e suporte), como uma visita sem login sabe "qual igreja", e a Fase 2 (as ~80 funções de escrita, uma a uma) | O banco único está pronto na Fase 1 (isolamento das consultas diretas, comprovado por teste). As decisões e o que falta ficam em [EXPANSAO.md](EXPANSAO.md), seções 3 e 4 |
 | **Ciclo 4** (temas de ministério) | O conteúdo depende dos ministérios da igreja e do resultado do piloto |
 | E-mails do **Grupo de Discipulado** (alerta ao discipulador e resumo semanal do grupo, RG-11) | O alerta aparece no painel do discipulador; o e-mail reaproveita a estrutura de lembretes e fica para depois do piloto dos grupos |
 | Criar lição da biblioteca pela tela | As 28 lições são importadas e editadas no editor; nova lição da biblioteca por tela fica para depois |

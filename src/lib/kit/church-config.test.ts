@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildEnvExample, buildRoteiro, buildSeedSql, validateChurchConfig, type KitFiles } from "./church-config";
+import { buildRoteiro, buildSeedSql, validateChurchConfig, type KitFiles } from "./church-config";
 
 const valid = {
   slug: "igreja-exemplo",
@@ -70,12 +70,12 @@ describe("validateChurchConfig", () => {
 });
 
 describe("buildSeedSql", () => {
-  it("traz o administrador, o nome, o contato, a limpeza da Nossa Igreja e a marca", () => {
+  it("traz a igreja, o administrador pendente, as páginas em branco e a marca", () => {
     const { config, palette } = ok(valid);
     const sql = buildSeedSql(config, palette);
-    expect(sql).toContain("'initial_admin_email', 'pastor@igrejaexemplo.org'");
-    expect(sql).toContain("to_jsonb('Igreja Exemplo'::text) where key = 'church.name'");
-    expect(sql).toContain("update public.church_pages set body = ''");
+    expect(sql).toContain("insert into public.churches (slug, name, contact_email) values ('igreja-exemplo', 'Igreja Exemplo', 'contato@igrejaexemplo.org')");
+    expect(sql).toContain("insert into public.church_admins_pending (email, church_id) values ('pastor@igrejaexemplo.org', v_church)");
+    expect(sql).toContain("insert into public.church_pages (church_id, slug, title, body, position) values");
     expect(sql).toContain("insert into public.church_brand");
     expect(sql.startsWith("--")).toBe(true);
     expect(sql).toContain("begin;");
@@ -90,39 +90,29 @@ describe("buildSeedSql", () => {
   it("aspas no nome viram texto (duplicadas), nunca código", () => {
     const { config, palette } = ok({ slug: "ab", name: "Igreja d'Água'); drop table x; --", initialAdminEmail: "a@b.co" });
     const sql = buildSeedSql(config, palette);
-    expect(sql).toContain("to_jsonb('Igreja d''Água''); drop table x; --'::text)");
+    expect(sql).toContain("'Igreja d''Água''); drop table x; --'");
     expect(sql.split("\n")[0]).not.toContain("\n");
   });
 });
 
-describe("buildEnvExample e buildRoteiro", () => {
-  const files: KitFiles = { banco: "1-banco.sql", identidade: "2-identidade.sql", conteudo: "3-conteudo.sql", biblioteca: "4-biblioteca.sql", variaveis: "variaveis.env" };
-
-  it("as variáveis trazem o nome e o endereço da igreja e avisam da chave secreta", () => {
-    const env = buildEnvExample(ok(valid).config);
-    expect(env).toContain("NEXT_PUBLIC_CHURCH_NAME=Igreja Exemplo");
-    expect(env).toContain("NEXT_PUBLIC_SITE_URL=https://discipulado.igrejaexemplo.org");
-    expect(env).toContain("NUNCA use a chave 'secret'");
-  });
+describe("buildRoteiro", () => {
+  const files: KitFiles = { identidade: "1-identidade.sql", conteudo: "2-conteudo.sql", biblioteca: "3-biblioteca.sql" };
 
   it("o roteiro é personalizado, na ordem certa, e não deixa marcador sem resolver", () => {
     const roteiro = buildRoteiro(ok(valid).config, files);
-    expect(roteiro).toContain("# Instalação: Igreja Exemplo");
+    expect(roteiro).toContain("# Nova igreja: Igreja Exemplo");
     expect(roteiro).toContain("pastor@igrejaexemplo.org");
-    expect(roteiro).toContain("https://discipulado.igrejaexemplo.org/auth/callback");
-    expect(roteiro.indexOf("1-banco.sql")).toBeLessThan(roteiro.indexOf("2-identidade.sql"));
-    expect(roteiro.indexOf("2-identidade.sql")).toBeLessThan(roteiro.indexOf("3-conteudo.sql"));
-    expect(roteiro).toContain("4-biblioteca.sql");
+    expect(roteiro.indexOf("1-identidade.sql")).toBeLessThan(roteiro.indexOf("2-conteudo.sql"));
+    expect(roteiro).toContain("3-biblioteca.sql");
     expect(roteiro).toContain("as cores já foram aplicadas");
     expect(roteiro).not.toContain("{{igreja}}");
     expect(roteiro).toContain("Nunca cole senhas");
   });
 
-  it("sem endereço nem cores, o roteiro pede para preencher depois e não cita a biblioteca", () => {
+  it("sem cores, o roteiro pede para escolhê-las, e sem biblioteca não a cita", () => {
     const { config } = ok({ slug: "ab", name: "Ig", initialAdminEmail: "a@b.co" });
     const roteiro = buildRoteiro(config, { ...files, biblioteca: null });
     expect(roteiro).toContain("escolha as **cores**");
-    expect(roteiro).toContain("https://SEU-SITE");
-    expect(roteiro).not.toContain("4-biblioteca.sql");
+    expect(roteiro).not.toContain("3-biblioteca.sql");
   });
 });

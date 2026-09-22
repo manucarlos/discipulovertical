@@ -12,7 +12,7 @@ const q = <T = Record<string, unknown>>(sql: string, params: unknown[] = []) =>
 
 beforeAll(async () => {
   db = await createDb();
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'pastor@example.com')");
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', (select id from public.churches where slug = 'vertical-church'))");
   admin = await createUser(db, "pastor@example.com");
   editor = await createUser(db, "editora@example.com");
   member = await createUser(db, "membro@example.com");
@@ -29,7 +29,8 @@ describe("app_settings", () => {
     const features = rows.filter((r) => r.key.startsWith("feature."));
     expect(features.length).toBeGreaterThanOrEqual(10);
     expect(features.every((r) => r.value === false)).toBe(true);
-    expect(rows.find((r) => r.key === "church.name")?.value).toBe("Vertical Church");
+    // Nome e contato da igreja não são mais app_settings (migração 0026): viraram colunas de `churches`.
+    expect((await q<{ name: string }>("select name from public.churches where slug = 'vertical-church'"))[0].name).toBe("Vertical Church");
   });
 
   it("qualquer pessoa logada lê; o visitante sem login não", async () => {
@@ -81,16 +82,13 @@ describe("app_settings", () => {
     await expect(
       asUser(db, admin, () => q(`update public.app_settings set value = '"sim"'::jsonb where key = 'feature.groups'`)),
     ).rejects.toThrow(/value_types/);
-    await expect(
-      asUser(db, admin, () => q(`update public.app_settings set value = 'true'::jsonb where key = 'church.name'`)),
-    ).rejects.toThrow(/value_types/);
   });
 
   it("o autor gravado é sempre quem fez a mudança, mesmo que o cliente tente mentir", async () => {
     await asUser(db, admin, () =>
-      q("update public.app_settings set value = '\"Igreja Nova\"'::jsonb, updated_by = $1 where key = 'church.name'", [member]),
+      q("update public.app_settings set value = 'true'::jsonb, updated_by = $1 where key = 'feature.reflections'", [member]),
     );
-    const [row] = await q<{ updated_by: string }>("select updated_by from public.app_settings where key = 'church.name'");
+    const [row] = await q<{ updated_by: string }>("select updated_by from public.app_settings where key = 'feature.reflections'");
     expect(row.updated_by).toBe(admin);
   });
 });

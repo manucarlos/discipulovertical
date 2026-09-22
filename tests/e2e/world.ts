@@ -32,7 +32,8 @@ export class World {
 
   static async create(initialAdminEmail = CLAUDIAO.email): Promise<World> {
     const world = new World(await createDb());
-    await world.sql("insert into public.app_config (key, value) values ('initial_admin_email', $1)", [initialAdminEmail]);
+    const church = (await world.sql<{ id: string }>("select id from public.churches where slug = 'vertical-church'"))[0].id;
+    await world.sql("insert into public.church_admins_pending (email, church_id) values ($1, $2)", [initialAdminEmail, church]);
     return world;
   }
 
@@ -62,7 +63,7 @@ export class World {
   /** O que a pessoa da igreja faz antes: cola no SQL Editor o SQL gerado pelo importador. */
   async importContent(options: { publish?: boolean; cycles?: number[] } = {}) {
     const chosen = options.cycles ? CYCLES.filter((c) => options.cycles!.includes(c.number)) : CYCLES;
-    await this.db.exec(buildImportSql(chosen, { publish: options.publish }));
+    await this.db.exec(buildImportSql(chosen, { publish: options.publish, churchSlug: "vertical-church" }));
   }
 
   /**

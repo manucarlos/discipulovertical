@@ -9,6 +9,7 @@ import { asUser, createDb, createUser } from "./harness";
 const cycles = parseHandoff(fs.readFileSync(path.resolve(__dirname, "../../docs/HANDOFF.md"), "utf8"));
 
 let db: PGlite;
+let church: string;
 let admin: string;
 let editor: string;
 const people: Record<string, string> = {};
@@ -62,18 +63,19 @@ async function person(email: string, name: string, opts: { onboardedDaysAgo?: nu
 async function progress(userId: string, lessonIndex: number, opts: { completed?: boolean; daysAgo: number }) {
   const at = daysAgo(opts.daysAgo);
   await q(
-    `insert into public.lesson_progress (user_id, lesson_id, status, released_at, started_at, completed_at, updated_at)
-     values ($1, $2, $3, $4, $4, $5, $4)`,
-    [userId, lessonIds[lessonIndex], opts.completed ? "completed" : "in_progress", at, opts.completed ? at : null],
+    `insert into public.lesson_progress (church_id, user_id, lesson_id, status, released_at, started_at, completed_at, updated_at)
+     values ($1, $2, $3, $4, $5, $5, $6, $5)`,
+    [church, userId, lessonIds[lessonIndex], opts.completed ? "completed" : "in_progress", at, opts.completed ? at : null],
   );
 }
 
 beforeAll(async () => {
   db = await createDb();
-  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true }));
+  church = (await q<{ id: string }>("select id from public.churches where slug = 'vertical-church'"))[0].id;
+  await db.exec(buildImportSql(cycles.filter((c) => c.number === 1), { publish: true, churchSlug: "vertical-church" }));
   for (const r of await q<{ id: string }>("select id from public.lessons order by position")) lessonIds.push(r.id);
 
-  await q("insert into public.app_config (key, value) values ('initial_admin_email', 'pastor@example.com')");
+  await q("insert into public.church_admins_pending (email, church_id) values ('pastor@example.com', (select id from public.churches where slug = 'vertical-church'))");
   admin = await createUser(db, "pastor@example.com", { name: "Pastor Paulo" });
   editor = await createUser(db, "editora@example.com", { name: "Edna Editora" });
   await q("update public.profiles set onboarded_at = now() where id in ($1, $2)", [admin, editor]);
@@ -185,12 +187,12 @@ describe("admin_member_overview", () => {
   it("quando entra uma lição obrigatória nova, quem tinha concluído tudo deixa de estar 'concluído'", async () => {
     const cycleId = (await q<{ id: string }>("select id from public.cycles where slug = 'c1'"))[0].id;
     const [lesson] = await q<{ id: string }>(
-      "insert into public.lessons (cycle_id, slug, title, position) values ($1, 'c1-l99', 'Nova', 99) returning id",
-      [cycleId],
+      "insert into public.lessons (church_id, cycle_id, slug, title, position) values ($1, $2, 'c1-l99', 'Nova', 99) returning id",
+      [church, cycleId],
     );
     const [version] = await q<{ id: string }>(
-      `insert into public.lesson_versions (lesson_id, content) values ($1, '{"blocks": []}') returning id`,
-      [lesson.id],
+      `insert into public.lesson_versions (church_id, lesson_id, content) values ($1, $2, '{"blocks": []}') returning id`,
+      [church, lesson.id],
     );
     await q("update public.lessons set current_version_id = $1 where id = $2", [version.id, lesson.id]);
     await q("update public.lessons set status = 'published' where slug = 'c1-l99'");
