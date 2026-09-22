@@ -86,6 +86,10 @@ describe("tabelas", () => {
     );
     expect(rows).toEqual([]);
   });
+
+  it("nenhum perfil fica sem igreja (migração 0028: achado em produção, um perfil sem church_id fica invisível até para o Admin — RLS restritiva)", async () => {
+    expect(await q("select 1 from public.profiles where church_id is null")).toEqual([]);
+  });
 });
 
 describe("funções", () => {
