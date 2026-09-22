@@ -32,9 +32,9 @@ const shape = (db: PGlite) =>
     .then((r) => r.rows.map((x) => x.k));
 
 describe("banco completo (um arquivo só para o SQL Editor)", () => {
-  it("tem as 28 migrações em ordem, numa transação, e cada uma com o seu cabeçalho", () => {
+  it("tem as 29 migrações em ordem, numa transação, e cada uma com o seu cabeçalho", () => {
     const sql = buildDbBundle(files);
-    expect(files).toHaveLength(28);
+    expect(files).toHaveLength(29);
     expect(sql).toMatch(/^-- Banco completo[\s\S]*\nbegin;\n/);
     expect(sql).toMatch(/\ncommit;\n/);
     const headers = [...sql.matchAll(/^-- ===== (.+?) =====$/gm)].map((m) => m[1]);

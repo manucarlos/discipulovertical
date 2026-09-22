@@ -29,7 +29,7 @@ Este guia é para o pastor. Você faz cada passo com calma; o Claude acompanha e
 | --- | --- | --- | --- | --- |
 | **1** | Conta no **GitHub** e enviar o código | Guarda o código com segurança e alimenta a Vercel | Grátis | 15 min |
 | **2** | Conta no **Supabase** e criar o projeto | O banco de dados e o login | Grátis (veja o aviso sobre pausa) | 15 min |
-| **3** | Aplicar as **28 migrações** (um arquivo só) | Cria as tabelas e as regras de segurança | Grátis | 10 min |
+| **3** | Aplicar as **29 migrações** (um arquivo só) | Cria as tabelas e as regras de segurança | Grátis | 10 min |
 | **4** | **Google Cloud** e ligar ao Supabase | O botão "Entrar com Google" | Grátis | 30 min |
 | **5** | Testar no seu computador | Ver tudo funcionando antes de publicar | Grátis | 15 min |
 | **6** | **Vercel**: colocar o site no ar | O endereço que as pessoas vão abrir | Grátis (confira os termos do plano) | 20 min |
@@ -48,7 +48,7 @@ O Claude já gerou três arquivos na pasta `content/generated/` do projeto (se n
 
 | Arquivo | O que é | Fase |
 | --- | --- | --- |
-| `banco-completo.sql` | As **28 migrações juntas**: cria todas as tabelas e regras de segurança | 3 |
+| `banco-completo.sql` | As **29 migrações juntas**: cria todas as tabelas e regras de segurança | 3 |
 | `todos-os-ciclos.sql` | Os **Ciclos 1 a 3** (28 lições, em rascunho) | 7 |
 | `biblioteca.sql` | A **biblioteca do Grupo de Discipulado** (28 lições e 6 trilhas, em rascunho) | 7 (só quando for abrir os grupos) |
 
@@ -97,7 +97,7 @@ Para abrir um deles: na pasta do projeto, `content` > `generated`, clique com o 
 
 ---
 
-## Fase 3. Aplicar as 28 migrações (o banco)
+## Fase 3. Aplicar as 29 migrações (o banco)
 
 As migrações criam as tabelas (pessoas, lições, progresso, grupos…) e, principalmente, as **regras de segurança**: quem pode ver o quê. Todas as tabelas já nascem protegidas.
 

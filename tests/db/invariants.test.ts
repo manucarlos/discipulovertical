@@ -90,6 +90,18 @@ describe("tabelas", () => {
   it("nenhum perfil fica sem igreja (migração 0028: achado em produção, um perfil sem church_id fica invisível até para o Admin — RLS restritiva)", async () => {
     expect(await q("select 1 from public.profiles where church_id is null")).toEqual([]);
   });
+
+  it("toda tabela com church_id tem um índice que começa por ela (migração 0029: achado em produção — lentidão)", async () => {
+    const rows = await q<{ relname: string }>(
+      `select c.relname from pg_attribute a
+       join pg_class c on c.oid = a.attrelid
+       join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'public' and c.relkind = 'r' and a.attname = 'church_id' and not a.attisdropped
+         and not exists (select 1 from pg_index i where i.indrelid = c.oid and i.indkey[0] = a.attnum)
+       order by 1`,
+    );
+    expect(rows).toEqual([]);
+  });
 });
 
 describe("funções", () => {
