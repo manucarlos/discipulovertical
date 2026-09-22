@@ -39,7 +39,7 @@ Sem `.env.local` o app abre e mostra avisos de "em preparação"; o login só fu
 | `npm run lint` | Confere o estilo do código |
 | `npm run build` | Versão de produção |
 | `npm run import:sql -- --igreja "Nome" --slug igreja-exemplo` | Gera o SQL de importação das lições (`--cycle 1` para um ciclo só) para a igreja daquele slug (já precisa existir em `churches`). O nome da igreja entra nos textos |
-| `npm run db:bundle` | Junta as 26 migrações num arquivo só para colar no Supabase (`content/generated/banco-completo.sql`) |
+| `npm run db:bundle` | Junta as 27 migrações num arquivo só para colar no Supabase (`content/generated/banco-completo.sql`) |
 | `npm run import:library -- --igreja "Nome" --slug igreja-exemplo` | Gera o SQL da biblioteca do Grupo de Discipulado (28 lições e 6 trilhas, em rascunho) para a igreja daquele slug |
 | `npm run kit -- exemplo` | **Kit de cadastro** de uma igreja nova no banco único: gera a identidade, o conteúdo e um roteiro personalizado a partir de `churches/exemplo.json` |
 | `npm run icons` | Gera as imagens da marca (logo do site, ícones do app e da aba, logo do certificado) a partir de `assets/brand/vertical-church-logo.jpg` |

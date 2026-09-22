@@ -136,7 +136,11 @@ describe("escrever com o church_id de outra igreja é recusado, mesmo à força"
 describe("convite: entrar por um código só leva à igreja daquele código", () => {
   it("quem ainda não tem igreja entra na A pelo convite dela, e nunca enxerga a B", async () => {
     const [{ invite_code: codeA }] = await q<{ invite_code: string }>("select invite_code from public.churches where id = $1", [churchA]);
-    const newcomer = await createUser(db, "novo@example.com", { churchId: null }); // nasce sem igreja, de propósito
+    // Migração 0027: hoje ninguém sai do cadastro sem igreja (entra direto na semente) — o "sem igreja"
+    // continua existindo como estado (claim_church ainda checa), só não é mais alcançável pelo cadastro
+    // comum. Zera à mão para testar claim_church() no que ele foi desenhado para fazer.
+    const newcomer = await createUser(db, "novo@example.com");
+    await q("update public.profiles set church_id = null where id = $1", [newcomer]);
     await asUser(db, newcomer, () => q("select public.claim_church($1)", [codeA]));
     expect((await q<{ church_id: string }>("select church_id from public.profiles where id = $1", [newcomer]))[0].church_id).toBe(churchA);
     expect(await asUser(db, newcomer, () => q("select 1 from public.lessons where id = $1", [lessonB]))).toEqual([]);

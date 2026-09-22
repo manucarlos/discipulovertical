@@ -61,12 +61,14 @@ export async function createDb(): Promise<PGlite> {
  *
  * `churchId` e `role`: atalho de teste (banco único multi-igreja, migração 0026). Grava direto no perfil, sem
  * passar pela cerimônia de convite/administrador pendente — quem testa especificamente essa cerimônia usa
- * `church_admins_pending` ou `claim_church()` de propósito. Sem `churchId` (omitido/undefined), a pessoa
- * entra na igreja semente (`vertical-church`, criada pela própria migração 0026): reflete o piloto de hoje
- * (uma igreja só) e evita que cada teste precise passar `churchId` toda vez. Com `churchId: null`
- * (explícito), fica mesmo sem igreja — para quem testa o "antes de entrar" de propósito (convite,
- * administrador pendente). Quem testa isolamento entre DUAS igrejas usa `createChurch()` e passa `churchId`
- * explicitamente (ver tests/db/multi-tenant.test.ts).
+ * `church_admins_pending` de propósito. Sem `churchId` (omitido/undefined), a pessoa entra na igreja semente
+ * (`vertical-church`) e evita que cada teste precise passar `churchId` toda vez — isso agora é também o
+ * comportamento REAL do banco (migração 0027: `handle_new_user`/`handle_user_confirmed` já fazem esse
+ * default sozinhos, achado só ao testar contra produção; ver tests/db/signup.test.ts, que testa esse caminho
+ * SEM passar por este atalho, de propósito). Com `churchId: null` (explícito), fica mesmo sem igreja — hoje
+ * um estado que só existe artificialmente em teste (o gatilho real nunca mais deixa ninguém assim). Quem
+ * testa isolamento entre DUAS igrejas usa `createChurch()` e passa `churchId` explicitamente (ver
+ * tests/db/multi-tenant.test.ts).
  */
 export async function createUser(
   db: PGlite,
