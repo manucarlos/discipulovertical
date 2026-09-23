@@ -77,6 +77,7 @@ import CareAdminPage from "@/app/admin/cuidado/page";
 import { changeRole } from "@/app/admin/pessoas/actions";
 import { MemberHeader } from "@/components/member-header";
 import { AdminHeader } from "@/components/admin/admin-header";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { auditHtml } from "./a11y";
 import { CLAUDIAO, CLAUDINHO, CLAUDIO, form, outcome, visit, World, type Visit } from "./world";
@@ -207,8 +208,8 @@ describe("Claudinho, membro novo: cada tela que ele vê", () => {
     for (const [name, html] of [
       ["cabeçalho do membro", renderToStaticMarkup(MemberHeader({ isStaff: false }))],
       ["cabeçalho do membro (equipe)", renderToStaticMarkup(MemberHeader({ isStaff: true }))],
-      ["cabeçalho do administrador", renderToStaticMarkup(AdminHeader({ role: "admin" }))],
-      ["cabeçalho do editor", renderToStaticMarkup(AdminHeader({ role: "editor" }))],
+      ["cabeçalho do administrador", renderToStaticMarkup(createElement(AdminHeader, { role: "admin" }))],
+      ["cabeçalho do editor", renderToStaticMarkup(createElement(AdminHeader, { role: "editor" }))],
     ] as const) {
       // Cabeçalhos são só navegação (o título da tela vem da página); auditamos o que se aplica a eles.
       const found = auditHtml(html, name).filter((p) => !p.includes("<h1>"));
