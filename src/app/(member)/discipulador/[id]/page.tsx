@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { describeActivity } from "@/lib/admin/people";
 import { requireDiscipler } from "@/lib/auth";
 import { groupStreak, memberDays, needsAttention, nextMeetingDate, releasedDays, type DayState } from "@/lib/groups/calendar";
 import { isUuid, WEEKDAY_LABEL } from "@/lib/groups/forms";
@@ -147,6 +148,10 @@ export default async function GroupPanelPage(props: PageProps<"/discipulador/[id
                       <Link href={`/discipulador/${id}/discipulo/${r.member.userId}`} className="underline-offset-4 hover:underline">
                         {r.member.name}
                       </Link>
+                      <span className="block text-xs font-normal text-muted">
+                        Ciclos {r.member.evolution.cyclesCompleted}/{r.member.evolution.cyclesTotal} · login{" "}
+                        {r.member.evolution.lastLoginAt ? describeActivity(r.member.evolution.lastLoginAt, now) : "nunca"}
+                      </span>
                     </th>
                     {shown.map((d) => {
                       const cell = CELL[r.days[d.day - 1].state];

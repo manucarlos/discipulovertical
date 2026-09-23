@@ -31,6 +31,7 @@ afterAll(async () => {
  * — nunca leem dado de outra pessoa, então não têm como vazar entre igrejas, hoje ou depois.
  */
 const JA_COBERTAS = [
+  "admin_member_overview", // migração 0030: passou a filtrar por church_id (a lista "Pessoas" e a evolução por pessoa)
   "audit_app_setting",
   "audit_church_page",
   "audit_lesson_publication",
@@ -73,7 +74,6 @@ const PENDENTES_FASE_2 = [
   "add_group_pause",
   "admin_care_queue",
   "admin_dashboard",
-  "admin_member_overview",
   "admin_set_discipler",
   "admin_set_role",
   "admin_transfer_group",
@@ -105,9 +105,12 @@ const PENDENTES_FASE_2 = [
   "join_group",
   "leave_group",
   "lesson_in_group_track",
+  "member_evolution_core", // 0030: recebe os ids já filtrados pelo chamador (mesmo padrão de member_situation_core)
+  "member_last_logins", // 0030: idem — interna, confia nos ids que member_evolution_core já filtrou
   "member_situation",
   "member_situation_core",
   "move_lesson",
+  "person_group_progress", // 0030: mesmo padrão de person_reflections/caregiver_member_card, logo abaixo
   "person_reflections",
   "remove_group_pause",
   "request_help",

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MemberStatus } from "@/lib/admin/people";
+import { toEvolution, type EvolutionRow, type MemberEvolution } from "@/lib/evolution";
 
 export type AlertStatus = "open" | "in_contact" | "resolved";
 
@@ -22,6 +23,7 @@ export interface CareMember {
   since: string;
   alertId: string | null;
   alertStatus: AlertStatus | null;
+  evolution: MemberEvolution;
 }
 
 export interface CareCard {
@@ -34,6 +36,7 @@ export interface CareCard {
   completedLessons: number;
   lastActivityAt: string | null;
   onboardedAt: string | null;
+  evolution: MemberEvolution;
 }
 
 export interface CareNote {
@@ -51,7 +54,7 @@ export async function syncAlerts(supabase: SupabaseClient): Promise<void> {
 export async function loadCareMembers(supabase: SupabaseClient): Promise<CareMember[]> {
   const { data, error } = await supabase.rpc("caregiver_members");
   if (error) throw new Error(`Falha ao carregar os membros: ${error.message}`);
-  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+  return ((data ?? []) as (Record<string, unknown> & EvolutionRow)[]).map((r) => ({
     id: r.member_id as string,
     name: r.display_name as string,
     status: r.status as MemberStatus,
@@ -61,6 +64,7 @@ export async function loadCareMembers(supabase: SupabaseClient): Promise<CareMem
     since: r.since as string,
     alertId: (r.alert_id as string | null) ?? null,
     alertStatus: (r.alert_status as AlertStatus | null) ?? null,
+    evolution: toEvolution(r),
   }));
 }
 
@@ -71,7 +75,7 @@ export async function loadCareCard(supabase: SupabaseClient, memberId: string): 
     if (error.message.includes("não autorizado")) return null;
     throw new Error(`Falha ao carregar a ficha: ${error.message}`);
   }
-  const r = ((data ?? []) as Record<string, unknown>[])[0];
+  const r = ((data ?? []) as (Record<string, unknown> & EvolutionRow)[])[0];
   if (!r) return null;
   return {
     id: r.member_id as string,
@@ -83,6 +87,7 @@ export async function loadCareCard(supabase: SupabaseClient, memberId: string): 
     completedLessons: r.completed_lessons as number,
     lastActivityAt: (r.last_activity_at as string | null) ?? null,
     onboardedAt: (r.onboarded_at as string | null) ?? null,
+    evolution: toEvolution(r),
   };
 }
 

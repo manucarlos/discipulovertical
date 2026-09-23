@@ -4,6 +4,7 @@ import { PersonDetailView } from "@/components/admin/people-views";
 import { loadPerson, loadPersonReflections } from "@/lib/admin/people-queries";
 import { requireAdmin } from "@/lib/auth";
 import { loadAuthoredNotes } from "@/lib/care";
+import { loadPersonGroupProgress } from "@/lib/evolution";
 import { loadSettings } from "@/lib/features";
 import { loadTrail } from "@/lib/trail/queries";
 import { assignCaregiver, unassignCaregiver } from "../../cuidado/actions";
@@ -49,7 +50,7 @@ export default async function PersonPage(props: PageProps<"/admin/pessoas/[id]">
 
   // A trilha "vista" por essa pessoa: mesmas regras de liberação, aplicadas ao progresso dela.
   const now = new Date();
-  const trail = await loadTrail(supabase, id, now);
+  const [trail, groupProgress] = await Promise.all([loadTrail(supabase, id, now), loadPersonGroupProgress(supabase, id)]);
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
@@ -63,6 +64,7 @@ export default async function PersonPage(props: PageProps<"/admin/pessoas/[id]">
         erro={first(search.erro)}
         reflections={reflections}
         careNotes={careNotes}
+        groupProgress={groupProgress}
         care={care && { ...care, assignAction: assignCaregiver.bind(null, id), unassignAction: unassignCaregiver.bind(null, id) }}
       />
     </main>

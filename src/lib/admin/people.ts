@@ -1,3 +1,5 @@
+import type { MemberEvolution } from "@/lib/evolution";
+
 export type UserRole = "member" | "caregiver" | "editor" | "admin";
 export type MemberStatus = "onboarding_pending" | "not_started" | "in_progress" | "stalled" | "completed";
 
@@ -107,4 +109,5 @@ export interface PersonRow {
   startedLessons: number;
   lastActivityAt: string | null;
   status: MemberStatus;
+  evolution: MemberEvolution;
 }

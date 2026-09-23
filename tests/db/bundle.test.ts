@@ -12,6 +12,7 @@ const BOOTSTRAP = /* sql */ `
   create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
   create schema auth;
   create table auth.users (id uuid primary key default gen_random_uuid(), email text, email_confirmed_at timestamptz,
+    last_sign_in_at timestamptz,
     raw_user_meta_data jsonb not null default '{}'::jsonb, raw_app_meta_data jsonb not null default '{}'::jsonb);
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   grant usage on schema public, auth to anon, authenticated, service_role;
@@ -34,7 +35,7 @@ const shape = (db: PGlite) =>
 describe("banco completo (um arquivo só para o SQL Editor)", () => {
   it("tem as 29 migrações em ordem, numa transação, e cada uma com o seu cabeçalho", () => {
     const sql = buildDbBundle(files);
-    expect(files).toHaveLength(29);
+    expect(files).toHaveLength(30);
     expect(sql).toMatch(/^-- Banco completo[\s\S]*\nbegin;\n/);
     expect(sql).toMatch(/\ncommit;\n/);
     const headers = [...sql.matchAll(/^-- ===== (.+?) =====$/gm)].map((m) => m[1]);

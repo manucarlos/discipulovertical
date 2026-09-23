@@ -18,6 +18,7 @@ import {
 } from "@/lib/admin/people";
 import type { PersonDetail, PersonReflection } from "@/lib/admin/people-queries";
 import type { AuthoredNote } from "@/lib/care";
+import type { MemberEvolution, PersonGroupProgress } from "@/lib/evolution";
 import { lockedMessage } from "@/lib/trail/format";
 import type { TrailView } from "@/lib/trail/view";
 
@@ -50,6 +51,29 @@ function RoleBadge({ role }: { role: UserRole }) {
 }
 
 const inputClass = "mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-base text-foreground focus:border-brand";
+
+const formatFreq = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/**
+ * Resumo compacto da evolução: Ciclos e Trilhas do Grupo de Discipulado lado a lado — nunca somados, são
+ * sistemas de progresso diferentes. Frequência: média móvel das últimas 4 semanas. Reaproveitado pela tela do
+ * cuidador e pelo painel do discipulador.
+ */
+export function EvolutionSummary({ evolution: e, now }: { evolution: MemberEvolution; now: Date }) {
+  const hasTrilha = e.groupsInProgress + e.groupsCompleted > 0;
+  return (
+    <p className="mt-1 text-sm text-muted">
+      Ciclos {e.cyclesCompleted}/{e.cyclesTotal} ({formatFreq(e.cycleFreqPerWeek)}/sem)
+      {hasTrilha && (
+        <>
+          {" · "}Trilhas {e.groupsInProgress} em andamento, {e.groupsCompleted} {e.groupsCompleted === 1 ? "concluída" : "concluídas"} (
+          {formatFreq(e.groupFreqPerWeek)}/sem)
+        </>
+      )}
+      {" · "}login {e.lastLoginAt ? describeActivity(e.lastLoginAt, now) : "nunca"}
+    </p>
+  );
+}
 
 /** Lista de pessoas (RF-23): busca, filtros por perfil e situação, e paginação. */
 export function PeopleListView({
@@ -149,8 +173,9 @@ export function PeopleListView({
               </div>
               <p className="mt-2 text-sm text-muted">
                 {p.completedLessons} {p.completedLessons === 1 ? "lição concluída" : "lições concluídas"} ·{" "}
-                {p.lastActivityAt ? `última atividade ${describeActivity(p.lastActivityAt, now)}` : "ainda sem atividade"}
+                {p.lastActivityAt ? `última leitura ${describeActivity(p.lastActivityAt, now)}` : "ainda sem leitura"}
               </p>
+              <EvolutionSummary evolution={p.evolution} now={now} />
             </Link>
           </li>
         ))}
@@ -262,6 +287,49 @@ export function ProgressSection({ trail, now }: { trail: TrailView; now: Date })
   );
 }
 
+/**
+ * As trilhas do Grupo de Discipulado de uma pessoa: progresso à parte de Ciclos (ProgressSection acima), nunca
+ * somado. Nada aparece se ela não participa de nenhuma — o recurso é opcional e nem toda igreja usa.
+ */
+export function GroupProgressSection({ groups }: { groups: PersonGroupProgress[] }) {
+  if (groups.length === 0) return null;
+  return (
+    <section aria-labelledby="trilhas-grupo" className="rounded-2xl border border-line bg-card p-5">
+      <h2 id="trilhas-grupo" className="font-serif text-xl">
+        Trilhas do Grupo de Discipulado
+      </h2>
+      <div className="mt-3 space-y-5">
+        {groups.map((g) => {
+          const percent = g.totalDays > 0 ? Math.round((g.completedDays / g.totalDays) * 100) : 0;
+          return (
+            <div key={g.groupId}>
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="font-medium">
+                  {g.groupName} <span className="font-normal text-muted">· {g.trackTitle}</span>
+                </h3>
+                <span className="text-sm text-muted">
+                  {g.completedDays} de {g.totalDays} · {percent}%
+                </span>
+              </div>
+              <div
+                role="progressbar"
+                aria-label={`Progresso na trilha ${g.trackTitle}`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={percent}
+                className="mt-1.5 h-2 overflow-hidden rounded-full bg-tint"
+              >
+                <div className="h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
+              </div>
+              {g.memberStatus === "left" && <p className="mt-1 text-xs text-muted">Saiu do grupo</p>}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 /** Ficha da pessoa (RF-24): dados, perfil de acesso, progresso lição a lição, consentimentos e histórico. */
 export function PersonDetailView({
   detail,
@@ -274,6 +342,7 @@ export function PersonDetailView({
   reflections = null,
   care = null,
   careNotes = null,
+  groupProgress = [],
   backHref = "/admin/pessoas",
 }: {
   detail: PersonDetail;
@@ -294,6 +363,8 @@ export function PersonDetailView({
   } | null;
   /** Notas de cuidado escritas sobre a pessoa. `null` com o recurso desligado. */
   careNotes?: AuthoredNote[] | null;
+  /** As trilhas do Grupo de Discipulado desta pessoa, segregadas de Ciclos. Vazio se ela não participa de nenhuma. */
+  groupProgress?: PersonGroupProgress[];
   backHref?: string;
 }) {
   const p = detail.summary;
@@ -335,8 +406,11 @@ export function PersonDetailView({
           <Fact label="Primeiro acesso concluído">
             {p.onboardedAt ? shortDate.format(new Date(p.onboardedAt)) : <span className="text-muted">ainda não</span>}
           </Fact>
-          <Fact label="Última atividade">
+          <Fact label="Última leitura">
             {p.lastActivityAt ? `${describeActivity(p.lastActivityAt, now)} (${dateTime.format(new Date(p.lastActivityAt))})` : "nenhuma"}
+          </Fact>
+          <Fact label="Último login">
+            {p.evolution.lastLoginAt ? `${describeActivity(p.evolution.lastLoginAt, now)} (${dateTime.format(new Date(p.evolution.lastLoginAt))})` : "nunca"}
           </Fact>
         </dl>
       </section>
@@ -419,6 +493,8 @@ export function PersonDetailView({
       )}
 
       <ProgressSection trail={trail} now={now} />
+
+      <GroupProgressSection groups={groupProgress} />
 
       {reflections && (
         <section aria-labelledby="reflexoes" className="rounded-2xl border border-line bg-card p-5">

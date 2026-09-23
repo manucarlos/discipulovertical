@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toEvolution, type EvolutionRow, type MemberEvolution } from "@/lib/evolution";
 import type { GroupSchedule } from "./calendar";
 
 export interface GroupInfo {
@@ -148,17 +149,35 @@ export interface RosterMember {
   name: string;
   joinedAt: string;
   status: string;
+  completedLessons: number;
+  startedLessons: number;
+  lastActivityAt: string | null;
+  evolution: MemberEvolution;
 }
 
-/** Quem está no grupo (só o nome), para o discipulador e o Admin. */
+interface RosterRow extends EvolutionRow {
+  user_id: string;
+  display_name: string;
+  joined_at: string;
+  status: string;
+  completed_lessons: number;
+  started_lessons: number;
+  last_activity_at: string | null;
+}
+
+/** Quem está no grupo (só o nome, mais a evolução: Ciclos e Trilhas lado a lado), para o discipulador e o Admin. */
 export async function loadRoster(supabase: SupabaseClient, groupId: string): Promise<RosterMember[]> {
   const { data, error } = await supabase.rpc("group_roster", { p_group: groupId });
   if (error) throw new Error(`Falha ao carregar o grupo: ${error.message}`);
-  return ((data ?? []) as { user_id: string; display_name: string; joined_at: string; status: string }[]).map((r) => ({
+  return ((data ?? []) as RosterRow[]).map((r) => ({
     userId: r.user_id,
     name: r.display_name,
     joinedAt: r.joined_at,
     status: r.status,
+    completedLessons: r.completed_lessons,
+    startedLessons: r.started_lessons,
+    lastActivityAt: r.last_activity_at,
+    evolution: toEvolution(r),
   }));
 }
 

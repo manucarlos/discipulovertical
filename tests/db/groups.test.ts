@@ -334,7 +334,24 @@ describe("nomes de quem está no grupo (sem o resto do perfil)", () => {
     await expect(as(ana, "select * from public.group_roster($1)", [groupId])).rejects.toThrow(/não autorizado/);
     await expect(as(disc, "select * from public.group_roster($1)", [groupId])).rejects.toThrow(/não autorizado/); // a conta dele foi excluída acima: não conduz mais o grupo
     const [row] = await as<Record<string, unknown>>(disc2, "select * from public.group_roster($1)", [groupId]);
-    expect(Object.keys(row).sort()).toEqual(["display_name", "joined_at", "status", "user_id"]);
+    expect(Object.keys(row).sort()).toEqual([
+      "completed_lessons",
+      "cycle_freq_4w",
+      "cycles_completed",
+      "cycles_total",
+      "display_name",
+      "group_freq_4w",
+      "group_lessons_completed",
+      "group_lessons_started",
+      "groups_completed",
+      "groups_in_progress",
+      "joined_at",
+      "last_activity_at",
+      "last_login_at",
+      "started_lessons",
+      "status",
+      "user_id",
+    ]);
   });
 
   it("os nomes dos pedidos de ajuda só saem para quem pode ler o pedido", async () => {

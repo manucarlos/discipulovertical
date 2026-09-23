@@ -13,8 +13,9 @@ import {
   type CareOverview,
   type OpenAlert,
 } from "@/lib/care";
+import type { PersonGroupProgress } from "@/lib/evolution";
 import type { TrailView } from "@/lib/trail/view";
-import { MemberStatusBadge, ProgressSection } from "./admin/people-views";
+import { EvolutionSummary, GroupProgressSection, MemberStatusBadge, ProgressSection } from "./admin/people-views";
 
 const TIME_ZONE = "America/Sao_Paulo";
 const shortDate = new Intl.DateTimeFormat("pt-BR", { timeZone: TIME_ZONE, day: "2-digit", month: "2-digit", year: "numeric" });
@@ -115,8 +116,9 @@ export function CareListView({ members, now }: { members: CareMember[]; now: Dat
                   {m.alertStatus && <AlertBadge status={m.alertStatus} />}
                 </span>
                 <span className="mt-1 block text-sm text-muted">
-                  {m.completedLessons} lições concluídas · última atividade {describeActivity(m.lastActivityAt, now)}
+                  {m.completedLessons} lições concluídas · última leitura {describeActivity(m.lastActivityAt, now)}
                 </span>
+                <EvolutionSummary evolution={m.evolution} now={now} />
               </Link>
             </li>
           ))}
@@ -137,6 +139,7 @@ export function CareMemberView({
   noteAction,
   deleteNoteAction,
   reflections,
+  groupProgress = [],
   ok,
   erro,
 }: {
@@ -149,6 +152,8 @@ export function CareMemberView({
   noteAction: (formData: FormData) => Promise<void>;
   deleteNoteAction: (noteId: string, formData: FormData) => Promise<void>;
   reflections: PersonReflection[] | null;
+  /** As trilhas do Grupo de Discipulado desta pessoa, segregadas de Ciclos. */
+  groupProgress?: PersonGroupProgress[];
   ok?: string;
   erro?: string;
 }) {
@@ -197,14 +202,25 @@ export function CareMemberView({
             </dd>
           </div>
           <div>
-            <dt className="text-sm text-muted">Última atividade</dt>
+            <dt className="text-sm text-muted">Última leitura</dt>
             <dd>{card.lastActivityAt ? `${describeActivity(card.lastActivityAt, now)} (${dateTime.format(new Date(card.lastActivityAt))})` : "nenhuma"}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-muted">Último login</dt>
+            <dd>
+              {card.evolution.lastLoginAt
+                ? `${describeActivity(card.evolution.lastLoginAt, now)} (${dateTime.format(new Date(card.evolution.lastLoginAt))})`
+                : "nunca"}
+            </dd>
           </div>
           <div>
             <dt className="text-sm text-muted">Versão da Bíblia</dt>
             <dd>{card.bibleVersion}</dd>
           </div>
         </dl>
+        <div className="mt-4 border-t border-line pt-3">
+          <EvolutionSummary evolution={card.evolution} now={now} />
+        </div>
       </section>
 
       {alert && (
@@ -221,6 +237,8 @@ export function CareMemberView({
       )}
 
       <ProgressSection trail={trail} now={now} />
+
+      <GroupProgressSection groups={groupProgress} />
 
       {reflections && (
         <section aria-labelledby="reflexoes" className="rounded-2xl border border-line bg-card p-5">

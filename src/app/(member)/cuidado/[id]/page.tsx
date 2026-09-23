@@ -4,6 +4,7 @@ import { CareMemberView } from "@/components/care-views";
 import { loadPersonReflections } from "@/lib/admin/people-queries";
 import { requireCaregiver } from "@/lib/auth";
 import { loadCareCard, loadCareNotes, loadOpenAlert } from "@/lib/care";
+import { loadPersonGroupProgress } from "@/lib/evolution";
 import { loadSettings } from "@/lib/features";
 import { loadTrail } from "@/lib/trail/queries";
 import { addCareNote, deleteCareNote, updateCareAlert } from "../actions";
@@ -30,11 +31,12 @@ export default async function CareMemberPage(props: PageProps<"/cuidado/[id]">) 
 
   const now = new Date();
   const { flags } = await loadSettings(supabase);
-  const [trail, notes, alert, reflections] = await Promise.all([
+  const [trail, notes, alert, reflections, groupProgress] = await Promise.all([
     loadTrail(supabase, id, now),
     loadCareNotes(supabase, id),
     loadOpenAlert(supabase, id),
     flags.reflections ? loadPersonReflections(supabase, id) : Promise.resolve(null),
+    loadPersonGroupProgress(supabase, id),
   ]);
 
   return (
@@ -49,6 +51,7 @@ export default async function CareMemberPage(props: PageProps<"/cuidado/[id]">) 
         noteAction={addCareNote.bind(null, id)}
         deleteNoteAction={deleteCareNote.bind(null, id)}
         reflections={reflections}
+        groupProgress={groupProgress}
         ok={first(search.ok)}
         erro={first(search.erro)}
       />

@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toEvolution, type EvolutionRow } from "@/lib/evolution";
 import { PAGE_SIZE, type MemberStatus, type PeopleFilters, type PersonRow, type UserRole } from "./people";
 
-interface OverviewRow {
+interface OverviewRow extends EvolutionRow {
   member_id: string;
   display_name: string;
   email: string;
@@ -26,6 +27,7 @@ const toPerson = (r: OverviewRow): PersonRow => ({
   startedLessons: r.started_lessons,
   lastActivityAt: r.last_activity_at,
   status: r.status,
+  evolution: toEvolution(r),
 });
 
 async function callOverview(

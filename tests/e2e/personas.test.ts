@@ -623,7 +623,7 @@ describe("Claudião, administrador: acompanha as pessoas", () => {
     // Passaram-se mais de 100 dias desde que o Claudinho esteve aqui: o pastor precisa enxergar isso.
     expect(item("Claudinho da Silva")).toContain("Parado");
     expect(item("Claudinho da Silva")).toContain("3 lições concluídas");
-    expect(item("Claudinho da Silva")).toMatch(/última atividade há \d+ (dias|meses)/);
+    expect(item("Claudinho da Silva")).toMatch(/última leitura há \d+ (dias|meses)/);
     // O administrador nunca fez a trilha e não é "parado": o alerta é para membros.
     expect(item("Claudião")).toContain("Administrador");
     expect(item("Claudião")).not.toContain("Parado");
