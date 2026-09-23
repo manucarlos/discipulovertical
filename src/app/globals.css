@@ -33,6 +33,23 @@ body {
 
 /* Modo escuro da leitura (RF-08): a regra .reading-dark também vem do brand.ts (READING_DARK_CSS), gravada pelo layout. */
 
+/* Entrada suave dos cards de ciclo/trilha (lista "Minha trilha"). Respeita quem prefere menos movimento. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes card-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .card-fade-in {
+    animation: card-fade-in 0.4s ease-out both;
+  }
+}
+
 /* Editor de texto das lições (TipTap): o reset do Tailwind remove estilos de listas, tabelas etc. */
 .lesson-prose {
   min-height: 16rem;

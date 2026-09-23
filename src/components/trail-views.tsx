@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatEventWhen, type MemberClosure } from "@/lib/closures";
+import { CycleIcon } from "@/components/cycle-icons";
 import type { Engagement } from "@/lib/gamification";
 import type { CycleView, LessonItem, TrailView } from "@/lib/trail/view";
 import { formatWhen, lockedMessage } from "@/lib/trail/format";
@@ -14,7 +15,10 @@ function ProgressBar({ percent, label }: { percent: number; label: string }) {
       aria-valuenow={percent}
       className="h-2.5 w-full overflow-hidden rounded-full bg-tint"
     >
-      <div className="h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
+      <div
+        className="h-full rounded-full bg-brand transition-[width] duration-700 ease-out motion-reduce:transition-none"
+        style={{ width: `${percent}%` }}
+      />
     </div>
   );
 }
@@ -97,23 +101,28 @@ export function TrailHome({ name, view, now, engagement = null }: { name: string
         <section aria-labelledby="ciclos" className="mt-10">
           <h2 id="ciclos" className="font-serif text-2xl">Ciclos</h2>
           <ul className="mt-4 space-y-3">
-            {view.cycles.map((cycle) => (
-              <li key={cycle.id}>
+            {view.cycles.map((cycle, i) => (
+              <li key={cycle.id} className="card-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
                 <Link
                   href={`/ciclo/${cycle.slug}`}
-                  className="block rounded-2xl border border-line bg-card p-4 transition hover:border-brand"
+                  className="flex gap-4 rounded-2xl border border-line bg-card p-4 transition hover:border-brand"
                 >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="font-serif text-xl">
-                      {cycle.position}. {cycle.title}
-                    </span>
-                    <span className="shrink-0 text-sm text-muted">
-                      {cycle.complete ? "Concluído" : `${cycle.percent}%`}
-                    </span>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-tint text-brand">
+                    <CycleIcon position={cycle.position} className="h-6 w-6" />
                   </div>
-                  {cycle.description && <p className="mt-1 text-sm text-muted">{cycle.description}</p>}
-                  <div className="mt-3">
-                    <ProgressBar percent={cycle.percent} label={`Progresso do ciclo ${cycle.title}`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-serif text-xl">
+                        {cycle.position}. {cycle.title}
+                      </span>
+                      <span className="shrink-0 text-sm text-muted">
+                        {cycle.complete ? "Concluído" : `${cycle.percent}%`}
+                      </span>
+                    </div>
+                    {cycle.description && <p className="mt-1 text-sm text-muted">{cycle.description}</p>}
+                    <div className="mt-3">
+                      <ProgressBar percent={cycle.percent} label={`Progresso do ciclo ${cycle.title}`} />
+                    </div>
                   </div>
                 </Link>
               </li>
@@ -191,8 +200,15 @@ export function CycleDetail({
       <Link href="/" className="text-sm text-muted underline">
         ← Minha trilha
       </Link>
-      <p className="mt-4 text-sm font-medium uppercase tracking-widest text-brand">Ciclo {cycle.position}</p>
-      <h1 className="font-serif text-3xl leading-tight">{cycle.title}</h1>
+      <div className="mt-4 flex items-center gap-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-tint text-brand">
+          <CycleIcon position={cycle.position} className="h-7 w-7" />
+        </div>
+        <div>
+          <p className="text-sm font-medium uppercase tracking-widest text-brand">Ciclo {cycle.position}</p>
+          <h1 className="font-serif text-3xl leading-tight">{cycle.title}</h1>
+        </div>
+      </div>
       {cycle.description && <p className="mt-2 text-muted">{cycle.description}</p>}
 
       {banners.cycleCompleted && (
